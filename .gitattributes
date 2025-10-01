@@ -1,3 +1,4 @@
+*.node filter=lfs diff=lfs merge=lfs -text
 *.env filter=lfs diff=lfs merge=lfs -text
 *.example filter=lfs diff=lfs merge=lfs -text
 *.gitignore filter=lfs diff=lfs merge=lfs -text
@@ -1233,7 +1234,6 @@
 /star-frontend/node_modules/@humanwhocodes/object-schema/LICENSE filter=lfs diff=lfs merge=lfs -text
 /star-frontend/node_modules/@img/sharp-win32-x64/LICENSE filter=lfs diff=lfs merge=lfs -text
 *.dll filter=lfs diff=lfs merge=lfs -text
-*.node filter=lfs diff=lfs merge=lfs -text
 /star-frontend/node_modules/@isaacs/cliui/node_modules/ansi-regex/license filter=lfs diff=lfs merge=lfs -text
 /star-frontend/node_modules/@isaacs/cliui/node_modules/strip-ansi/license filter=lfs diff=lfs merge=lfs -text
 /star-frontend/node_modules/@jridgewell/gen-mapping/LICENSE filter=lfs diff=lfs merge=lfs -text
