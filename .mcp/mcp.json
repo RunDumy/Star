@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": [
+        "mcp",
+        "gateway",
+        "run"
+      ],
+      "type": "stdio"
+    }
+  },
+  "note": "Use the MCP_DOCKER server to run the MCP gateway via Docker. Requires Docker installed and the 'mcp' image available."
+}
