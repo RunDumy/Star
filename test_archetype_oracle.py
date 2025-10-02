@@ -2,9 +2,13 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend/star_backend_flask'))
 
-from archetype_oracle import ArchetypeOracle
+# Add the backend path for imports
+backend_path = os.path.join(os.path.dirname(__file__), 'backend', 'star_backend_flask')
+sys.path.insert(0, backend_path)
+
+# Import after path modification
+from archetype_oracle import ArchetypeOracle  # type: ignore
 from datetime import datetime
 
 def test_archetype_oracle():

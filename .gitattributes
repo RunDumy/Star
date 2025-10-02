@@ -1,1 +1,8 @@
 *.node filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+.env filter=lfs diff=lfs merge=lfs -text
+.env.local filter=lfs diff=lfs merge=lfs -text
+.env.example filter=lfs diff=lfs merge=lfs -text
+.gitattributes
+node_modules/
+.next/

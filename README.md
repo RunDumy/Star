@@ -1,19 +1,20 @@
-# 🌌✨🃏 **STAR** - Interactive Tarot Drag-and-Drop Reader 🃏✨🌌
+# 🌌✨🃏 **STAR** — A Revolutionary Zodiac Social Media Platform 🃏✨🌌
+*Outshining Instagram & TikTok with Archetypal Intelligence and Cosmic Connection*
 
-*A Revolutionary Zodiac Social Media Platform Outshining Instagram & TikTok*
-
-[![Vercel Deployment](https://vercel.com/button)](https://vercel.com)
-[![Render Deployment](https://render.com/images/badge.svg)](https://render.com)
+[![Deploy on Vercel](https://vercel.com/button)](https://vercel.com)
+[![Deploy on Render](https://render.com/images/badge.svg)](https://render.com)
 
 ## 🎯 **What is STAR?**
 
-**STAR** is a groundbreaking **Interactive Tarot Drag-and-Drop Reader** that transcends traditional social media platforms. Experience ancient wisdom through modern technology with:
+**STAR** is a revolutionary **Zodiac Social Media Platform** powered by **mythical and occult intelligence**. It transcends traditional social media by weaving together astrology, tarot, archetypes, and planetary symbolism into a living, interactive oracle.
 
-✨ **Drag-and-Drop Tarot**: Intuitive card placement with energy flow visualization
-🎵 **Cosmic Playlists**: Mood-based Spotify integration for tarot readings
-🌍 **Astrological Context**: Location-aware insights using IPGeolocation
-🎨 **Visual Sharing**: Canvas-generated spreads with cosmic aesthetics
-🔮 **Personalized Insights**: Element-based energy calculations
+🔮 **Drag-and-Drop Tarot** — Ritual-based card placement with elemental energy flow
+🎵 **Cosmic Playlists** — AI-curated soundtracks tuned to archetypal moods and planetary alignments
+🌍 **Astrological Context** — Location-aware celestial overlays, moon phase resonance, and sun sign filters
+🎨 **Visual Sharing** — Canvas-generated spreads with starfield gradients and occult glyphs
+🧬 **Personalized Insights** — Elemental balance, zodiac archetype mapping, and mentor overlays drawn from esoteric traditions
+
+STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **social constellation** where users channel their inner archetypes, share cosmic revelations, and participate in the unfolding zodiacal narrative.
 
 ## 🚀 **Live Demo**
 
@@ -24,29 +25,37 @@
 ## 🏗️ **Architecture**
 
 ```
-🌌 STAR Platform
+🌌 STAR Platform — Zodiac Social Media Ecosystem
 ├── 🎨 Frontend (Next.js + React + TypeScript)
+│   ├── Archetype Oracle & Birth Chart Calculator
 │   ├── Interactive Tarot Reader with Konva.js canvases
+│   ├── Mentor Personality Engine & AI Companions
 │   ├── Real-time energy flow visualizations
 │   ├── Cosmic sharing modals with Spotify integration
+│   ├── Zodiac Profiling & Resonance Mapping
 │   └── Accessibility-first design (WCAG 2.1 AA)
 │
 ├── 🔧 Backend (Flask/FastAPI + Python)
-│   ├── Advanced energy flow algorithms
-│   ├── Spotify playlist generation (mood-based)
+│   ├── Mythical intelligence algorithms
+│   ├── Occult resonance tracking & ritual processing
+│   ├── Planetary symbolism algorithms
+│   ├── Spotify playlist generation (planetary-alignment based)
 │   ├── IPGeolocation astrological insights
-│   └── PostgreSQL with caching (TTLCache)
+│   ├── Esoteric numerology & karmic analysis
+│   ├── PostgreSQL with caching (TTLCache)
+│   └── Socket.IO real-time constellation networking
 │
 ├── 🧪 Testing (Jest + PyTest + 85% Coverage)
 │   ├── Component testing with React Testing Library
-│   ├── API endpoint validation
+│   ├── API endpoint validation & integration tests
+│   ├── Archetype oracle testing & edge cases
 │   └── Accessibility and performance testing
 │
 └── ☁️ Production Deployment (Vercel + Render)
     ├── Global CDN with auto-scaling
-    ├── Zero-downtime CI/CD
-    ├── Production monitoring
-    └── Enterprise-grade security
+    ├── Zero-downtime CI/CD & automated deployments
+    ├── Production monitoring & analytics
+    └── Enterprise-grade security (HTTPS, CORS, rate limiting)
 ```
 
 ## 🛠️ **Technology Stack**
@@ -61,7 +70,7 @@
 
 ### **Backend**
 - **Runtime**: Python 3.10+
-- **Framework**: Flask/FastAPI with async support
+- **Framework**: Flask with async support
 - **Database**: PostgreSQL (Render) with SQLAlchemy
 - **Caching**: TTLCache for performance optimization
 - **APIs**: Spotify Web API, IPGeolocation
@@ -100,22 +109,22 @@ cd Star
 
 2. **Setup Backend**
 ```bash
-cd star-backend
-pip install -r requirements.txt
-cp .env.example .env  # Add your API keys
-uvicorn star_backend_flask.api:app --reload
+cd backend/star_backend_flask
+pip install -r ../requirements.txt
+cp ../../.env.example ../../.env  # Add your API keys
+python app.py
 ```
 
 3. **Setup Frontend**
 ```bash
-cd ../star-frontend
+cd ../../star-frontend
 npm install
 npm run dev
 ```
 
 4. **Access**
 - Frontend: http://localhost:3000
-- Backend: http://localhost:8000
+- Backend: http://localhost:5000
 - Tarot App: http://localhost:3000/tarot-reading
 
 ### **Testing**
@@ -170,27 +179,44 @@ DATABASE_URL=postgresql://provided_by_render
 
 ## 🎨 **Key Features**
 
+### **🔮 Archetype Oracle System**
+- **Cosmic Profile Generation**: Comprehensive personality mapping across Western, Chinese, and Vedic zodiacs
+- **Archetypal Intelligence**: Deep resonance analysis using Jungian archetypes and karmic cycles
+- **Personal Cycle Tracking**: Moon phase alignment and life purpose calculations
+- **Mentor Companions**: AI-powered archetypal guidance and emotional support
+
 ### **✨ Interactive Tarot Experience**
-- **Drag-and-Drop Interface**: Natural card placement
-- **Energy Flow Visualization**: Real-time elemental connections
-- **Touch/Mobile Support**: Haptic feedback and gestures
-- **Accessibility**: Full keyboard navigation and screen readers
+- **Drag-and-Drop Interface**: Ritual-based card placement with energetic intention
+- **Energy Flow Visualization**: Real-time elemental connections and pattern recognition
+- **Touch/Mobile Support**: Haptic feedback and gesture-based interactions
+- **Accessibility**: Full keyboard navigation and screen readers (WCAG 2.1 AA)
 
-### **🎵 Spotify Integration**
-- **Mood-Based Playlists**: Fire energy → electronic/dance tracks
-- **Dynamic Naming**: "Cosmic Tarot: Flowing & Transforming Energy"
-- **Instant Generation**: Curates 10-track cosmic soundtracks
+### **🔢 Numerology Engine**
+- **Comprehensive Calculations**: Life path, destiny, soul urge, and personality numbers
+- **Compatibility Analysis**: Relationship insights through numerical resonance
+- **Karmic Cycles**: Personal evolution tracking and destiny path guidance
+- **Birth Day Insights**: Daily energetic alignments and opportunities
 
-### **🌍 Location Intelligence**
-- **IPGeolocation**: Automatic user location detection
-- **Astrological Context**: Moon phase and sun sign insights
-- **Personalized Readings**: Localized celestial resonance
+### **🌌 Birth Chart Calculator**
+- **Complete Natal Chart**: Planetary positions, houses, and aspects analysis
+- **Transits & Progressions**: Current celestial influences and future trends
+- **Aspect Harmonics**: Complex planetary relationships and meaningful connections
+- **Locational Intelligence**: Birthplace-specific celestial configurations
 
-### **🎨 Visual Sharing**
-- **Canvas Generation**: Konva.js powered spread images
-- **Cosmic Aesthetics**: Starfield backgrounds and gradients
-- **Copy/Share Links**: Instant URL generation
-- **Download Support**: PNG export for social sharing
+### **🎵 Archetypal Soundscapes**
+- **AI-Curated Playlists**: Mood-based Spotify integration matching elemental energies
+- **Dynamic Naming**: Context-aware playlist titles reflecting cosmic themes
+- **Mood-Aligned Curation**: Curates 10-track cosmic soundtracks for rituals and reflection
+
+### **🎭 Social Zodiac Community**
+- **Zodiac Profiling**: Multi-tradition sign compatibility and interaction tracking
+- **Resonance Mapping**: Emotional frequency analysis and interpersonal dynamics
+- **Tradition Preferences**: Hermetic, Kabbalistic, and Theosophical framework options
+
+### **🎨 Cosmic Visual Sharing**
+- **Canvas Generation**: Konva.js-powered spread images with celestial aesthetics
+- **Starfield Backdrops**: Dynamic cosmic backgrounds and gradient overlays
+- **Instant Sharing**: URL generation and download support for social platforms
 
 ## 📊 **Performance & Quality**
 
@@ -202,13 +228,66 @@ DATABASE_URL=postgresql://provided_by_render
 - **Security**: Environment variables, HTTPS everywhere
 
 ### **API Endpoints**
+
+#### **Core Health & Diagnostics**
 ```
-GET  /api/v1/health           # Health check
-POST /api/v1/tarot/calculate-energy-flow  # Energy calculations
-POST /api/v1/tarot/enhanced-interpretation # Full readings
-POST /api/v1/tarot/spotify-playlist       # Music generation
-POST /api/v1/tarot/location-insights      # Astrological context
-POST /api/v1/tarot/share-spread          # Sharing URLs
+GET  /api/v1/health           # System health check
+GET  /api/v1/posts           # Get all social posts
+POST /api/v1/posts           # Create new post
+POST /api/v1/upload          # Upload media content
+```
+
+#### **Archetype & Oracle System**
+```
+GET  /api/v1/archetype-oracle                 # Personal cosmic profile
+POST /api/v1/archetype-oracle/calculate       # Generate archetype reading
+POST /api/v1/archetype-oracle/cosmic-profile  # Public cosmic profile
+GET  /api/v1/archetype-oracle/archetype-synthesis # Archetype synthesis
+```
+
+#### **Tarot Intelligence**
+```
+POST /api/v1/tarot/calculate-energy-flow      # Energy flow analysis
+POST /api/v1/tarot/enhanced-interpretation    # Enhanced tarot readings
+POST /api/v1/tarot/spotify-playlist           # Generate cosmic playlists
+POST /api/v1/tarot/location-insights          # Location-based insights
+POST /api/v1/tarot/share-spread              # Share reading URLs
+```
+
+#### **Numerology Engine**
+```
+GET  /api/v1/numerology                       # Personal numerology profile
+POST /api/v1/numerology/calculate             # Public numerology calculation
+POST /api/v1/numerology/compatibility         # Relationship compatibility
+```
+
+#### **Astrological Calculations**
+```
+POST /api/v1/birth-chart                      # Birth chart calculations
+POST /api/v1/zodiac-numbers                   # Zodiac number generation
+```
+
+#### **Occult Oracle AI**
+```
+POST /api/v1/occult-oracle/mentor             # Mentor personality responses
+GET  /api/v1/occult-oracle/resonance          # Emotional resonance tracking
+POST /api/v1/occult-oracle/emotional-os       # Emotional OS processing
+POST /api/v1/occult-oracle/experience         # Full oracle experience
+POST /api/v1/occult-oracle/public-experience  # Public oracle access
+```
+
+#### **Social Features**
+```
+GET  /api/v1/profile/<user_id>                # User profile details
+POST /api/v1/follow/<user_id>                 # Follow/unfollow users
+GET  /api/v1/trends                           # Trending content
+PUT  /api/v1/user/settings                    # Update user preferences
+```
+
+#### **Content & Community**
+```
+POST /api/v1/register                         # User registration
+POST /api/v1/login                            # User authentication
 ```
 
 ## 🤝 **Contributing**
@@ -230,25 +309,36 @@ We welcome cosmic collaborators! 🌟
 
 ## 📋 **Roadmap**
 
-### **Phase 1: Core Experience** ✅ COMPLETED
-- Interactive tarot reading
-- Energy flow visualization
-- Spotify playlist generation
-- Location-aware insights
-- Sharing capabilities
+### **Phase 1: Foundation** ✅ COMPLETED
+- Archetype Oracle & Cosmic Profile generation
+- Interactive tarot drag-and-drop experience
+- Birth chart calculations with astrological insights
+- Numerology engine with karmic analysis
+- Basic mentor personality responses
+- Spotify integration for cosmic playlists
 
-### **Phase 2: Community Features** (Upcoming)
-- [ ] User profiles and authentication
-- [ ] Shared spread gallery
-- [ ] Social interactions (likes, comments, follows)
-- [ ] Community-driven card interpretations
+### **Phase 2: Social Resonance** (Current Development)
+- [ ] Full mentor companions with conversation history
+- [ ] Emotional OS for mood tracking and processing
+- [ ] Resonance mapping between users
+- [ ] Zodiac compatibility algorithms
+- [ ] Shared cosmic profiles and gallery
+- [ ] Community discussions around archetypes
 
-### **Phase 3: Advanced Integrations** (Planned)
-- [ ] Sound effects for card placements
-- [ ] Haptic feedback for mobile
-- [ ] AR card overlay with camera
-- [ ] Voice-guided readings
-- [ ] Multi-language support
+### **Phase 3: Planetary Scale** (Vision)
+- [ ] Real-time celestial transits and notifications
+- [ ] Planetary optimization recommendations
+- [ ] Multi-user ritual coordination
+- [ ] Advanced karmic cycle tracking
+- [ ] Professional astrology integrations
+- [ ] AR/VR cosmic experiences
+- [ ] Global community events and lunar festivals
+
+### **Phase 4: Universal Intelligence** (Future Frontier)
+- [ ] AI-powered personal mythology generation
+- [ ] Quantum resonance pattern recognition
+- [ ] Interstellar communication protocols
+- [ ] Collective consciousness algorithms
 
 ## 📄 **License**
 
@@ -273,5 +363,3 @@ Your **STAR** platform is ready to revolutionize social media with meaningful sp
 ---
 
 *Built with astrology, algorithms, and a dash of stardust ✨🃏🌌*
-# Star
-# Star

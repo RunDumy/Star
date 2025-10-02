@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: star-backend
+    name: star-backend-service
     runtime: python
     region: oregon
     plan: free
@@ -12,6 +12,6 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        value: postgresql://postgres:8phRIvhoniavo2Wv@db.hiwmpmvqcxzshdmhhlsb.supabase.co:5432/postgres
+        generateValue: true
       - key: ALLOWED_ORIGINS
         value: https://your-frontend-name.vercel.app

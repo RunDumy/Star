@@ -1,44 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
-import {
-  Chart as ChartJS,
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Radar } from 'react-chartjs-2';
-
-ChartJS.register(
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend
-);
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-
-interface OracleData {
-  cosmic_profile: any;
-  symbolic_spread: any;
-  resonance_map: any;
-  cycle_tracker: any;
-  karmic_insights: any;
-  user_info: {
-    full_name: string;
-    birth_date: string;
-    tradition: string;
-  };
-}
+import CosmicProfileGrid from '../components/CosmicProfileGrid';
+import ResonanceMap from '../components/ResonanceMap';
+import PoeticScroll from '../components/PoeticScroll';
+import CosmicButton from '../components/CosmicButton';
+import CosmicCard from '../components/CosmicCard';
+import { calculateArchetypeOracle } from '../lib/api';
+import { PublicOracleData } from '../types/archetype-oracle';
 
 export default function PublicArchetypeOracle() {
-  const [oracle, setOracle] = useState<OracleData | null>(null);
+  const [oracle, setOracle] = useState<PublicOracleData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('cosmic_profile');
   const [loading, setLoading] = useState<boolean>(false);
@@ -58,8 +30,8 @@ export default function PublicArchetypeOracle() {
     setOracle(null);
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/archetype-oracle/calculate`, formData);
-      setOracle(response.data);
+      const response = await calculateArchetypeOracle(formData);
+      setOracle(response);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message);
     } finally {
@@ -67,42 +39,9 @@ export default function PublicArchetypeOracle() {
     }
   };
 
-  const getResonanceChartData = () => {
-    if (!oracle?.resonance_map) return null;
-
-    const dataValues = Object.values(oracle.resonance_map).map((item: any) => item.number || 0);
-
-    return {
-      labels: ['Life Path', 'Destiny', 'Soul Urge', 'Personality', 'Birth Day'],
-      datasets: [
-        {
-          label: 'Numerical Values',
-          data: dataValues,
-          backgroundColor: 'rgba(75, 0, 130, 0.2)',
-          borderColor: '#4B0082',
-          pointBackgroundColor: '#ffffff',
-          pointBorderColor: '#4B0082',
-          pointRadius: 5,
-        },
-      ],
-    };
-  };
-
-  const chartOptions = {
-    scales: {
-      r: {
-        angleLines: { color: '#ffffff' },
-        grid: { color: '#4B0082' },
-        pointLabels: { color: '#ffffff' },
-        ticks: { color: '#ffffff', backdropColor: 'transparent' }
-      }
-    },
-    plugins: {
-      legend: { labels: { color: '#ffffff' } },
-      title: { display: true, text: 'Cosmic Resonance Map', color: '#ffffff' }
-    },
-    responsive: true,
-    maintainAspectRatio: false
+  const onCardClick = (aspect: any) => {
+    setActiveTab('aspect_detail');
+    // Could store selected aspect for detail view
   };
 
   const tabs = [
@@ -198,201 +137,164 @@ export default function PublicArchetypeOracle() {
               ))}
             </div>
 
-            {/* Similar tab content as in archetype-oracle.tsx */}
+            {/* Interactive Components */}
             {activeTab === 'cosmic_profile' && oracle.cosmic_profile && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(oracle.cosmic_profile.numerology).map(([key, data]: [string, any]) => (
-                  <div key={key} className="bg-gradient-to-br from-purple-900 to-blue-900 p-6 rounded-xl shadow-lg border border-purple-500">
-                    <h3 className="text-xl font-semibold mb-2 text-purple-200">
-                      {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </h3>
-                    <div className="mb-4">
-                      <div className="text-2xl font-bold text-yellow-400 mb-2">
-                        {oracle.cosmic_profile.archetypal_persona[key]}
-                      </div>
-                      <div className="text-sm text-gray-300">Number: {data.number}</div>
-                    </div>
-                    {oracle.cosmic_profile.poetic_scrolls?.[key] && (
-                      <div className="mb-4 p-3 bg-purple-800/30 rounded-lg italic text-pink-300 border-l-4 border-pink-500">
-                        <strong>Poetic Scroll:</strong> {oracle.cosmic_profile.poetic_scrolls[key]}
-                      </div>
-                    )}
-                    {oracle.cosmic_profile.tarot[key] && (
-                      <div className="mb-4">
-                        <h4 className="text-lg font-semibold text-purple-200">Tarot Arcana</h4>
-                        <p className="text-sm text-gray-300">{oracle.cosmic_profile.tarot[key].card}</p>
-                        <p className="text-xs text-green-400 mt-1">{oracle.cosmic_profile.tarot[key].meaning}</p>
-                        <p className="text-xs text-red-400 mt-1">Shadow: {oracle.cosmic_profile.tarot[key].shadow}</p>
-                      </div>
-                    )}
-                    {oracle.cosmic_profile.planetary[key] && (
-                      <div>
-                        <h4 className="text-lg font-semibold text-purple-200">Cosmic Correspondences</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>Planet: <span className="text-blue-400">{oracle.cosmic_profile.planetary[key].planet}</span></div>
-                          <div>Element: <span className="text-orange-400">{oracle.cosmic_profile.planetary[key].element}</span></div>
-                          <div>Color: <span className="text-pink-400">{oracle.cosmic_profile.planetary[key].color}</span></div>
-                          <div>Sound: <span className="text-green-400">{oracle.cosmic_profile.planetary[key].sound}</span></div>
-                          <div>Geometry: <span className="text-teal-400">{oracle.cosmic_profile.planetary[key].geometry}</span></div>
-                        </div>
-                      </div>
-                    )}
-                    {data.karmic_debt && (
-                      <div className="mt-4 p-3 bg-red-900/30 rounded-lg border-l-4 border-red-500">
-                        <div className="text-red-300 font-semibold">Karmic Debt</div>
-                        <div className="text-sm text-gray-300">{data.karmic_debt.lesson}</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <CosmicProfileGrid
+                profileData={oracle.cosmic_profile}
+                onCardClick={onCardClick}
+              />
+            )}
+
+            {activeTab === 'resonance_map' && oracle.resonance_map && oracle.cosmic_profile?.cosmic_ui && (
+              <ResonanceMap
+                resonanceMap={oracle.resonance_map}
+                cosmicUI={oracle.cosmic_profile.cosmic_ui}
+              />
+            )}
+
+            {/* Poetic Scrolls for all aspects */}
+            {activeTab === 'cosmic_profile' && oracle.cosmic_profile && (
+              <div className="mt-12 space-y-6">
+                <h2 className="text-2xl font-bold text-center text-starlight mb-8">Poetic Scrolls of Revelation</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(oracle.cosmic_profile.poetic_scrolls).map(([aspect, scrollText], index) => (
+                    <PoeticScroll
+                      key={aspect}
+                      text={scrollText}
+                      cosmicUI={oracle.cosmic_profile?.cosmic_ui?.[aspect as keyof typeof oracle.cosmic_profile.cosmic_ui]}
+                      delay={index * 200}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
             {activeTab === 'symbolic_spread' && oracle.symbolic_spread && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {Object.entries(oracle.symbolic_spread.spread).map(([position, data]: [string, any]) => (
-                  <div key={position} className="bg-gradient-to-br from-blue-900 to-indigo-900 p-6 rounded-xl shadow-lg border border-blue-500">
-                    <h3 className="text-xl font-semibold mb-4 text-blue-200 capitalize">
-                      {position}
-                    </h3>
-                    {data.card && (
-                      <div className="mb-4">
-                        <div className="text-2xl font-bold text-yellow-400 mb-2">{data.card.card}</div>
-                        <p className="text-sm text-gray-300 mb-2">{data.card.meaning}</p>
-                        <p className="text-xs text-red-400">Shadow: {data.card.shadow}</p>
-                      </div>
-                    )}
-                    <div className="text-sm text-gray-300">
-                      <strong>Interpretation:</strong> {data.interpretation}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'resonance_map' && oracle.resonance_map && (
               <div className="space-y-8">
-                <div className="bg-gradient-to-br from-gray-900 to-black p-6 rounded-xl shadow-lg border border-gray-500">
-                  <h3 className="text-xl font-semibold mb-6 text-center text-gray-200">Cosmic Resonance Map</h3>
-                  <div className="h-96 w-full max-w-2xl mx-auto">
-                    {getResonanceChartData() && <Radar data={getResonanceChartData()!} options={chartOptions} />}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.entries(oracle.resonance_map).map(([key, data]: [string, any]) => (
-                    <div key={key} className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 rounded-xl shadow-lg border border-gray-500">
-                      <h4 className="text-lg font-semibold mb-3 text-gray-200">
-                        {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Planet:</span>
-                          <span className="text-blue-400">{data.planet}</span>
+                <h2 className="text-2xl font-bold text-center text-starlight mb-8">Past • Present • Future</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {Object.entries(oracle.symbolic_spread.spread).map(([position, data]: [string, any], index) => (
+                    <CosmicCard key={position} className="p-6">
+                      <div className="text-center">
+                        <div className="text-4xl mb-4">
+                          {position === 'past' ? '📜' : position === 'present' ? '✨' : '🔮'}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Element:</span>
-                          <span className="text-orange-400">{data.element}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Color:</span>
-                          <span className="text-pink-400">{data.color}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Sound:</span>
-                          <span className="text-green-400">{data.sound}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Geometry:</span>
-                          <span className="text-teal-400">{data.geometry}</span>
-                        </div>
-                        {data.poetic_description && (
-                          <div className="mt-3 p-2 bg-purple-900/20 rounded border border-purple-500 italic text-pink-300">
-                            <div className="text-xs text-purple-200 font-semibold">Poetic Flow:</div>
-                            <div className="text-xs text-gray-300">{data.poetic_description}</div>
+                        <h3 className="text-xl font-bold text-starlight mb-4 capitalize">
+                          {position} Path
+                        </h3>
+                        {data.card && (
+                          <div className="mb-4">
+                            <div className="text-2xl font-bold text-cosmic-accent mb-2">
+                              {data.card.card}
+                            </div>
+                            <p className="text-sm text-gray-300 mb-3">{data.card.meaning}</p>
+                            <p className="text-xs text-red-400 italic">Shadow: {data.card.shadow}</p>
                           </div>
                         )}
-                        {data.karmic_ritual && (
-                          <div className="mt-3 p-2 bg-red-900/20 rounded border border-red-500">
-                            <div className="text-red-300 font-semibold text-xs">Karmic Ritual</div>
-                            <div className="text-xs text-gray-300">{data.karmic_ritual.ritual}</div>
-                          </div>
-                        )}
+                        <div className="bg-cosmic-deep/50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-300 italic">"{data.interpretation}"</p>
+                        </div>
                       </div>
-                    </div>
+                    </CosmicCard>
                   ))}
                 </div>
               </div>
             )}
 
             {activeTab === 'cycle_tracker' && oracle.cycle_tracker && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-green-900 to-emerald-900 p-6 rounded-xl shadow-lg border border-green-500">
-                  <h3 className="text-xl font-semibold mb-4 text-green-200">Personal Year</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <div className="text-4xl font-bold text-yellow-400 mb-2">{oracle.cycle_tracker.personal_year.number}</div>
-                      <div className="text-sm text-gray-300 mb-3">{oracle.cycle_tracker.personal_year.meaning?.name || 'Unknown'}</div>
-                      <div className="text-sm text-gray-300">{oracle.cycle_tracker.personal_year.meaning?.vibration || 'Unknown vibration'}</div>
+              <div className="space-y-8">
+                <h2 className="text-2xl font-bold text-center text-starlight mb-8">Personal Cycle Tracker</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Personal Year */}
+                  <CosmicCard className="p-8">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📅</div>
+                      <h3 className="text-2xl font-bold text-starlight mb-4">Personal Year</h3>
+                      <div className="text-6xl font-bold text-cosmic-accent mb-4">
+                        {oracle.cycle_tracker.personal_year.number}
+                      </div>
+                      <p className="text-gray-300 mb-3">
+                        {oracle.cycle_tracker.personal_year.meaning?.name || 'Universal Flow'}
+                      </p>
+                      {oracle.cycle_tracker.personal_year.tarot && (
+                        <div className="bg-cosmic-deep/50 p-4 rounded-lg mt-4">
+                          <p className="text-sm text-cosmic-glow font-semibold mb-2">
+                            Tarot Guide: {oracle.cycle_tracker.personal_year.tarot.card}
+                          </p>
+                          <p className="text-xs text-gray-300">
+                            {oracle.cycle_tracker.personal_year.tarot.meaning}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    {oracle.cycle_tracker.personal_year.tarot && (
-                      <div>
-                        <h4 className="text-lg font-semibold text-green-200 mb-2">Tarot Guide</h4>
-                        <div className="text-lg text-yellow-400 mb-1">{oracle.cycle_tracker.personal_year.tarot.card}</div>
-                        <div className="text-sm text-gray-300">{oracle.cycle_tracker.personal_year.tarot.meaning}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  </CosmicCard>
 
-                <div className="bg-gradient-to-br from-purple-900 to-indigo-900 p-6 rounded-xl shadow-lg border border-purple-500">
-                  <h3 className="text-xl font-semibold mb-4 text-purple-200">Daily Vibration</h3>
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-yellow-400 mb-2">{oracle.cycle_tracker.daily_vibration.number}</div>
-                    <div className="text-lg text-gray-300 mb-4">{oracle.cycle_tracker.daily_vibration.message}</div>
-                    {oracle.cycle_tracker.daily_vibration.tarot && (
-                      <div className="bg-purple-800/30 p-4 rounded-lg">
-                        <div className="text-xl text-yellow-400 mb-2">{oracle.cycle_tracker.daily_vibration.tarot.card}</div>
-                        <div className="text-sm text-gray-300">{oracle.cycle_tracker.daily_vibration.tarot.meaning}</div>
+                  {/* Daily Vibration */}
+                  <CosmicCard className="p-8">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">🌟</div>
+                      <h3 className="text-2xl font-bold text-starlight mb-4">Daily Vibration</h3>
+                      <div className="text-6xl font-bold text-cosmic-accent mb-4">
+                        {oracle.cycle_tracker.daily_vibration.number}
                       </div>
-                    )}
-                  </div>
+                      <p className="text-cosmic-glow italic mb-3">
+                        {oracle.cycle_tracker.daily_vibration.message}
+                      </p>
+                      {oracle.cycle_tracker.daily_vibration.tarot && (
+                        <div className="bg-cosmic-deep/50 p-4 rounded-lg mt-4">
+                          <p className="text-sm text-cosmic-glow font-semibold mb-2">
+                            Today brings: {oracle.cycle_tracker.daily_vibration.tarot.card}
+                          </p>
+                          <p className="text-xs text-gray-300">
+                            {oracle.cycle_tracker.daily_vibration.tarot.meaning}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CosmicCard>
                 </div>
               </div>
             )}
 
             {activeTab === 'karmic_insights' && oracle.karmic_insights && (
-              <div className="space-y-6">
+              <div className="space-y-8">
+                <h2 className="text-2xl font-bold text-center text-starlight mb-8">Karmic Insights</h2>
                 {oracle.karmic_insights.karmic_insights.length > 0 ? (
-                  oracle.karmic_insights.karmic_insights.map((insight: any, index: number) => (
-                    <div key={index} className="bg-gradient-to-br from-red-900 to-pink-900 p-6 rounded-xl shadow-lg border border-red-500">
-                      <h3 className="text-xl font-semibold mb-4 text-red-200">Karmic Insight {index + 1}</h3>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <div className="text-3xl font-bold text-yellow-400 mb-2">#{insight.number}</div>
-                          <div className="text-lg font-semibold text-red-300 mb-2">{insight.lesson}</div>
-                          <div className="text-sm text-gray-300 p-3 bg-red-800/20 rounded">
-                            <strong>Ritual:</strong> {insight.ritual}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {oracle.karmic_insights.karmic_insights.map((insight, index: number) => (
+                      <CosmicCard key={index} className="p-6">
+                        <div className="text-center">
+                          <div className="text-4xl mb-4">🔥</div>
+                          <h3 className="text-xl font-bold text-starlight mb-4">Karmic Lesson #{insight.number}</h3>
+                          <p className="text-lg text-cosmic-accent font-semibold mb-3">{insight.lesson}</p>
+
+                          {insight.tarot && (
+                            <div className="bg-cosmic-deep/50 p-4 rounded-lg mb-4">
+                              <p className="text-sm text-cosmic-glow font-semibold mb-2">
+                                Tarot: {insight.tarot.card}
+                              </p>
+                              <p className="text-xs text-gray-300">{insight.tarot.meaning}</p>
+                            </div>
+                          )}
+
+                          <div className="bg-red-900/20 border border-red-500/50 p-4 rounded-lg mb-4">
+                            <p className="text-sm text-red-300 font-semibold mb-2">Karmic Ritual:</p>
+                            <p className="text-xs text-gray-300">{insight.ritual}</p>
+                          </div>
+
+                          <div className="text-xs text-gray-400 italic">
+                            "{insight.message}"
                           </div>
                         </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-red-200 mb-2">Tarot Guidance</h4>
-                          {insight.tarot && (
-                            <>
-                              <div className="text-xl text-yellow-400 mb-2">{insight.tarot.card}</div>
-                              <div className="text-sm text-gray-300 mb-2">{insight.tarot.meaning}</div>
-                            </>
-                          )}
-                          <div className="text-sm text-gray-300 italic">"{insight.message}"</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-gradient-to-br from-green-900 to-teal-900 p-8 rounded-xl shadow-lg border border-green-500 text-center">
-                    <div className="text-2xl text-green-400 mb-4">✨ Clean Slate ✨</div>
-                    <div className="text-lg text-gray-200">{oracle.karmic_insights.message}</div>
+                      </CosmicCard>
+                    ))}
                   </div>
+                ) : (
+                  <CosmicCard className="p-12 text-center">
+                    <div className="text-6xl mb-4">✨</div>
+                    <h3 className="text-2xl font-bold text-starlight mb-4">Clean Karmic Slate</h3>
+                    <p className="text-gray-300">{oracle.karmic_insights.message}</p>
+                  </CosmicCard>
                 )}
               </div>
             )}

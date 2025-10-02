@@ -69,3 +69,26 @@ form, .cosmic-container {
     max-width: 520px;
   }
 }
+
+/* TarotCard component styles */
+.tarot-card-transform {
+  transform: rotate(var(--tarot-card-rotation));
+}
+
+.tarot-card-dragging {
+  transform: translate3d(var(--tarot-card-x), var(--tarot-card-y), 0) rotate(var(--tarot-card-rotation));
+  z-index: 1000;
+}
+
+.tarot-card-background {
+  background: var(--tarot-card-gradient);
+  box-shadow: var(--tarot-card-glow);
+}
+
+.tarot-card-constellation-primary {
+  fill: var(--tarot-card-color-primary);
+}
+
+.tarot-card-constellation-secondary {
+  fill: var(--tarot-card-color-secondary);
+}

@@ -398,33 +398,7 @@ def get_vedic_zodiac(birth_date):
     }
     return western_to_vedic.get(birth_date.strftime('%B').capitalize(), 'Unknown')
 
-# ==================== JWT AUTHENTICATION ====================
-
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'Authorization' not in request.headers or not request.headers['Authorization'].startswith('Bearer '):
-            return {'error': 'Invalid or missing Authorization header'}, 401
-        try:
-            token = request.headers['Authorization'].split(' ')[1]
-            data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=[app.config['JWT_ALGORITHM']])
-            current_user = User.query.get(data['user_id'])
-            if not current_user:
-                return {'error': 'User not found'}, 401
-            current_user.last_seen = datetime.now(timezone.utc)
-            db.session.commit()
-        except jwt.ExpiredSignatureError:
-            return {'error': 'Token has expired'}, 401
-        except jwt.InvalidTokenError:
-            return {'error': 'Token is invalid'}, 401
-        except Exception as e:
-            logger.error(f"Token validation error: {str(e)}")
-            return {'error': 'Internal server error'}, 500
-
-        if args and hasattr(args[0], '__class__'):
-            return f(args[0], current_user, *args[1:], **kwargs)
-        return f(current_user, *args, **kwargs)
-    return decorated
+from star_auth import token_required
 
 # ==================== VALIDATION SCHEMAS ====================
 

@@ -66,6 +66,9 @@ interface CosmicProfile {
   tarot: Record<string, TarotData>;
   planetary: Record<string, PlanetaryData>;
   archetypal_persona: Record<string, string>;
+  tailwind_classes?: Record<string, any>;
+  emotional_resonance?: Record<string, any>;
+  cosmic_ui?: Record<string, any>;
 }
 
 interface SymbolicSpread {
@@ -285,51 +288,102 @@ export default function ArchetypeOracle() {
         </div>
 
         {activeTab === 'cosmic_profile' && oracle?.cosmic_profile && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(oracle.cosmic_profile.numerology).map(([key, data]) => (
-              <div key={key} className="bg-gradient-to-br from-purple-900 to-blue-900 p-6 rounded-xl shadow-lg border border-purple-500">
-                <h3 className="text-xl font-semibold mb-2 text-purple-200">
-                  {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </h3>
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-yellow-400 mb-2">
-                    {oracle.cosmic_profile.archetypal_persona[key]}
-                  </div>
-                  <div className="text-sm text-gray-300">Number: {data.number}</div>
-                </div>
-                {oracle.cosmic_profile.poetic_scrolls?.[key] && (
-                  <div className="mb-4 p-3 bg-purple-800/30 rounded-lg italic text-pink-300 border-l-4 border-pink-500">
-                    <strong>Poetic Scroll:</strong> {oracle.cosmic_profile.poetic_scrolls[key]}
-                  </div>
-                )}
-                {oracle.cosmic_profile.tarot[key] && (
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-purple-200">Tarot Arcana</h4>
-                    <p className="text-sm text-gray-300">{oracle.cosmic_profile.tarot[key].card}</p>
-                    <p className="text-xs text-green-400 mt-1">{oracle.cosmic_profile.tarot[key].meaning}</p>
-                    <p className="text-xs text-red-400 mt-1">Shadow: {oracle.cosmic_profile.tarot[key].shadow}</p>
-                  </div>
-                )}
-                {oracle.cosmic_profile.planetary[key] && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-purple-200">Cosmic Correspondences</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Planet: <span className="text-blue-400">{oracle.cosmic_profile.planetary[key].planet}</span></div>
-                      <div>Element: <span className="text-orange-400">{oracle.cosmic_profile.planetary[key].element}</span></div>
-                      <div>Color: <span className="text-pink-400">{oracle.cosmic_profile.planetary[key].color}</span></div>
-                      <div>Sound: <span className="text-green-400">{oracle.cosmic_profile.planetary[key].sound}</span></div>
-                      <div>Geometry: <span className="text-teal-400">{oracle.cosmic_profile.planetary[key].geometry}</span></div>
+          <div className="space-y-8">
+            {/* Cosmic Navigation */}
+            <div className="flex justify-center">
+              <div dangerouslySetInnerHTML={{
+                __html: '<nav class="bg-cosmic-deep border border-cosmic-glow/20 rounded-lg p-2"><div class="flex space-x-2 justify-center"><button class="bg-cosmic-glow text-cosmic-deep px-4 py-2 rounded-lg transition animate-pulse-slow">🔥 ♋ Life Path</button><button class="text-star-white hover:bg-cosmic-purple/10 px-4 py-2 rounded-lg transition animate-pulse-slow">✨ Destiny</button><button class="text-star-white hover:bg-cosmic-purple/10 px-4 py-2 rounded-lg transition animate-pulse-slow">💫 Soul Urge</button><button class="text-star-white hover:bg-cosmic-purple/10 px-4 py-2 rounded-lg transition animate-pulse-slow">🌟 Personality</button><button class="text-star-white hover:bg-cosmic-purple/10 px-4 py-2 rounded-lg transition animate-pulse-slow">🌙 Birth Day</button></div></nav>'
+              }} />
+            </div>
+
+            {/* Archetype Cards with Cosmic UI */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(oracle.cosmic_profile.numerology).map(([key, data]) => {
+                const aspect = key;
+                const tailwindClasses = oracle.cosmic_profile.tailwind_classes?.[aspect] || {};
+                const emotional = oracle.cosmic_profile.emotional_resonance?.[aspect] || {};
+                const uiData = oracle.cosmic_profile.cosmic_ui?.[aspect] || {};
+
+                return (
+                  <div key={key} className={`${tailwindClasses.card_bg || 'bg-void border border-yellow-400'} rounded-xl p-6 shadow-lg ${tailwindClasses.glow_effect || 'shadow-yellow-400/50'}`}>
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-yellow-200 rounded-full flex items-center justify-center animate-pulse">
+                        <span className="text-void text-2xl">✦</span>
+                      </div>
+                      <h3 className={`${tailwindClasses.text_color || 'text-starlight'} text-xl font-bold mb-2`}>
+                        {oracle.cosmic_profile.archetypal_persona[key]}
+                      </h3>
+                      <p className={`${tailwindClasses.accent_color || 'text-yellow-400'} mb-4`}>
+                        {oracle.cosmic_profile.poetic_scrolls?.[key]}
+                      </p>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm text-gray-300">
+                          <span>Number:</span>
+                          <span className="text-yellow-400">{data.number}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-300">
+                          <span>Emotional Frequency:</span>
+                          <span className="text-yellow-400">{emotional.frequency || 'Activating'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-300">
+                          <span>Resonance:</span>
+                          <span className="text-yellow-400">{emotional.resonance_strength || 80}%</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {oracle.cosmic_profile.tarot[key] && (
+                          <div className="text-xs">
+                            <p className="text-green-400">{oracle.cosmic_profile.tarot[key].card}</p>
+                            <p className="text-red-400">Shadow: {oracle.cosmic_profile.tarot[key].shadow}</p>
+                          </div>
+                        )}
+                        {oracle.cosmic_profile.planetary[key] && (
+                          <div className="text-xs">
+                            <span className="text-blue-400">{oracle.cosmic_profile.planetary[key].planet}</span>
+                            <span className="text-gray-400"> • </span>
+                            <span className="text-orange-400">{oracle.cosmic_profile.planetary[key].element}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {data.karmic_debt && (
+                        <div className="mt-4 p-3 bg-red-900/30 rounded-lg border-l-4 border-red-500">
+                          <div className="text-red-300 font-semibold text-sm">Karmic Debt</div>
+                          <div className="text-xs text-gray-300">{data.karmic_debt.lesson}</div>
+                        </div>
+                      )}
+
+                      <button className={`${tailwindClasses.button_classes || 'bg-yellow-400 text-void hover:bg-yellow-300'} px-4 py-2 rounded-lg font-bold mt-4 transition transform hover:scale-105 text-sm`}>
+                        Explore {aspect.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </button>
                     </div>
                   </div>
-                )}
-                {data.karmic_debt && (
-                  <div className="mt-4 p-3 bg-red-900/30 rounded-lg border-l-4 border-red-500">
-                    <div className="text-red-300 font-semibold">Karmic Debt</div>
-                    <div className="text-sm text-gray-300">{data.karmic_debt.lesson}</div>
+                );
+              })}
+            </div>
+
+            {/* Harmony Suggestions */}
+            {oracle.cosmic_profile.emotional_resonance && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(oracle.cosmic_profile.emotional_resonance).map(([aspect, emotional]: [string, any]) => (
+                  <div key={aspect} className="bg-gradient-to-br from-purple-900 to-blue-900 p-4 rounded-lg border border-purple-500">
+                    <h4 className="text-purple-200 font-semibold mb-2 capitalize">
+                      {aspect.replace('_', ' ')} Harmony
+                    </h4>
+                    <p className="text-gray-300 text-sm">{emotional.harmony_suggestion}</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {emotional.primary_emotions?.map((emotion: string, i: number) => (
+                        <span key={i} className="bg-purple-600 text-xs px-2 py-1 rounded-full">
+                          {emotion}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 

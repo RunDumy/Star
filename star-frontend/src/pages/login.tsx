@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import StarBackground from '../components/StarBackground';
 import { login } from '../lib/api';
 import DOMPurify from 'dompurify';
@@ -63,7 +64,7 @@ export default function Login() {
           </form>
           {message && <p className="mt-3 text-center text-sm text-gray-200">{message}</p>}
           <p className="mt-4 text-center text-sm">
-            New here? <a href="/register" className="text-blue-400 underline">Create an account</a>
+            New here? <Link href="/register" className="text-blue-400 underline">Create an account</Link>
           </p>
         </div>
       </div>

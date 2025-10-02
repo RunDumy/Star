@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import StarBackground from '../components/StarBackground';
 import { register } from '../lib/api';
 import DOMPurify from 'dompurify';
@@ -30,8 +31,12 @@ export default function Register() {
         birth_date: birthDate,
       });
       setMessage(data?.message || 'Registered!');
-    } catch (err: any) {
-      setMessage(err?.response?.data?.error || 'Registration failed');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error && 'response' in err
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? (err as any).response?.data?.error || 'Registration failed'
+        : 'Registration failed';
+      setMessage(errorMessage);
     }
   };
 
@@ -95,7 +100,7 @@ export default function Register() {
           </form>
           {message && <p className="mt-3 text-center text-sm text-gray-200">{message}</p>}
           <p className="mt-4 text-center text-sm">
-            Have an account? <a href="/login" className="text-blue-400 underline">Login</a>
+            Have an account? <Link href="/login" className="text-blue-400 underline">Login</Link>
           </p>
         </div>
       </div>

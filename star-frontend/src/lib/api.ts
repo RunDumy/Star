@@ -18,6 +18,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export { api };
+
 export interface LoginInput {
   username: string;
   password: string;
@@ -64,5 +66,97 @@ export async function followUser(userId: number | string) {
 
 export async function fetchProfile(userId: number | string) {
   const res = await api.get(`/api/v1/profile/${userId}`);
+  return res.data;
+}
+
+export async function calculateBirthChart(data: { birth_date: string; birth_time: string; location: string }) {
+  const res = await api.post(`/api/v1/birth-chart`, data);
+  return res.data;
+}
+
+export interface CalculateArchetypeOracleInput {
+  full_name: string;
+  birth_date: string;
+  tradition?: string;
+}
+
+export async function calculateArchetypeOracle(data: CalculateArchetypeOracleInput) {
+  const res = await api.post(`/api/v1/archetype-oracle/calculate`, data);
+  return res.data;
+}
+
+export async function fetchCosmicProfile(full_name: string, birth_date: string, tradition?: string) {
+  const data = { full_name, birth_date, tradition };
+  const res = await api.post(`/api/v1/archetype-oracle/cosmic-profile`, data);
+  return res.data;
+}
+
+// Tarot-related API functions
+export async function calculateEnergyFlows(cards: any[], spread: any) {
+  const res = await api.post('/api/v1/tarot/calculate-energy-flow', {
+    cards,
+    spread
+  });
+  return res.data;
+}
+
+export async function getEnhancedInterpretation(cards: any[], spread: any) {
+  const res = await api.post('/api/v1/tarot/enhanced-interpretation', {
+    cards,
+    spread
+  });
+  return res.data;
+}
+
+export async function shareSpread(spread: any, spreadType: string, userId: string | null) {
+  // In Jest tests we use `jest-fetch-mock` which mocks global.fetch.
+  // Use fetch when available so tests that mock fetch will be intercepted.
+  if (typeof fetch !== 'undefined') {
+    const res = await fetch('/api/v1/tarot/share-spread', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spread, spread_type: spreadType, user_id: userId }),
+    });
+    return res.json();
+  }
+
+  const res = await api.post('/api/v1/tarot/share-spread', {
+    spread,
+    spread_type: spreadType,
+    user_id: userId,
+  });
+  return res.data;
+}
+
+export async function generateSpotifyPlaylist(energyFlows: any[], spreadType: string) {
+  if (typeof fetch !== 'undefined') {
+    const res = await fetch('/api/v1/tarot/spotify-playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ energy_flows: energyFlows, spread_type: spreadType }),
+    });
+    return res.json();
+  }
+
+  const res = await api.post('/api/v1/tarot/spotify-playlist', {
+    energy_flows: energyFlows,
+    spread_type: spreadType,
+  });
+  return res.data;
+}
+
+export async function getLocationInsights(ipAddress: string) {
+  if (typeof fetch !== 'undefined') {
+    const res = await fetch('/api/v1/tarot/location-insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip_address: ipAddress }),
+    });
+    return res.json();
+  }
+
+  const res = await api.post('/api/v1/tarot/location-insights', {
+    ip_address: ipAddress,
+  });
   return res.data;
 }

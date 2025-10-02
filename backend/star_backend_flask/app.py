@@ -25,6 +25,21 @@ import json
 from urllib.parse import quote
 from supabase import create_client
 
+# Import birth chart calculation functions
+from birth_chart import calculate_birth_chart, geocode_location
+
+# Import tarot interactions
+from tarot_interactions import tarot_bp
+
+# Import sigil generator
+from sigil_generator import sigil_bp
+
+# Import feed system
+from feed import feed
+
+# Import archetype prompts system
+from archetype_prompts import archetype_prompts
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
@@ -392,33 +407,7 @@ def get_vedic_zodiac(birth_date):
     }
     return western_to_vedic.get(birth_date.strftime('%B').capitalize(), 'Unknown')
 
-# ==================== JWT AUTHENTICATION ====================
-
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'Authorization' not in request.headers or not request.headers['Authorization'].startswith('Bearer '):
-            return {'error': 'Invalid or missing Authorization header'}, 401
-        try:
-            token = request.headers['Authorization'].split(' ')[1]
-            data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=[app.config['JWT_ALGORITHM']])
-            current_user = User.query.get(data['user_id'])
-            if not current_user:
-                return {'error': 'User not found'}, 401
-            current_user.last_seen = datetime.now(timezone.utc)
-            db.session.commit()
-        except jwt.ExpiredSignatureError:
-            return {'error': 'Token has expired'}, 401
-        except jwt.InvalidTokenError:
-            return {'error': 'Token is invalid'}, 401
-        except Exception as e:
-            logger.error(f"Token validation error: {str(e)}")
-            return {'error': 'Internal server error'}, 500
-
-        if args and hasattr(args[0], '__class__'):
-            return f(args[0], current_user, *args[1:], **kwargs)
-        return f(current_user, *args, **kwargs)
-    return decorated
+from star_auth import token_required
 
 # ==================== VALIDATION SCHEMAS ====================
 
@@ -469,7 +458,7 @@ class Register(Resource):
 
         # Calculate numerology numbers
         from numerology import NumerologyCalculator
-        from archetype_oracle import ArchetypeOracle
+        from archetype_oracle import ArchetypeOracle, CosmicArchetypeOracle
         numerology_readings = NumerologyCalculator.calculate_comprehensive_readings(
             full_name, birth_date
         )
@@ -911,6 +900,69 @@ class PublicArchetypeOracleResource(Resource):
             logger.error(f"Public oracle error: {e}")
             return {'error': 'Failed to generate public oracle reading'}, 500
 
+class CosmicProfileResource(Resource):
+    @limiter.limit("30/hour")
+    def post(self):
+        """Generate cosmic profile with UI augmentation"""
+        try:
+            schema = PublicOracleSchema()
+            data = schema.load(request.get_json())
+
+            # Parse birth date
+            try:
+                birth_date = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
+            except ValueError:
+                return {'error': 'Invalid date format. Use YYYY-MM-DD'}, 400
+
+            cosmic_profile = CosmicArchetypeOracle.generate_cosmic_ui_profile(
+                data['full_name'], birth_date, data.get('tradition')
+            )
+
+            return {
+                'cosmic_profile': cosmic_profile,
+                'user_info': {
+                    'full_name': data['full_name'],
+                    'birth_date': data['birth_date'],
+                    'tradition': data.get('tradition')
+                }
+            }, 200
+        except ValidationError as ve:
+            logger.error(f"Validation error: {ve.messages}")
+            return {'error': ve.messages}, 400
+        except Exception as e:
+            logger.error(f"Cosmic profile error: {e}")
+            return {'error': 'Failed to generate cosmic profile'}, 500
+
+class BirthChartResource(Resource):
+    @limiter.limit("30/hour")
+    def post(self):
+        """Calculate birth chart for given birth details"""
+        try:
+            data = request.get_json()
+            birth_date_str = data.get('birth_date')  # YYYY-MM-DD
+            birth_time = data.get('birth_time')  # HH:MM
+            location = data.get('location')
+
+            if not all([birth_date_str, birth_time, location]):
+                return {'error': 'birth_date, birth_time, and location are required'}, 400
+
+            # Parse birth date
+            try:
+                birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return {'error': 'Invalid birth_date format. Use YYYY-MM-DD'}, 400
+
+            # Calculate birth chart
+            chart_data = calculate_birth_chart(birth_date, birth_time, location)
+            if not chart_data:
+                return {'error': 'Failed to calculate birth chart'}, 500
+
+            return {'birth_chart': chart_data}, 200
+
+        except Exception as e:
+            logger.error(f"Birth chart calculation error: {e}")
+            return {'error': 'Failed to calculate birth chart'}, 500
+
 class Health(Resource):
     def get(self):
         return {'status': 'ok'}, 200
@@ -932,6 +984,171 @@ api.add_resource(NumerologyCalculatorResource, '/api/v1/numerology/calculate')
 api.add_resource(UserSettingsResource, '/api/v1/user/settings')
 api.add_resource(ArchetypeOracleResource, '/api/v1/archetype-oracle')
 api.add_resource(PublicArchetypeOracleResource, '/api/v1/archetype-oracle/calculate')
+api.add_resource(CosmicProfileResource, '/api/v1/archetype-oracle/cosmic-profile')
+api.add_resource(BirthChartResource, '/api/v1/birth-chart')
+
+# Occult Oracle AI Endpoints
+class ArchetypeSynthesizerResource(Resource):
+    @limiter.limit("30/hour")
+    @token_required
+    def get(self, current_user):
+        """Get user's archetype synthesis"""
+        try:
+            if not current_user.full_name or not current_user.birth_date:
+                return {'error': 'Full name and birth date required for archetype synthesis'}, 400
+
+            synthesis = ArchetypeSynthesizer.synthesize_archetypes(
+                current_user.full_name, current_user.birth_date, current_user.tradition
+            )
+
+            return {'archetype_synthesis': synthesis}, 200
+        except Exception as e:
+            logger.error(f"Archetype synthesis error: {e}")
+            return {'error': 'Failed to generate archetype synthesis'}, 500
+
+class MentorPersonalityResource(Resource):
+    @limiter.limit("100/hour")
+    @token_required
+    def post(self, current_user):
+        """Generate mentor response based on user input"""
+        try:
+            data = request.get_json()
+            user_input = data.get('user_input')
+            mood_override = data.get('mood_override')
+
+            if not user_input:
+                return {'error': 'user_input required'}, 400
+
+            # Get cosmic profile
+            cosmic_profile = CosmicArchetypeOracle.generate_cosmic_ui_profile(
+                current_user.full_name, current_user.birth_date, current_user.tradition
+            )
+
+            mentor_response = MentorPersonalityEngine.generate_mentor_response(
+                user_input, cosmic_profile, mood_override
+            )
+
+            return {'mentor_response': mentor_response}, 200
+        except Exception as e:
+            logger.error(f"Mentor response error: {e}")
+            return {'error': 'Failed to generate mentor response'}, 500
+
+class ResonanceTrackerResource(Resource):
+    @limiter.limit("60/hour")
+    @token_required
+    def get(self, current_user):
+        """Get current resonance tracking data"""
+        try:
+            if not current_user.birth_date:
+                return {'error': 'Birth date required for resonance tracking'}, 400
+
+            resonance_data = ResonanceTracker.calculate_emotional_frequency(current_user.birth_date)
+
+            return {'resonance_tracking': resonance_data}, 200
+        except Exception as e:
+            logger.error(f"Resonance tracking error: {e}")
+            return {'error': 'Failed to generate resonance tracking'}, 500
+
+class EmotionalOSResource(Resource):
+    @limiter.limit("50/hour")
+    @token_required
+    def post(self, current_user):
+        """Process emotional query through Emotional OS"""
+        try:
+            data = request.get_json()
+            user_emotion = data.get('emotion')
+            user_consent = data.get('consent', True)
+
+            if not user_emotion:
+                return {'error': 'emotion required'}, 400
+
+            if not current_user.full_name or not current_user.birth_date:
+                return {'error': 'Full name and birth date required for Emotional OS processing'}, 400
+
+            emotional_response = EmotionalOS.process_emotional_query(
+                current_user.full_name, current_user.birth_date, user_emotion, user_consent
+            )
+
+            return {'emotional_processing': emotional_response}, 200
+        except Exception as e:
+            logger.error(f"Emotional OS error: {e}")
+            return {'error': 'Failed to process emotional query'}, 500
+
+class OccultOracleAIResource(Resource):
+    @limiter.limit("20/hour")
+    @token_required
+    def post(self, current_user):
+        """Generate complete Occult Oracle AI experience"""
+        try:
+            data = request.get_json() or {}
+            user_input = data.get('user_input')
+            emotion = data.get('emotion')
+            tradition_override = data.get('tradition')
+
+            if not current_user.full_name or not current_user.birth_date:
+                return {'error': 'Full name and birth date required for Oracle AI'}, 400
+
+            tradition = tradition_override or current_user.tradition
+
+            oracle_experience = OccultOracleAI.generate_full_oracle_experience(
+                current_user.full_name,
+                current_user.birth_date,
+                user_input,
+                emotion,
+                tradition
+            )
+
+            return {'oracle_experience': oracle_experience}, 200
+        except Exception as e:
+            logger.error(f"Occult Oracle AI error: {e}")
+            return {'error': 'Failed to generate oracle experience'}, 500
+
+class PublicOccultOracleResource(Resource):
+    @limiter.limit("10/hour")
+    def post(self):
+        """Generate public Occult Oracle AI experience"""
+        try:
+            schema = PublicOracleSchema()
+            data = schema.load(request.get_json())
+
+            # Parse birth date
+            try:
+                birth_date = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
+            except ValueError:
+                return {'error': 'Invalid date format. Use YYYY-MM-DD'}, 400
+
+            # Generate full experience (excluding personal user data)
+            oracle_experience = OccultOracleAI.generate_full_oracle_experience(
+                data['full_name'],
+                birth_date,
+                None,  # No user input for public
+                None,  # No emotion for public
+                data.get('tradition')
+            )
+
+            # Remove sensitive or personalized elements for public access
+            public_experience = {
+                'cosmic_profile': oracle_experience.get('cosmic_profile'),
+                'archetype_synthesis': oracle_experience.get('archetype_synthesis'),
+                'resonance_tracking': oracle_experience.get('resonance_tracking'),
+                'cycle_tracking': oracle_experience.get('cycle_tracking')
+            }
+
+            return {'oracle_experience': public_experience}, 200
+        except ValidationError as ve:
+            logger.error(f"Validation error: {ve.messages}")
+            return {'error': ve.messages}, 400
+        except Exception as e:
+            logger.error(f"Public Oracle AI error: {e}")
+            return {'error': 'Failed to generate public oracle experience'}, 500
+
+# Add new resources
+api.add_resource(ArchetypeSynthesizerResource, '/api/v1/occult-oracle/archetype-synthesis')
+api.add_resource(MentorPersonalityResource, '/api/v1/occult-oracle/mentor')
+api.add_resource(ResonanceTrackerResource, '/api/v1/occult-oracle/resonance')
+api.add_resource(EmotionalOSResource, '/api/v1/occult-oracle/emotional-os')
+api.add_resource(OccultOracleAIResource, '/api/v1/occult-oracle/experience')
+api.add_resource(PublicOccultOracleResource, '/api/v1/occult-oracle/public-experience')
 
 # Return JSON on rate limit exceeded
 @app.errorhandler(429)
@@ -980,6 +1197,15 @@ if __name__ == '__main__':
         trend_engine.generate_trends()
         logger.info("Trend engine initialized with cosmic trends")
     
+    # Register tarot interactions blueprint
+    app.register_blueprint(tarot_bp, url_prefix='/api/v1/tarot')
+
+    # Register feed and social blueprint
+    app.register_blueprint(feed, url_prefix='/api/v1')
+
+    # Register archetype prompts blueprint
+    app.register_blueprint(archetype_prompts, url_prefix='/api/v1')
+
     logger.info("Starting Star App server...")
     logger.info(f"Available at: http://localhost:{os.environ.get('PORT', 5000)}")
     debug_mode = os.environ.get('FLASK_DEBUG', '1') == '1'

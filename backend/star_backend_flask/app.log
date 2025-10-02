@@ -31,3 +31,19 @@
 2025-09-28 12:19:40,990 INFO: Available at: http://localhost:5000
 2025-09-28 12:19:40,995 WARNING:  * Debugger is active!
 2025-09-28 12:19:40,999 INFO:  * Debugger PIN: 377-668-772
+2025-10-01 04:14:50,695 INFO: Starting application with Python 3.11.8
+2025-10-01 04:14:50,697 INFO: Loaded .env file for local development
+2025-10-01 04:14:51,423 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:14:51,423 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:14:57,589 INFO: Starting application with Python 3.11.8
+2025-10-01 04:14:57,590 INFO: Loaded .env file for local development
+2025-10-01 04:14:58,005 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:14:58,006 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:15:12,572 INFO: Starting application with Python 3.11.8
+2025-10-01 04:15:12,573 INFO: Loaded .env file for local development
+2025-10-01 04:15:13,008 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:15:13,008 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:26:46,981 INFO: Starting application with Python 3.11.8
+2025-10-01 04:26:46,982 INFO: Loaded .env file for local development
+2025-10-01 04:26:47,500 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:26:47,500 INFO: Using database URI: sqlite:///star.db

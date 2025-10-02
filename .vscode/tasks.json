@@ -1,0 +1,164 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Next.js Frontend",
+      "type": "npm",
+      "script": "dev",
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/star-frontend"
+      }
+    },
+    {
+      "label": "Install Python Dependencies",
+      "type": "shell",
+      "command": ".venv\\Scripts\\pip",
+      "args": ["install", "-r", "requirements.txt"],
+      "group": "build"
+    }
+  ]
+}
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Next.js Frontend",
+            "type": "npm",
+            "script": "dev",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/star-frontend"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Frontend Dependencies",
+            "type": "npm",
+            "script": "install",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/star-frontend"
+            }
+        },
+        {
+            "label": "Build Frontend",
+            "type": "npm",
+            "script": "build",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/star-frontend"
+            }
+        },
+        {
+            "label": "Run Frontend Tests",
+            "type": "npm",
+            "script": "test",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}/star-frontend"
+            }
+        },
+        {
+            "label": "Install Python Dependencies",
+            "type": "shell",
+            "command": ".venv/Scripts/pip",
+            "args": ["install", "-r", "requirements.txt"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Install BeautifulSoup for Horoscopes",
+            "type": "shell",
+            "command": ".venv/Scripts/pip",
+            "args": ["install", "beautifulsoup4", "requests"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Install Apify Client",
+            "type": "shell",
+            "command": ".venv/Scripts/pip",
+            "args": ["install", "apify-client"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Generate Coverage Report",
+            "type": "shell",
+            "command": ".venv/Scripts/pytest",
+            "args": [
+                "--cov=.",
+                "--cov-report=html:htmlcov",
+                "--cov-report=xml:coverage.xml",
+                "--cov-report=term-missing"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Run All Tests with Coverage",
+            "type": "shell",
+            "command": ".venv/Scripts/pytest",
+            "args": [
+                "test_archetype_oracle.py",
+                "test_import.py",
+                "test_main_api.py",
+                "backend/tests/",
+                "--cov=.",
+                "--cov-report=term-missing",
+                "--cov-report=html:htmlcov",
+                "--cov-report=xml:coverage.xml",
+                "-v"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}
