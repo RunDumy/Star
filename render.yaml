@@ -2,31 +2,33 @@ services:
   - type: web
     name: star-backend
     runtime: python
+    region: oregon
     plan: free
-    rootDir: backend/star_backend_flask
-    buildCommand: "pip install -r ../../requirements.txt"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT --worker-class eventlet -w 1 app:app"
+    rootDir: star-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: JWT_SECRET
-        generateValue: true
       - key: SECRET_KEY
-        generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: star-db
-          property: connectionString
-      - key: SUPABASE_URL
-        sync: false # Set via Render environment variables
-      - key: SUPABASE_ANON_KEY
-        sync: false # Set via Render environment variables
+        value: your-secure-secret-key
+      - key: JWT_SECRET
+        value: your-secure-jwt-secret-key
+      - key: JWT_SECRET_KEY
+        value: your-secure-jwt-secret-key
       - key: SPOTIFY_CLIENT_ID
-        sync: false # Set via Render environment variables
+        value: dcc37439570a47b1a79db76e3bd35a22
       - key: SPOTIFY_CLIENT_SECRET
-        sync: false # Set via Render environment variables
+        value: c2e06d864bca407bab4a6dfbf80993d5
       - key: IPGEOLOCATION_API_KEY
-        sync: false # Set via Render environment variables
-
-databases:
-  - name: star-db
-    databaseName: star
-    user: star
+        value: ac0f06798ef248d4b2290e1e20e0a2cc
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000,https://your-vercel-app.vercel.app
+      - key: PORT
+        value: 5000
+      - key: FLASK_DEBUG
+        value: 0
+      - key: SUPABASE_URL
+        value: https://hiwmpmvqcxzshdmhhlsb.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE
+      - key: DATABASE_URL
+        value: postgresql://postgres:8phRIvhoniavo2Wv@db.hiwmpmvqcxzshdmhhlsb.supabase.co:5432/postgres
