@@ -2,6 +2,41 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "MCP: Run Docker Gateway",
+      "type": "shell",
+      "command": "docker mcp gateway run",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: Stop Docker Gateway",
+      "type": "shell",
+      "command": "docker kill $(docker ps -q --filter \"ancestor=mcp\") || echo 'No MCP containers running'",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: Show MCP Containers",
+      "type": "shell",
+      "command": "docker ps --filter \"ancestor=mcp\"",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
       "label": "Run Next.js Frontend",
       "type": "npm",
       "script": "dev",
