@@ -1,3 +1,44 @@
+# Dependencies
+node_modules/
+.npm
+.pnpm
+.yarn/install-state.gz
+
+# Next.js
+.next/
+out/
+dist/
+
+# Build outputs
+build/
+
+# Environment variables
+.env*.local
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large binary files
+*.node
 # Project-specific ignores
 node_modules/
 .venv/
@@ -23,3 +64,4 @@ dist/
 .next/
 *.pyc
 __pycache__/
+*.node
