@@ -4,14 +4,24 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
       - key: DATABASE_URL
         generateValue: true
+      - key: SPOTIFY_CLIENT_ID
+        generateValue: true
+      - key: SPOTIFY_CLIENT_SECRET
+        generateValue: true
+      - key: IPGEOLOCATION_API_KEY
+        generateValue: true
       - key: ALLOWED_ORIGINS
-        value: https://your-frontend-name.vercel.app
+        value: http://localhost:3000,https://star-frontend.vercel.app
