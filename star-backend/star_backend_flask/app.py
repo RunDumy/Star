@@ -1179,6 +1179,14 @@ def handle_send_message(data):
 
 # ==================== MAIN APPLICATION ====================
 
+# Example endpoint registration (small, safe to remove later)
+try:
+    from example_endpoint import ExampleResource
+    api.add_resource(ExampleResource, '/api/example')
+except Exception:
+    logger.warning('Example endpoint registration failed; continuing')
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
