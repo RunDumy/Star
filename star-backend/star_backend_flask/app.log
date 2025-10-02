@@ -1,0 +1,49 @@
+2025-09-28 01:26:02,831 INFO: Starting application with Python 3.11.8
+2025-09-28 01:26:02,831 INFO: Loaded .env file for local development
+2025-09-28 01:27:04,143 INFO: Starting application with Python 3.11.8
+2025-09-28 01:27:04,144 INFO: Loaded .env file for local development
+2025-09-28 01:27:04,529 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-09-28 01:27:04,529 INFO: Using database URI: sqlite:///star.db
+2025-09-28 12:18:55,182 INFO: Starting application with Python 3.11.8
+2025-09-28 12:18:55,183 INFO: Loaded .env file for local development
+2025-09-28 12:18:55,378 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-09-28 12:18:55,378 INFO: Using database URI: sqlite:///star.db
+2025-09-28 12:19:12,887 INFO: Starting application with Python 3.11.8
+2025-09-28 12:19:12,888 INFO: Loaded .env file for local development
+2025-09-28 12:19:13,035 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-09-28 12:19:13,035 INFO: Using database URI: sqlite:///star.db
+2025-09-28 12:19:39,629 INFO: Starting application with Python 3.11.8
+2025-09-28 12:19:39,630 INFO: Loaded .env file for local development
+2025-09-28 12:19:39,775 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-09-28 12:19:39,775 INFO: Using database URI: sqlite:///star.db
+2025-09-28 12:19:39,802 INFO: Database tables created successfully
+2025-09-28 12:19:39,802 INFO: Trend engine initialized with cosmic trends
+2025-09-28 12:19:39,802 INFO: Starting Star App server...
+2025-09-28 12:19:39,802 INFO: Available at: http://localhost:5000
+2025-09-28 12:19:39,809 INFO:  * Restarting with stat
+2025-09-28 12:19:40,809 INFO: Starting application with Python 3.11.8
+2025-09-28 12:19:40,810 INFO: Loaded .env file for local development
+2025-09-28 12:19:40,966 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-09-28 12:19:40,966 INFO: Using database URI: sqlite:///star.db
+2025-09-28 12:19:40,990 INFO: Database tables created successfully
+2025-09-28 12:19:40,990 INFO: Trend engine initialized with cosmic trends
+2025-09-28 12:19:40,990 INFO: Starting Star App server...
+2025-09-28 12:19:40,990 INFO: Available at: http://localhost:5000
+2025-09-28 12:19:40,995 WARNING:  * Debugger is active!
+2025-09-28 12:19:40,999 INFO:  * Debugger PIN: 377-668-772
+2025-10-01 04:14:50,695 INFO: Starting application with Python 3.11.8
+2025-10-01 04:14:50,697 INFO: Loaded .env file for local development
+2025-10-01 04:14:51,423 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:14:51,423 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:14:57,589 INFO: Starting application with Python 3.11.8
+2025-10-01 04:14:57,590 INFO: Loaded .env file for local development
+2025-10-01 04:14:58,005 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:14:58,006 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:15:12,572 INFO: Starting application with Python 3.11.8
+2025-10-01 04:15:12,573 INFO: Loaded .env file for local development
+2025-10-01 04:15:13,008 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:15:13,008 INFO: Using database URI: sqlite:///star.db
+2025-10-01 04:26:46,981 INFO: Starting application with Python 3.11.8
+2025-10-01 04:26:46,982 INFO: Loaded .env file for local development
+2025-10-01 04:26:47,500 WARNING: SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.
+2025-10-01 04:26:47,500 INFO: Using database URI: sqlite:///star.db

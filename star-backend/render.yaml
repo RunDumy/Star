@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: star-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres:8phRIvhoniavo2Wv@db.hiwmpmvqcxzshdmhhlsb.supabase.co:5432/postgres
+      - key: JWT_SECRET_KEY
+        value: your-secure-jwt-secret-key-here
+      - key: ALLOWED_ORIGINS
+        value: https://your-frontend-name.vercel.app
