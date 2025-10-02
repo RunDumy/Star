@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f37c1cd1630449efb47c6455e324289844e592aa07e0b174a419fdd4f8ab48e5
-size 338
+from flask_migrate import Migrate
+from app import app, db
+
+with app.app_context():
+    def upgrade():
+        db.engine.execute('ALTER TABLE user ADD COLUMN tradition VARCHAR(50)')
+
+    def downgrade():
+        db.engine.execute('ALTER TABLE user DROP COLUMN tradition')
+
+    upgrade()
+    print("Migration for tradition column applied")

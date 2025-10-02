@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0921b3b4821ab0e2bace33ffbc9cd0c5559037f24cd1dcd27e1750c119b6fc8e
-size 659
+services:
+  - type: web
+    name: star-backend
+    runtime: python
+    plan: free
+    rootDir: backend/star_backend_flask
+    buildCommand: "pip install -r ../../requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --worker-class eventlet -w 1 app:app"
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: star-db
+          property: connectionString
+      - key: SUPABASE_URL
+        sync: false # Set via Render environment variables
+      - key: SUPABASE_ANON_KEY
+        sync: false # Set via Render environment variables
+      - key: SPOTIFY_CLIENT_ID
+        sync: false # Set via Render environment variables
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false # Set via Render environment variables
+      - key: IPGEOLOCATION_API_KEY
+        sync: false # Set via Render environment variables
+
+databases:
+  - name: star-db
+    databaseName: star
+    user: star

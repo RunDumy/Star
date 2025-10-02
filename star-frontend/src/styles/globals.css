@@ -1,3 +1,71 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5ab0f82c60af3cfd2a06f3d7323132d5410b8b65d79abc015cd58ef2ec05f07d
-size 1388
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  color: white;
+}
+
+/* Cosmic background and comet */
+.starry-background {
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comet {
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  top: 10%;
+  right: -100px;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.9));
+  box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  animation: comet 6s infinite linear;
+}
+
+@keyframes comet {
+  0%   { transform: translate(0, 0) rotate(-35deg); opacity: 0.9; }
+  100% { transform: translate(-120vw, 80vh) rotate(-35deg); opacity: 0; }
+}
+
+/* Form and control styles for accessibility and consistency */
+input, select, button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid #1e90ff;
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  margin: 5px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  background: #1e90ff;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #4682b4;
+}
+
+/* Containers adapt to screen */
+form, .cosmic-container {
+  max-width: 90%;
+  margin: auto;
+}
+
+@media (min-width: 768px) {
+  form, .cosmic-container {
+    max-width: 520px;
+  }
+}

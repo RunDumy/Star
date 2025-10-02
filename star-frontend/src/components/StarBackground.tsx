@@ -1,3 +1,40 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8f4e4343bab5516c5709b1b8a8511693c4e1c9f8b79ece9d4ff16514574e9547
-size 1349
+'use client';
+
+import { useCallback, PropsWithChildren } from 'react';
+import Particles from 'react-tsparticles';
+import { loadFull } from 'tsparticles';
+
+export default function StarBackground({ children }: PropsWithChildren) {
+  const particlesInit = useCallback(async (engine: any) => {
+    await loadFull(engine);
+  }, []);
+
+  return (
+    <div className="starry-background relative min-h-screen">
+      <Particles
+        id="tsparticles"
+        init={particlesInit}
+        className="absolute inset-0 -z-10"
+        options={{
+          background: { color: 'transparent' },
+          fpsLimit: 60,
+          particles: {
+            number: { value: 80, density: { enable: true, area: 800 } },
+            color: { value: '#ffffff' },
+            size: { value: 2, random: true },
+            move: { enable: true, speed: 0.5, direction: 'none', outModes: { default: 'out' } },
+            opacity: { value: 0.6, random: true, animation: { enable: true, speed: 1, minimumValue: 0.2 } },
+            links: { enable: false }
+          },
+          interactivity: {
+            events: { onHover: { enable: true, mode: 'repulse' }, resize: true },
+            modes: { repulse: { distance: 100, duration: 0.4 } }
+          },
+          detectRetina: true
+        }}
+      />
+      <div className="comet" />
+      {children}
+    </div>
+  );
+}

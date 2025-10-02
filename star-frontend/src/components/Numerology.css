@@ -1,3 +1,81 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a79862cdd906392d0c682a525625cc7b7f6f4ae44264d3d9aca29662fcc5624a
-size 1336
+.numerology-container {
+  padding: 20px;
+  background: #000022;
+  color: #ffffff;
+  min-height: 100vh;
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+}
+
+.numerology-container h2 {
+  font-size: 2em;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(75, 0, 130, 0.7);
+}
+
+.numerology-card {
+  border: 1px solid #4B0082;
+  padding: 16px;
+  margin: 8px auto;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1a0033, #2a0044);
+  color: #ffffff;
+  max-width: 350px;
+  box-shadow: 0 0 15px rgba(75, 0, 130, 0.5);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.numerology-card h3 {
+  margin: 0 0 10px;
+}
+
+.numerology-card p {
+  margin: 5px 0;
+  font-size: 1em;
+}
+
+.karmic-debt {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.error {
+  color: #ff4444;
+  font-size: 1.2em;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  margin: 0 5px;
+  background: #2a0044;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s;
+}
+
+.tab.active {
+  background: #4B0082;
+  box-shadow: 0 0 10px rgba(75, 0, 130, 0.7);
+}
+
+.tab:hover {
+  background: #3a0055;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px rgba(75, 0, 130, 0.5);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(75, 0, 130, 0.8);
+  }
+}

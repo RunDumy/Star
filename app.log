@@ -1,3 +1,2 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7f19633d2cd7000d13bc8610add31bb826c5f9d63cc79dd06e432555f5b8d037
-size 139
+2025-09-28 02:23:36,802 INFO: Starting application with Python 3.11.8
+2025-09-28 02:23:36,802 INFO: Loaded .env file for local development

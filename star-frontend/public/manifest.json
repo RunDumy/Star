@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8e923702aec5458a8efb0d52d8bcd5ed4a92578b41023582be727bc24cb0c874
-size 309
+{
+  "short_name": "Star App",
+  "name": "Star - Cosmic Social Network",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#000000",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#000000"
+}
