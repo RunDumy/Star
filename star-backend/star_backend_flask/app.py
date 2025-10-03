@@ -1,35 +1,41 @@
 # -*- coding: utf-8 -*-
 # Project: Star App - The Cosmic Social Network
 # Complete version with all installed packages and zodiac number generator
-from flask import Flask, request, jsonify, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit, join_room
-from flask_restful import Api, Resource
+import json
+import logging
+import os
+import random
+import time
+from datetime import datetime, timedelta, timezone
+from functools import wraps
+from urllib.parse import quote
+
+import bcrypt
+import jwt
+import requests
+# Import birth chart calculation functions
+from birth_chart import calculate_birth_chart, geocode_location
+from dotenv import load_dotenv
+# Import feed blueprint
+from feed import feed
+from flask import Flask, jsonify, request, send_from_directory
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
-import bcrypt
-import jwt
-import os
-import logging
-import requests
-from datetime import datetime, timedelta, timezone
-from functools import wraps
-from dotenv import load_dotenv
-from marshmallow import Schema, fields, validates, ValidationError, validate
-import time
-import random
-import json
-from urllib.parse import quote
-from supabase import create_client
-
-# Import birth chart calculation functions
-from birth_chart import calculate_birth_chart, geocode_location
-
+from flask_restful import Api, Resource
+from flask_socketio import SocketIO, emit, join_room
+from flask_sqlalchemy import SQLAlchemy
+from marshmallow import Schema, ValidationError, fields, validate, validates
+# Import notifications blueprint
+from notifications import notifications
+# Import star points blueprint
+from star_points import star_points
 # Import tarot interactions
 from tarot_interactions import tarot_bp
+
+from supabase import create_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -37,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Log Python version
 import sys
+
 logger.info(f"Starting application with Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
 
 # Load environment variables
@@ -448,8 +455,8 @@ class Register(Resource):
         vedic_zodiac = get_vedic_zodiac(birth_date)
 
         # Calculate numerology numbers
-        from numerology import NumerologyCalculator
         from archetype_oracle import ArchetypeOracle, CosmicArchetypeOracle
+        from numerology import NumerologyCalculator
         numerology_readings = NumerologyCalculator.calculate_comprehensive_readings(
             full_name, birth_date
         )
@@ -540,9 +547,48 @@ class PostResource(Resource):
     @limiter.limit("50/hour")
     @cache.cached(timeout=60)
     def get(self):
-        """Get all posts with caching"""
+        """Get all posts with caching and optional planet filtering"""
         try:
-            posts = Post.query.order_by(Post.created_at.desc()).limit(20).all()
+            planet_filter = request.args.get('filter')
+            query = Post.query
+            
+            # Apply planet-based filtering
+            if planet_filter:
+                planet_themes = {
+                    'venus': ['love', 'harmony', 'connection', 'beauty', 'relationship'],
+                    'mars': ['action', 'challenge', 'energy', 'courage', 'passion'],
+                    'jupiter': ['growth', 'wisdom', 'expansion', 'luck', 'adventure']
+                }
+                if planet_filter in planet_themes:
+                    # Filter posts containing planet-related keywords
+                    theme_keywords = planet_themes[planet_filter]
+                    content_filters = [Post.content.ilike(f'%{keyword}%') for keyword in theme_keywords]
+                    query = query.filter(db.or_(*content_filters))
+            
+            posts = query.order_by(Post.created_at.desc()).limit(20).all()
+            
+            # Add planetary context for filtered results
+            planetary_context = {}
+            if planet_filter:
+                planet_contexts = {
+                    'venus': {
+                        'current_hour': 'Venus Hour',
+                        'dominant_energy': 'Harmony and connection',
+                        'favorable_actions': ['Connect', 'Create', 'Reflect']
+                    },
+                    'mars': {
+                        'current_hour': 'Mars Hour', 
+                        'dominant_energy': 'Action and energy',
+                        'favorable_actions': ['Challenge', 'Act', 'Compete']
+                    },
+                    'jupiter': {
+                        'current_hour': 'Jupiter Hour',
+                        'dominant_energy': 'Growth and wisdom',
+                        'favorable_actions': ['Learn', 'Expand', 'Explore']
+                    }
+                }
+                planetary_context = planet_contexts.get(planet_filter, {})
+            
             return {
                 'posts': [{
                     'id': post.id,
@@ -553,7 +599,8 @@ class PostResource(Resource):
                     'spark_count': post.spark_count,
                     'echo_count': post.echo_count,
                     'created_at': post.created_at.isoformat()
-                } for post in posts]
+                } for post in posts],
+                'planetary_context': planetary_context
             }, 200
         except Exception as e:
             logger.error(f"Failed to fetch posts: {str(e)}")
@@ -1198,6 +1245,15 @@ if __name__ == '__main__':
     
     # Register tarot interactions blueprint
     app.register_blueprint(tarot_bp, url_prefix='/api/v1/tarot')
+
+    # Register feed blueprint
+    app.register_blueprint(feed, url_prefix='/api/v1')
+
+    # Register star points blueprint
+    app.register_blueprint(star_points, url_prefix='/api/v1')
+
+    # Register notifications blueprint
+    app.register_blueprint(notifications, url_prefix='/api/v1')
 
     logger.info("Starting Star App server...")
     logger.info(f"Available at: http://localhost:{os.environ.get('PORT', 5000)}")

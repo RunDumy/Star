@@ -26,18 +26,35 @@ body {
   height: 2px;
   top: 10%;
   right: -100px;
-  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.9));
-  box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.9)
+  );
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
   animation: comet 6s infinite linear;
 }
 
 @keyframes comet {
-  0%   { transform: translate(0, 0) rotate(-35deg); opacity: 0.9; }
-  100% { transform: translate(-120vw, 80vh) rotate(-35deg); opacity: 0; }
+  0% {
+    transform: translate(0, 0) rotate(-35deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-120vw, 80vh) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+/* Mythic cosmos starfield background */
+.mythic-cosmos-background {
+  background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a1b 100%);
 }
 
 /* Form and control styles for accessibility and consistency */
-input, select, button {
+input,
+select,
+button {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid #1e90ff;
   color: white;
@@ -59,13 +76,15 @@ button:hover {
 }
 
 /* Containers adapt to screen */
-form, .cosmic-container {
+form,
+.cosmic-container {
   max-width: 90%;
   margin: auto;
 }
 
 @media (min-width: 768px) {
-  form, .cosmic-container {
+  form,
+  .cosmic-container {
     max-width: 520px;
   }
 }
@@ -76,7 +95,8 @@ form, .cosmic-container {
 }
 
 .tarot-card-dragging {
-  transform: translate3d(var(--tarot-card-x), var(--tarot-card-y), 0) rotate(var(--tarot-card-rotation));
+  transform: translate3d(var(--tarot-card-x), var(--tarot-card-y), 0)
+    rotate(var(--tarot-card-rotation));
   z-index: 1000;
 }
 
@@ -91,4 +111,414 @@ form, .cosmic-container {
 
 .tarot-card-constellation-secondary {
   fill: var(--tarot-card-color-secondary);
+}
+
+/* Cosmic Network Styles */
+.cosmic-network-container {
+  position: relative;
+}
+
+.cosmic-network-svg {
+  min-height: 400px;
+}
+
+.cosmic-tooltip {
+  font-family: "Courier New", monospace;
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced cosmic animations */
+@keyframes cosmic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+  }
+}
+
+@keyframes cosmic-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.8));
+  }
+}
+
+.cosmic-glow {
+  animation: cosmic-glow 3s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 25px rgba(0, 191, 255, 0.4);
+}
+
+.cosmic-pulse {
+  animation: cosmic-pulse 2s ease-in-out infinite;
+}
+
+/* Zodiac-themed color schemes */
+.zodiac-aries {
+  color: #ff6b6b;
+}
+.zodiac-taurus {
+  color: #4ecdc4;
+}
+.zodiac-gemini {
+  color: #45b7d1;
+}
+.zodiac-cancer {
+  color: #96ceb4;
+}
+.zodiac-leo {
+  color: #ffeaa7;
+}
+.zodiac-virgo {
+  color: #dda0dd;
+}
+.zodiac-libra {
+  color: #98d8c8;
+}
+.zodiac-scorpio {
+  color: #f7dc6f;
+}
+.zodiac-sagittarius {
+  color: #bb8fce;
+}
+.zodiac-capricorn {
+  color: #85c1e9;
+}
+.zodiac-aquarius {
+  color: #f8c471;
+}
+.zodiac-pisces {
+  color: #82e0aa;
+}
+
+/* Profile card hover effects */
+.profile-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.profile-card:hover {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Cosmic button variants */
+.cosmic-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.cosmic-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.cosmic-btn-secondary {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.cosmic-btn-secondary:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Loading spinner variants */
+.cosmic-spinner {
+  border: 3px solid rgba(139, 92, 246, 0.1);
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive cosmic grid */
+.cosmic-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .cosmic-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cosmic modal backdrop */
+.cosmic-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.cosmic-modal {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
+}
+
+/* Friend connection animation */
+@keyframes connect-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.friend-connection {
+  animation: connect-pulse 2s ease-in-out infinite;
+}
+
+/* Network node hover effects */
+.network-node {
+  transition: all 0.2s ease;
+}
+
+.network-node:hover circle {
+  stroke-width: 4px;
+  stroke: #fbbf24;
+}
+
+.network-node:hover text {
+  fill: #fbbf24;
+  font-weight: bold;
+}
+
+/* Enhanced Cosmic Button Styles */
+.zodiac-symbol {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(0, 191, 255, 0.5);
+  animation: twinkle-symbol 1.5s infinite;
+}
+
+.cosmic-button {
+  position: relative;
+  transform: perspective(1000px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(0, 191, 255, 0.3);
+}
+
+.cosmic-button:hover {
+  transform: perspective(1000px) rotateX(15deg) rotateY(15deg) scale(1.2)
+    translateZ(20px);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(0, 191, 255, 0.5);
+}
+
+.cosmic-button:active {
+  transform: perspective(1000px) scale(0.9);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.cosmic-glow-secondary {
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.4);
+}
+
+.cosmic-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 215, 0, 0.8);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.cosmic-button:hover .particle-1 {
+  animation: orbit 2s infinite linear;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-button:hover .particle-2 {
+  animation: orbit 2s infinite linear 0.5s;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-button:hover .particle-3 {
+  animation: orbit 2s infinite linear 1s;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-menu-item {
+  transition: background-color 0.2s ease;
+}
+
+.cosmic-menu-item:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+@keyframes twinkle-symbol {
+  0% {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 20px rgba(0, 191, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(255, 215, 0, 1), 0 0 30px rgba(0, 191, 255, 0.7);
+  }
+  100% {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 20px rgba(0, 191, 255, 0.5);
+  }
+}
+
+@keyframes orbit {
+  0% {
+    transform: translate(-50%, -50%) translateX(0) translateY(0);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(20px) translateY(10px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(0) translateY(20px);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(-20px) translateY(10px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(0) translateY(0);
+    opacity: 0.8;
+  }
+}
+
+/* Planet Background Styles */
+.planet {
+  position: absolute;
+  border-radius: 50%;
+  animation: orbit-planet linear infinite;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.5) 100%);
+}
+
+.planet.venus {
+  width: 60px;
+  height: 60px;
+  top: 20%;
+  left: 10%;
+  background: radial-gradient(circle, #f472b6 0%, #7e22ce 100%);
+  animation-duration: 40s;
+}
+
+.planet.mars {
+  width: 40px;
+  height: 40px;
+  top: 60%;
+  left: 30%;
+  background: radial-gradient(circle, #dc2626 0%, #9a3412 100%);
+  animation-duration: 30s;
+}
+
+.planet.jupiter {
+  width: 80px;
+  height: 80px;
+  top: 40%;
+  left: 70%;
+  background: radial-gradient(circle, #fb923c 0%, #7c2d12 100%);
+  animation-duration: 50s;
+}
+
+/* Planet Button Styles */
+.planet-button {
+  border-radius: 50%;
+  position: relative;
+  overflow: visible;
+}
+
+.planet-ring {
+  position: absolute;
+  inset: -5px;
+  border: 2px solid;
+  border-color: inherit;
+  border-radius: 50%;
+  animation: rotate-ring 10s linear infinite;
+}
+
+@keyframes orbit-planet {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(10px, 20px); }
+  50% { transform: translate(0, 30px); }
+  75% { transform: translate(-10px, 20px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes rotate-ring {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

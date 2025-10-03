@@ -5,7 +5,7 @@ import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 
 export default function StarBackground({ children }: PropsWithChildren) {
-  const particlesInit = useCallback(async (engine: any) => {
+  const particlesInit = useCallback(async (engine: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     await loadFull(engine);
   }, []);
 
@@ -33,6 +33,12 @@ export default function StarBackground({ children }: PropsWithChildren) {
           detectRetina: true
         }}
       />
+      {/* Planet Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-5">
+        <div className="planet venus" />
+        <div className="planet mars" />
+        <div className="planet jupiter" />
+      </div>
       <div className="comet" />
       {children}
     </div>
