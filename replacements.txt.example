@@ -1,0 +1,15 @@
+# Example replacements file for BFG or git-filter-repo --replace-text
+# Format: OLD==>NEW
+# DO NOT commit this file with real secrets. Keep replacements.txt local and delete it after use.
+
+# Replace Supabase anon key (example placeholder)
+supabaseAnonOldValue==>REDACTED_SUPABASE_ANON
+
+# Replace Supabase service role key
+supabaseServiceRoleOldValue==>REDACTED_SUPABASE_SERVICE_ROLE
+
+# Replace Spotify client secret
+spotifyClientSecretOldValue==>REDACTED_SPOTIFY_SECRET
+
+# Replace a full DATABASE_URL if present in commits (mask the password)
+postgres://postgres:oldpassword@db.example.supabase.co:5432/postgres==>postgres://postgres:REDACTED@db.example.supabase.co:5432/postgres

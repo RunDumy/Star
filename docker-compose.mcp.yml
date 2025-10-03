@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   mcp-gateway:
@@ -13,7 +13,6 @@ services:
     environment:
       - MCP_ENV=development
       - TZ=UTC
-
 # Usage:
 # docker compose -f docker-compose.mcp.yml up
 # Replace `mcp/gateway:latest` with the official image name your org provides if different.
