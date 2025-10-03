@@ -7,7 +7,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
     startCommand: |
-      uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT
+      gunicorn star_backend_flask.app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
         generateValue: true

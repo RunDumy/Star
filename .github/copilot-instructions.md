@@ -1,10 +1,13 @@
 <!-- Copilot / AI agent instructions for the Star repository (concise) -->
+
 # Copilot Instructions for STAR Platform
 
 ## Overview
+
 STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a Flask backend (`star-backend/star_backend_flask/`) using Supabase. An experimental FastAPI backend exists (`star-backend/main.py`). Docker ensures error-free local setup, with Render (backend) and Vercel (frontend) for deployment. Jest and pytest handle testing, with GitHub Actions for CI/CD.
 
 ## Architecture
+
 - **Frontend (`star-frontend/`)**: Next.js + React + TypeScript. Key files:
   - `pages/` (routes), `components/` (UI), `hooks/` (logic), `utils/` (helpers).
   - `next.config.js`, `package.json`, `tsconfig.json`, `jest.config.js` (in `star-frontend/`).
@@ -18,12 +21,14 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 - **Why**: Monorepo simplifies dependency management; Flask for production, FastAPI for experimentation; Supabase for scalable database; Docker for consistent environments.
 
 ## File Placement
+
 - **Frontend**: All configs (`next.config.js`, `package.json`, `tsconfig.json`, `jest.config.js`) in `star-frontend/`. Move root-level configs to `star-frontend/`.
 - **Backend**: Core files (`app.py`, `api.py`, `star_auth.py`) in `star-backend/star_backend_flask/`. Database files (`supabase_schema.sql`) in `star-backend/database/`. Move root-level `main.py`, `star_auth.py`, `supabase_schema.sql` to `star-backend/`.
 - **Config**: Deployment configs in `config/` (e.g., `config/render/render.yaml`, `config/vercel/vercel.json`, `config/docker/docker-compose.yml`).
 - **Tests**: Backend tests in `tests/backend/test_*.py` (e.g., `test_api.py`); frontend tests in `star-frontend/__tests__/*.test.tsx`.
 
 ## Developer Workflows
+
 - **Docker Setup (Required)**:
   - Install Docker Desktop on Windows.
   - Run `docker-compose -f config/docker/docker-compose.yml up --build` to start backend, frontend, and Supabase locally.
@@ -47,6 +52,7 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 - **CI/CD**: GitHub Actions in `.github/workflows/` (e.g., `test.yml`, `deploy.yml`).
 
 ## Conventions
+
 - **Backend**:
   - API endpoints in `star_backend_flask/api.py` use `/api/*` (e.g., `/api/posts`).
   - Use `@token_required` from `star_auth.py` for protected routes.
@@ -61,6 +67,7 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 - **File Naming**: snake_case for Python (e.g., `test_api.py`), camelCase for TypeScript (e.g., `useAuth.ts`).
 
 ## Integration Points
+
 - **Supabase**:
   - Configured via `SUPABASE_URL`/`SUPABASE_KEY` in `star-backend/.env`.
   - Schema in `star-backend/database/supabase_schema.sql`. Apply with `cd star-backend; supabase db push`.
@@ -74,12 +81,14 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 - **Cross-Component**: Frontend calls `/api/*`; backend handles auth and Supabase queries.
 
 ## Gotchas
+
 - **Duplicate Backends**: Use `star-backend/` (canonical, used by Render). Merge unique files from `backend/` and delete it.
 - **Large Files**: Exclude `*.zip`, `*.tar.gz`, `*.exe`, `*.msi`, `*.log`, `jre/` in `.gitignore`. Check with `git status`.
 - **Secrets**: Never commit secrets in `render.yaml`, `vercel.json`, or `.env`. Use `config/env/ROTATE_SECRETS.md`.
 - **Docker**: Required for local Supabase and production-like testing. Ensure Docker Desktop is installed.
 
 ## Checklist for Contributions
+
 - Move frontend configs (e.g., `next.config.js`) to `star-frontend/`.
 - Move backend files (e.g., `main.py`, `star_auth.py`) to `star-backend/star_backend_flask/`.
 - Place `supabase_schema.sql` in `star-backend/database/`.
