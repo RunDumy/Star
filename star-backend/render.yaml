@@ -1,35 +1,31 @@
 services:
   - type: web
-    name: star-backend-service
+    name: Star
     runtime: python
-    region: oregon
+    repo: https://github.com/RunDumy/Star
     plan: free
-    buildCommand: |
-      cd star-backend
-      pip install -r requirements.txt
-    startCommand: |
-      cd star-backend/star_backend_flask
-      gunicorn app:app --bind 0.0.0.0:$PORT
+    region: virginia
+    buildCommand: cd star-backend && pip install -r requirements.txt
+    startCommand: cd star-backend/star_backend_flask && gunicorn app:app --bind 0.0.0.0:$PORT
+    autoDeployTrigger: "off"
     envVars:
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: JWT_SECRET_KEY
-        generateValue: true
+        sync: false
       - key: JWT_ALGORITHM
-        value: HS256
+        sync: false
       - key: DATABASE_URL
-        generateValue: true
+        sync: false
       - key: SUPABASE_URL
-        generateValue: true
+        sync: false
       - key: SUPABASE_ANON_KEY
-        generateValue: true
+        sync: false
       - key: SPOTIFY_CLIENT_ID
-        generateValue: true
+        sync: false
       - key: SPOTIFY_CLIENT_SECRET
-        generateValue: true
+        sync: false
       - key: IPGEOLOCATION_API_KEY
-        generateValue: true
+        sync: false
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000,https://star-frontend.vercel.app
-      - key: FLASK_DEBUG
-        value: 0
+        sync: false
