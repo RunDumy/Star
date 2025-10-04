@@ -24,7 +24,7 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 
 - **Frontend**: All configs (`next.config.js`, `package.json`, `tsconfig.json`, `jest.config.js`) in `star-frontend/`. Move root-level configs to `star-frontend/`.
 - **Backend**: Core files (`app.py`, `api.py`, `star_auth.py`) in `star-backend/star_backend_flask/`. Database files (`supabase_schema.sql`) in `star-backend/database/`. Move root-level `main.py`, `star_auth.py`, `supabase_schema.sql` to `star-backend/`.
-- **Config**: Deployment configs in `config/` (e.g., `config/render/render.yaml`, `config/vercel/vercel.json`, `config/docker/docker-compose.yml`).
+- **Config**: Deployment configs in `config/` (e.g., `star-backend/render.yaml`, `config/vercel/vercel.json`, `config/docker/docker-compose.yml`).
 - **Tests**: Backend tests in `tests/backend/test_*.py` (e.g., `test_api.py`); frontend tests in `star-frontend/__tests__/*.test.tsx`.
 
 ## Developer Workflows
@@ -46,7 +46,7 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
   - Backend: Logs to `app.log`. Use `flask run --debug` or Docker logs.
   - Frontend: Use Next.js dev tools or VS Code debugger.
 - **Deployment**:
-  - Backend: `config/render/render.yaml` deploys `star-backend/` to Render (`uvicorn star_backend_flask.api:app`).
+  - Backend: `star-backend/render.yaml` deploys `star-backend/` to Render (`gunicorn --chdir star_backend_flask app:app`).
   - Frontend: `config/vercel/vercel.json` for Vercel. Deploy with `cd star-frontend; vercel deploy --prod`.
   - Local: `docker-compose -f config/docker/docker-compose.yml up --build`.
 - **CI/CD**: GitHub Actions in `.github/workflows/` (e.g., `test.yml`, `deploy.yml`).
@@ -76,7 +76,7 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
   - Install: `npm install -g vercel`.
   - Deploy frontend: `cd star-frontend; vercel deploy --prod`.
   - Configure in `config/vercel/vercel.json` for rewrites to `/api/*`.
-- **Render**: Configured in `config/render/render.yaml` for backend deployment.
+- **Render**: Configured in `star-backend/render.yaml` for backend deployment.
 - **Docker**: Use `config/docker/docker-compose.yml` for local backend/frontend/Supabase.
 - **Cross-Component**: Frontend calls `/api/*`; backend handles auth and Supabase queries.
 
@@ -96,5 +96,5 @@ STAR is a monorepo with a Next.js + TypeScript frontend (`star-frontend/`) and a
 - Verify with `docker-compose -f config/docker/docker-compose.yml up --build`.
 - Check `app.log` for errors.
 - Deploy frontend: `cd star-frontend; vercel deploy --prod`.
-- Deploy backend: Verify `config/render/render.yaml` and redeploy on Render.
+- Deploy backend: Verify `star-backend/render.yaml` and redeploy on Render.
 - Avoid large files: Update `.gitignore` and check `git status`.

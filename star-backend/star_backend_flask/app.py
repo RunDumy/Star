@@ -13,6 +13,8 @@ from urllib.parse import quote
 import bcrypt
 import jwt
 import requests
+# Import analytics blueprint
+from analytics import analytics_bp
 # Import birth chart calculation functions
 from birth_chart import calculate_birth_chart, geocode_location
 from dotenv import load_dotenv
@@ -27,6 +29,8 @@ from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from flask_socketio import SocketIO, emit, join_room
 from flask_sqlalchemy import SQLAlchemy
+# Import group chat blueprint
+from group_chat import group_chat_bp
 from marshmallow import Schema, ValidationError, fields, validate, validates
 # Import notifications blueprint
 from notifications import notifications
@@ -1254,6 +1258,12 @@ if __name__ == '__main__':
 
     # Register notifications blueprint
     app.register_blueprint(notifications, url_prefix='/api/v1')
+
+    # Register group chat blueprint
+    app.register_blueprint(group_chat_bp, url_prefix='/api/v1')
+
+    # Register analytics blueprint
+    app.register_blueprint(analytics_bp, url_prefix='/api/v1')
 
     logger.info("Starting Star App server...")
     logger.info(f"Available at: http://localhost:{os.environ.get('PORT', 5000)}")

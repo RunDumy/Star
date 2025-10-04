@@ -1,0 +1,46 @@
+version: "3.8"
+
+# Development overrides for docker-compose.yml
+# This file is automatically merged with docker-compose.yml when running docker-compose
+
+services:
+  # Development backend with hot reload
+  backend:
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    volumes:
+      - ../../star-backend:/app
+    command: ["python", "star_backend_flask/app.py"]
+
+  # Development frontend with hot reload
+  frontend:
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ../../star-frontend:/app
+      - /app/node_modules
+    command: ["npm", "run", "dev"]
+
+  # Supabase with local development settings
+  supabase:
+    environment:
+      - POSTGRES_PASSWORD=dev_password_change_me
+    ports:
+      - "54322:5432" # Use different port to avoid conflicts
+
+  # Additional development tools
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: star-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@star.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+    depends_on:
+      - supabase
+    networks:
+      - star-network

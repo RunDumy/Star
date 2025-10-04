@@ -1,86 +1,87 @@
 {
-    "python.pythonPath": ".venv/Scripts/python.exe",
-    "python.defaultInterpreterPath": ".venv/Scripts/python.exe",
-    "python.terminal.activateEnvironment": true,
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.mypyEnabled": true,
-    "python.formatting.provider": "black",
-    "python.testing.pytestEnabled": true,
-    "python.testing.pytestArgs": [
-        "test_archetype_oracle.py",
-        "test_import.py",
-        "test_main_api.py",
-        "backend/tests/",
-        "--cov=.",
-        "--cov-report=term-missing"
-    ],
-    "python.testing.unittestEnabled": false,
-    "coverage-gutters.coverageFileNames": [
-        "coverage.xml",
-        ".coverage",
-        "htmlcov/coverage.xml"
-    ],
-    "coverage-gutters.showLineCoverage": true,
-    "coverage-gutters.showRulerCoverage": true,
-    "files.associations": {
-        "*.py": "python",
-        "*.tsx": "typescriptreact",
-        "*.ts": "typescript",
-        "*.js": "javascript",
-        "*.jsx": "javascriptreact"
-    },
-    "emmet.includeLanguages": {
-        "typescript": "typescriptreact",
-        "javascript": "javascriptreact"
-    },
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit",
-        "source.organizeImports": "explicit"
-    },
-    "typescript.preferences.importModuleSpecifier": "relative",
-    "javascript.preferences.importModuleSpecifier": "relative",
-    "explorer.fileNesting.enabled": true,
-    "explorer.fileNesting.expand": false,
-    "explorer.fileNesting.patterns": {
-        "*.ts": "${capture}.js",
-        "*.tsx": "${capture}.ts",
-        "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
-        "*.jsx": "${capture}.js",
-        "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
-        "main.py": "test_*.py, requirements.txt, .env*",
-        ".env": ".env.example, .env.local, .env.development, .env.production"
-    },
-    "terminal.integrated.scrollback": 10000,
-    "terminal.integrated.shell.windows": "C:\\Windows\\System32\\cmd.exe",
-    "terminal.integrated.env.windows": {
-        "PYTHONPATH": "${workspaceFolder}",
-        "FLASK_ENV": "development"
-    },
-    "debug.terminal.clearBeforeReusing": true,
-    "git.confirmSync": false,
-    "git.autofetch": true,
-    "git.enableSmartCommit": true,
-    "extensions.recommendations": [
-        "ms-python.python",
-        "ms-python.pylint",
-        "ms-python.flake8",
-        "ms-python.black-formatter",
-        "ms-python.mypy-type-checker",
-        "ms-python.pytest",
-        "ryanluker.vscode-coverage-gutters",
-        "ms-vscode.vscode-json",
-        "bradlc.vscode-tailwindcss",
-        "esbenp.prettier-vscode",
-        "ms-vscode.vscode-eslint",
-        "ms-vscode.vscode-typescript-next",
-        "formulahendry.auto-rename-tag",
-        "christian-kohler.path-intellisense",
-        "ms-vscode.vscode-js-profile-flame",
-        "ms-vscode.vscode-chrome-debug-core",
-        "ms-vscode.js-debug",
-        "ms-vscode.vscode-chrome-debug"
-    ]
+  "python.pythonPath": ".venv/Scripts/python.exe",
+  "python.defaultInterpreterPath": ".venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.formatting.provider": "black",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "test_archetype_oracle.py",
+    "test_import.py",
+    "test_main_api.py",
+    "backend/tests/",
+    "--cov=.",
+    "--cov-report=term-missing"
+  ],
+  "python.testing.unittestEnabled": false,
+  "coverage-gutters.coverageFileNames": [
+    "coverage.xml",
+    ".coverage",
+    "htmlcov/coverage.xml"
+  ],
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+  "files.associations": {
+    "*.py": "python",
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript",
+    "*.js": "javascript",
+    "*.jsx": "javascriptreact"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "typescriptreact",
+    "javascript": "javascriptreact"
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+    "*.jsx": "${capture}.js",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    "main.py": "test_*.py, requirements.txt, .env*",
+    ".env": ".env.example, .env.local, .env.development, .env.production"
+  },
+  "terminal.integrated.scrollback": 10000,
+  "terminal.integrated.shell.windows": "C:\\Windows\\System32\\cmd.exe",
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}",
+    "FLASK_ENV": "development"
+  },
+  "debug.terminal.clearBeforeReusing": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "extensions.recommendations": [
+    "ms-python.python",
+    "ms-python.pylint",
+    "ms-python.flake8",
+    "ms-python.black-formatter",
+    "ms-python.mypy-type-checker",
+    "ms-python.pytest",
+    "ryanluker.vscode-coverage-gutters",
+    "ms-vscode.vscode-json",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-eslint",
+    "ms-vscode.vscode-typescript-next",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-js-profile-flame",
+    "ms-vscode.vscode-chrome-debug-core",
+    "ms-vscode.js-debug",
+    "ms-vscode.vscode-chrome-debug"
+  ],
+  "terminal.integrated.env.linux": {}
 }

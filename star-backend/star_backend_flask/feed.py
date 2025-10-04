@@ -1,8 +1,13 @@
-from flask import Blueprint, request, jsonify, current_app
-from supabase import create_client, Client
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, current_app, jsonify, request
+# Import notification function
+from notifications import create_notification
+from star_auth import token_required
 from werkzeug.exceptions import BadRequest
+
+from supabase import Client, create_client
 
 feed = Blueprint('feed', __name__)
 
@@ -11,10 +16,14 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    current_app.logger.warning("Supabase credentials not found, feed functionality disabled")
+    print("Supabase credentials not found, feed functionality disabled")
     supabase = None
 else:
-    supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    except Exception as e:
+        print(f"Failed to initialize Supabase client: {e}")
+        supabase = None
 
 @feed.route('/api/v1/feed', methods=['GET'])
 def get_feed():
@@ -203,6 +212,22 @@ def like_post(post_id):
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }).eq('id', post_id).execute()
 
+            # Create notification for post author
+            post_result = supabase.table('user_posts').select('user_id').eq('id', post_id).execute()
+            if post_result.data and post_result.data[0]['user_id'] != user_id:
+                post_author_id = post_result.data[0]['user_id']
+                user_result = supabase.table('user').select('username').eq('id', user_id).execute()
+                liker_username = user_result.data[0]['username'] if user_result.data else 'Someone'
+                create_notification(
+                    user_id=post_author_id,
+                    notification_type='like',
+                    title='New Like',
+                    message=f'{liker_username} liked your post',
+                    related_id=str(post_id),
+                    related_type='post',
+                    metadata={'liker_id': user_id, 'liker_username': liker_username}
+                )
+
             # Log action for gamification
             log_user_action(user_id, 'like', 'post_like')
             action = 'liked'
@@ -246,6 +271,22 @@ def comment_on_post(post_id):
             'comments': supabase.raw('comments + 1'),
             'updated_at': datetime.now(timezone.utc).isoformat()
         }).eq('id', post_id).execute()
+
+        # Create notification for post author
+        post_result = supabase.table('user_posts').select('user_id').eq('id', post_id).execute()
+        if post_result.data and post_result.data[0]['user_id'] != user_id:
+            post_author_id = post_result.data[0]['user_id']
+            user_result = supabase.table('user').select('username').eq('id', user_id).execute()
+            commenter_username = user_result.data[0]['username'] if user_result.data else 'Someone'
+            create_notification(
+                user_id=post_author_id,
+                notification_type='comment',
+                title='New Comment',
+                message=f'{commenter_username} commented on your post',
+                related_id=str(post_id),
+                related_type='post',
+                metadata={'commenter_id': user_id, 'commenter_username': commenter_username, 'comment_content': comment_text[:50]}
+            )
 
         # Log action for gamification
         log_user_action(user_id, 'comment', 'post_comment')
@@ -506,3 +547,68 @@ def update_engagement_streak(user_id):
 
     except Exception as e:
         current_app.logger.error(f"Streak update error: {str(e)}")
+
+@feed.route('/api/v1/cosmic_network/<int:user_id>', methods=['GET'])
+@token_required
+def get_cosmic_network(user_id):
+    """Get cosmic network data for visualization - friends and interactions"""
+    try:
+        # Get user's friends
+        friends_result = supabase.table('friends').select('friend_id, status, created_at').eq('user_id', user_id).eq('status', 'accepted').execute()
+        
+        # Get friend details
+        friends_data = []
+        if friends_result.data:
+            for friend in friends_result.data:
+                friend_id = friend['friend_id']
+                # Get friend profile info
+                profile_result = supabase.table('profiles').select('display_name, zodiac_sign, bio, avatar_url').eq('user_id', friend_id).execute()
+                profile = profile_result.data[0] if profile_result.data else {}
+                
+                friends_data.append({
+                    'id': friend_id,
+                    'display_name': profile.get('display_name', f'User {friend_id}'),
+                    'zodiac_sign': profile.get('zodiac_sign', 'Unknown'),
+                    'bio': profile.get('bio', ''),
+                    'avatar_url': profile.get('avatar_url', ''),
+                    'friendship_date': friend['created_at']
+                })
+
+        # Get recent interactions (likes, comments, shares)
+        interactions_result = supabase.table('interactions').select('target_user_id, interaction_type, created_at').eq('user_id', user_id).order('created_at.desc').limit(50).execute()
+        
+        # Get interaction targets' profile info
+        interactions_data = []
+        if interactions_result.data:
+            for interaction in interactions_result.data:
+                target_id = interaction['target_user_id']
+                profile_result = supabase.table('profiles').select('display_name, zodiac_sign').eq('user_id', target_id).execute()
+                profile = profile_result.data[0] if profile_result.data else {}
+                
+                interactions_data.append({
+                    'target_id': target_id,
+                    'target_name': profile.get('display_name', f'User {target_id}'),
+                    'target_zodiac': profile.get('zodiac_sign', 'Unknown'),
+                    'interaction_type': interaction['interaction_type'],
+                    'timestamp': interaction['created_at']
+                })
+
+        # Get user's own profile for center node
+        user_profile_result = supabase.table('profiles').select('display_name, zodiac_sign, bio, avatar_url').eq('user_id', user_id).execute()
+        user_profile = user_profile_result.data[0] if user_profile_result.data else {}
+
+        return jsonify({
+            'user': {
+                'id': user_id,
+                'display_name': user_profile.get('display_name', f'User {user_id}'),
+                'zodiac_sign': user_profile.get('zodiac_sign', 'Unknown'),
+                'bio': user_profile.get('bio', ''),
+                'avatar_url': user_profile.get('avatar_url', '')
+            },
+            'friends': friends_data,
+            'interactions': interactions_data
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Cosmic network error: {str(e)}")
+        return jsonify({'error': 'Failed to fetch cosmic network data'}), 500

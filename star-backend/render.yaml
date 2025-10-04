@@ -4,11 +4,12 @@ services:
     runtime: python
     region: oregon
     plan: free
-    rootDir: star-backend
     buildCommand: |
+      cd star-backend
       pip install -r requirements.txt
     startCommand: |
-      gunicorn star_backend_flask.app:app --bind 0.0.0.0:$PORT
+      cd star-backend/star_backend_flask
+      gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -18,6 +19,10 @@ services:
         value: HS256
       - key: DATABASE_URL
         generateValue: true
+      - key: SUPABASE_URL
+        generateValue: true
+      - key: SUPABASE_ANON_KEY
+        generateValue: true
       - key: SPOTIFY_CLIENT_ID
         generateValue: true
       - key: SPOTIFY_CLIENT_SECRET
@@ -26,3 +31,5 @@ services:
         generateValue: true
       - key: ALLOWED_ORIGINS
         value: http://localhost:3000,https://star-frontend.vercel.app
+      - key: FLASK_DEBUG
+        value: 0
