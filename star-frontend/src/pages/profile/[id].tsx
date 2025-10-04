@@ -1,85 +1,285 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import StarBackground from '../../components/StarBackground';
-import { followUser, fetchProfile } from '../../lib/api';
+import { getFriends, getPosts, getProfile, sendFriendRequest, supabase } from '../../lib/supabase';
 
-type Engagement = {
-  sparks: number;
-  echoes?: number;
+type Friend = {
+  id: string;
+  display_name: string;
+  zodiac_sign: string;
+  bio: string;
+  avatar_url: string;
+  friendship_date: string;
 };
 
-type PostItem = {
-  id: number;
+type Post = {
+  id: string;
   content: string;
   created_at: string;
-  engagement: Engagement;
+  user_id: string;
+  profiles: {
+    display_name: string;
+    zodiac_sign: string;
+    avatar_url: string;
+  };
 };
 
-type ProfileResponse = {
-  profile: {
-    username: string;
-    zodiac_sign: string;
-    chinese_zodiac?: string;
-    vedic_zodiac?: string;
-    bio?: string;
-    join_date: string;
-  };
-  posts: PostItem[];
+type Profile = {
+  id: string;
+  user_id: string;
+  display_name: string;
+  zodiac_sign: string;
+  bio: string;
+  avatar_url: string;
+  created_at: string;
 };
 
 export default function Profile() {
   const router = useRouter();
   const { id } = router.query;
-  const [data, setData] = useState<ProfileResponse | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isFriend, setIsFriend] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    fetchProfile(id as string)
-      .then((res) => setData(res))
-      .catch(() => setMessage('Failed to load profile'))
-      .finally(() => setLoading(false));
-  }, [id]);
+
+    const loadProfileData = async () => {
+      try {
+        setLoading(true);
+
+        // Load profile
+        const profileData = await getProfile(id as string);
+        setProfile(profileData);
+
+        // Load friends
+        const friendsData = await getFriends(id as string);
+        setFriends(friendsData || []);
+
+        // Load posts
+        const postsData = await getPosts(id as string);
+        setPosts(postsData || []);
+
+        // Check if current user is friends with this profile
+        if (currentUser) {
+          const friendCheck = friendsData?.find(friend => friend.friend_id === currentUser.id);
+          setIsFriend(!!friendCheck);
+        }
+
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        setMessage('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfileData();
+  }, [id, currentUser]);
 
   const onFollow = async () => {
-    if (!id) return;
+    if (!id || !currentUser) return;
+
     try {
-      const res = await followUser(id as string);
-      setMessage(res?.message || 'Followed');
-    } catch (err: any) {
-      setMessage(err?.response?.data?.error || 'Failed to follow');
+      await sendFriendRequest(currentUser.id, id as string);
+      setMessage('Friend request sent!');
+      setIsFriend(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to send friend request');
     }
   };
+
+  if (loading) {
+    return (
+      <StarBackground>
+        <div className="cosmic-container relative z-10 flex min-h-screen items-center justify-center p-4 text-white">
+          <div className="text-center">
+            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto"></div>
+            <p>Loading cosmic profile...</p>
+          </div>
+        </div>
+      </StarBackground>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <StarBackground>
+        <div className="cosmic-container relative z-10 flex min-h-screen items-center justify-center p-4 text-white">
+          <div className="text-center">
+            <h1 className="mb-4 text-2xl font-bold">Profile Not Found</h1>
+            <p>The cosmic entity you&apos;re seeking doesn&apos;t exist in this dimension.</p>
+          </div>
+        </div>
+      </StarBackground>
+    );
+  }
 
   return (
     <StarBackground>
       <div className="cosmic-container relative z-10 p-4 text-white">
-        {loading && <p>Loading…</p>}
-        {!loading && data && (
-          <>
-            <h1 className="mb-2 text-2xl font-bold">{data.profile.username}&apos;s Profile</h1>
-            <p className="mb-2">Zodiac: {data.profile.zodiac_sign}</p>
-            {data.profile.bio && <p className="mb-2">Bio: {data.profile.bio}</p>}
-            <button onClick={onFollow} className="mb-4 rounded bg-blue-600 p-2 hover:bg-blue-500">
-              Follow
-            </button>
-            <h2 className="mb-2 text-xl font-semibold">Posts</h2>
-            {data.posts.map((post) => (
-              <div key={post.id} className="mb-3 rounded border border-gray-700 p-3">
-                <p>{post.content}</p>
-                <p className="text-xs text-gray-400">
-                  {new Date(post.created_at).toLocaleString()} — Sparks: {post.engagement.sparks}
-                </p>
+        {/* Profile Header */}
+        <div className="mb-8 rounded-lg border border-purple-500/30 bg-black/20 p-6 backdrop-blur-sm">
+          <div className="flex items-start space-x-6">
+            <div className="flex-shrink-0">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  className="h-24 w-24 rounded-full border-2 border-purple-400"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-purple-400 bg-purple-900/50">
+                  <span className="text-2xl font-bold text-purple-300">
+                    {profile.display_name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <h1 className="mb-2 text-3xl font-bold text-purple-300">{profile.display_name}</h1>
+              <p className="mb-2 text-lg text-blue-300">✨ {profile.zodiac_sign}</p>
+              {profile.bio && <p className="mb-4 text-gray-300">{profile.bio}</p>}
+              <p className="text-sm text-gray-400">
+                Joined: {new Date(profile.created_at).toLocaleDateString()}
+              </p>
+            </div>
+            {currentUser && currentUser.id !== id && (
+              <button
+                onClick={onFollow}
+                disabled={isFriend}
+                className={`rounded-lg px-6 py-2 font-semibold transition-colors ${
+                  isFriend
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-500'
+                }`}
+              >
+                {isFriend ? 'Friends' : 'Connect'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Cosmic Network Visualization */}
+        <div className="mb-8">
+          <h2 className="mb-4 text-2xl font-bold text-purple-300">Cosmic Network</h2>
+          <div className="rounded-lg border border-purple-500/30 bg-black/20 p-4 backdrop-blur-sm">
+            {/* <CosmicNetwork userId={id as string} /> */}
+            <p className="text-center text-gray-400 py-8">
+              Cosmic Network visualization coming soon...
+            </p>
+          </div>
+        </div>
+
+        {/* Friends Section */}
+        <div className="mb-8">
+          <h2 className="mb-4 text-2xl font-bold text-purple-300">
+            Cosmic Connections ({friends.length})
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {friends.map((friend) => (
+              <div
+                key={friend.id}
+                className="rounded-lg border border-purple-500/20 bg-black/10 p-4 backdrop-blur-sm hover:border-purple-400/50 transition-colors cursor-pointer"
+                onClick={() => router.push(`/profile/${friend.id}`)}
+              >
+                <div className="flex items-center space-x-3">
+                  {friend.avatar_url ? (
+                    <img
+                      src={friend.avatar_url}
+                      alt={friend.display_name}
+                      className="h-12 w-12 rounded-full border border-purple-400"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-purple-400 bg-purple-900/50">
+                      <span className="text-lg font-bold text-purple-300">
+                        {friend.display_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-semibold text-purple-300">{friend.display_name}</h3>
+                    <p className="text-sm text-blue-300">{friend.zodiac_sign}</p>
+                  </div>
+                </div>
               </div>
             ))}
-          </>
+            {friends.length === 0 && (
+              <p className="col-span-full text-center text-gray-400 py-8">
+                No cosmic connections yet. Be the first star in their constellation!
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Posts Section */}
+        <div className="mb-8">
+          <h2 className="mb-4 text-2xl font-bold text-purple-300">Cosmic Posts</h2>
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className="rounded-lg border border-purple-500/20 bg-black/10 p-4 backdrop-blur-sm"
+              >
+                <div className="flex items-start space-x-3">
+                  {post.profiles?.avatar_url ? (
+                    <img
+                      src={post.profiles.avatar_url}
+                      alt={post.profiles.display_name}
+                      className="h-10 w-10 rounded-full border border-purple-400"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-purple-400 bg-purple-900/50">
+                      <span className="font-bold text-purple-300">
+                        {post.profiles?.display_name?.charAt(0).toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h3 className="font-semibold text-purple-300">
+                        {post.profiles?.display_name || 'Unknown'}
+                      </h3>
+                      <span className="text-sm text-blue-300">
+                        {post.profiles?.zodiac_sign || 'Unknown'}
+                      </span>
+                    </div>
+                    <p className="mb-2 text-gray-200">{post.content}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(post.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {posts.length === 0 && (
+              <p className="text-center text-gray-400 py-8">
+                No posts yet. The cosmos awaits their first message!
+              </p>
+            )}
+          </div>
+        </div>
+
+        {message && (
+          <div className="fixed bottom-4 right-4 rounded-lg bg-purple-900/90 px-4 py-2 text-white backdrop-blur-sm">
+            {message}
+          </div>
         )}
-        {!loading && !data && <p>Profile not found.</p>}
-        {message && <p className="mt-3 text-sm text-gray-200">{message}</p>}
       </div>
     </StarBackground>
   );

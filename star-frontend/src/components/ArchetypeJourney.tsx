@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Sparkles, Send, Eye, Star } from 'lucide-react';
-import SigilGenerator from './SigilGenerator';
-import LoadingSpinner from './LoadingSpinner';
+import { Eye, Send, Sparkles, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import ErrorMessage from './ErrorMessage';
+import LoadingSpinner from './LoadingSpinner';
+import SigilGenerator from './SigilGenerator';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface ArchetypeJourneyProps {
-  userId: number;
+  userId: string | number;
   zodiacSign?: string;
   tarotCard?: string;
   planetaryHour?: string;
@@ -30,6 +30,14 @@ interface Prompt {
   response_count?: number;
 }
 
+interface ResponseItem {
+  id: number | string;
+  response: string;
+  author: string;
+  zodiac_sign?: string;
+  created_at?: string;
+}
+
 const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
   userId,
   zodiacSign = 'Libra',
@@ -44,7 +52,7 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
   const [hasResponded, setHasResponded] = useState(false);
   const [isLimitedTime, setIsLimitedTime] = useState(false);
   const [showAllResponses, setShowAllResponses] = useState(false);
-  const [responses, setResponses] = useState<any[]>([]);
+  const [responses, setResponses] = useState<ResponseItem[]>([]);
 
   // Fetch prompt on component mount
   useEffect(() => {
@@ -61,7 +69,7 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
         }>(
           `${API_URL}/api/v1/prompt/generate`,
           {
-            user_id: userId,
+            user_id: typeof userId === 'string' ? parseInt(userId, 10) : userId,
             zodiac_sign: zodiacSign,
             tarot_card: tarotCard,
             planetary_data: { hour_planet: planetaryHour },
@@ -85,9 +93,10 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
 
         // Randomly make it a limited-time prompt (FOMO feature)
         setIsLimitedTime(Math.random() > 0.7);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Prompt fetch failed:', err);
-        setError(err.response?.data?.error || 'Failed to load cosmic prompt');
+        const message = axios.isAxiosError(err) ? err.response?.data?.error : String(err);
+        setError(message || 'Failed to load cosmic prompt');
       } finally {
         setIsLoading(false);
       }
@@ -105,7 +114,7 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
       setError(null);
 
       await axios.post(`${API_URL}/api/v1/prompt/respond`, {
-        user_id: userId,
+        user_id: typeof userId === 'string' ? parseInt(userId, 10) : userId,
         prompt_id: prompt.id,
         response: response.trim()
       });
@@ -116,9 +125,10 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
       // Show success message (could be a toast notification)
       alert('Response shared to the cosmic community! 🌟');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Response submission failed:', err);
-      setError(err.response?.data?.error || 'Failed to share response');
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : String(err);
+      setError(message || 'Failed to share response');
     } finally {
       setIsLoading(false);
     }
@@ -131,13 +141,13 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
     try {
       const { data } = await axios.get(`${API_URL}/api/v1/prompt/${prompt.id}/responses`);
       setResponses(data.responses || []);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to load responses:', err);
     }
   };
 
   // Handle key press for textarea
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleResponse();
@@ -223,15 +233,16 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
           {/* Response Section */}
           {!hasResponded ? (
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-200">
+              <label htmlFor="archetype-response" className="block text-sm font-medium text-gray-200">
                 Share your cosmic wisdom:
               </label>
               <textarea
+                id="archetype-response"
                 className="w-full p-3 bg-gray-800/60 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="What does this prompt reveal about your cosmic journey?..."
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 rows={4}
                 maxLength={500}
               />
@@ -282,16 +293,16 @@ const ArchetypeJourney: React.FC<ArchetypeJourneyProps> = ({
 
               {showAllResponses && responses.length > 0 && (
                 <div className="mt-3 space-y-3 max-h-60 overflow-y-auto">
-                  {responses.map((resp: any, index: number) => (
-                    <div key={index} className="bg-gray-800/40 border border-gray-600/30 rounded p-3">
+                  {responses.map((resp: ResponseItem) => (
+                    <div key={resp.id ?? resp.created_at} className="bg-gray-800/40 border border-gray-600/30 rounded p-3">
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="font-medium text-purple-300">{resp.author}</span>
                         <span className="text-sm text-gray-400 capitalize">{resp.zodiac_sign}</span>
                         <span className="text-xs text-gray-500">
-                          {new Date(resp.created_at).toLocaleDateString()}
+                          {resp.created_at ? new Date(resp.created_at).toLocaleDateString() : ''}
                         </span>
                       </div>
-                      <p className="text-gray-300 text-sm italic">"{resp.response}"</p>
+                      <p className="text-gray-300 text-sm italic">{`"${resp.response}"`}</p>
                     </div>
                   ))}
                 </div>

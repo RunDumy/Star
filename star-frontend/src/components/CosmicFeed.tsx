@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { animated, useSpring } from '@react-spring/web';
 import axios from 'axios';
-import { Heart, MessageCircle, Share2, Bookmark, Star, Sparkles } from 'lucide-react';
-import { FeedItem, FeedResponse, ZodiacActions } from '../types/feed';
-import SigilGenerator from './SigilGenerator';
+import { Bookmark, Heart, MessageCircle, Share2, Sparkles, Star } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import { fetchFeed as apiFetchFeed } from '../lib/api';
+import { FeedItem, ZodiacActions } from '../types/feed';
 import ArchetypeJourney from './ArchetypeJourney';
-import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
+import LoadingSpinner from './LoadingSpinner';
+import SigilGenerator from './SigilGenerator';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface CosmicFeedProps {
-  userId: string;
+  userId: string | number;
   className?: string;
 }
 
@@ -32,14 +32,6 @@ const ZODIAC_ACTIONS: ZodiacActions = {
   'Capricorn': { comment: 'Bleat', like: 'Nudge', follow: 'Climb', share: 'Build' },
   'Aquarius': { comment: 'Buzz', like: 'Tap', follow: 'Flow', share: 'Innovate' },
   'Pisces': { comment: 'Splash', like: 'Flutter', follow: 'Drift', share: 'Dream' }
-};
-
-// Element-based color schemes
-const ELEMENT_COLORS = {
-  Fire: 'from-red-500 to-orange-500',
-  Earth: 'from-green-500 to-brown-500',
-  Air: 'from-blue-400 to-cyan-400',
-  Water: 'from-purple-500 to-indigo-500'
 };
 
 // Planetary hour color mappings
@@ -68,21 +60,25 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
   // Haptic feedback for engagement
   const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
     if ('vibrate' in navigator) {
-      navigator.vibrate(intensity === 'heavy' ? 100 : intensity === 'medium' ? 50 : 25);
+      let duration: number;
+      if (intensity === 'heavy') {
+        duration = 100;
+      } else if (intensity === 'medium') {
+        duration = 50;
+      } else {
+        duration = 25;
+      }
+      navigator.vibrate(duration);
     }
   };
 
   // Fetch feed items
-  const fetchFeed = async (pageNum: number = 1, reset: boolean = false) => {
+  const fetchFeed = useCallback(async (pageNum: number = 1, reset: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get<FeedResponse>(`${API_URL}/api/v1/feed`, {
-        params: { page: pageNum, user_id: userId }
-      });
-
-      const { data } = response;
+      const data = await apiFetchFeed(pageNum, userId);
 
       if (reset) {
         setFeedItems(data.items);
@@ -93,13 +89,14 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
       setHasMore(data.has_more);
       setPlanetaryContext(data.planetary_context);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Feed fetch error:', err);
-      setError(err.response?.data?.error || 'Failed to load cosmic feed');
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : String(err);
+      setError(message || 'Failed to load cosmic feed');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   // Handle engagement actions (like, comment, share, save)
   const handleEngagement = async (
@@ -132,7 +129,7 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
           )
         );
       } else if (action === 'comment' && commentText) {
-        const response = await axios.post(`${API_URL}/api/v1/posts/${itemId}/comment`, {
+        await axios.post(`${API_URL}/api/v1/posts/${itemId}/comment`, {
           user_id: userId,
           comment: commentText
         });
@@ -153,9 +150,10 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
         );
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`${action} error:`, err);
-      setError(`Failed to ${action} post`);
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : String(err);
+      setError(message || `Failed to ${action} post`);
     }
   };
 
@@ -234,7 +232,7 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
 
           {item.type === 'prompt' && (
             <ArchetypeJourney
-              userId={parseInt(item.user_id)}
+              userId={item.user_id}
               zodiacSign={item.metadata.zodiac_sign}
               tarotCard={typeof item.content === 'object' && item.content && 'tarot' in item.content ? String(item.content.tarot) : undefined}
               planetaryHour={item.metadata.planetary_hour}
@@ -296,6 +294,7 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
           <button
             onClick={() => handleEngagement('save', item.id)}
             className="p-2 text-gray-400 hover:text-yellow-400 transition-colors"
+            aria-label="Save post"
           >
             <Bookmark className="w-4 h-4" />
           </button>
@@ -314,7 +313,7 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
   // Initialize feed
   useEffect(() => {
     fetchFeed(1, true);
-  }, [userId]);
+  }, [userId, fetchFeed]);
 
   // Loading state
   if (loading && feedItems.length === 0) {
@@ -347,8 +346,8 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
           <div className="mt-2">
             <span className="text-xs text-gray-400">Favorable actions: </span>
             <div className="flex flex-wrap gap-1 mt-1">
-              {planetaryContext.favorable_actions.slice(0, 3).map((action: string, idx: number) => (
-                <span key={idx} className="text-xs bg-purple-700/40 text-purple-200 px-2 py-1 rounded">
+              {planetaryContext.favorable_actions.slice(0, 3).map((action: string) => (
+                <span key={action} className="text-xs bg-purple-700/40 text-purple-200 px-2 py-1 rounded">
                   {action}
                 </span>
               ))}
@@ -374,7 +373,7 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
         endMessage={
           <div className="text-center py-8">
             <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-gray-400">You've reached the cosmic void 🌌</p>
+            <p className="text-gray-400">You&apos;ve reached the cosmic void 🌌</p>
             <p className="text-sm text-gray-500 mt-1">More content awaits in the next planetary hour</p>
           </div>
         }

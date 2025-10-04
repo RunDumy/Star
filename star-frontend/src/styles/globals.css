@@ -209,6 +209,26 @@ form,
   color: #82e0aa;
 }
 
+/* Scorpio stinger animation */
+@keyframes scorpio-sting {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) rotate(5deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.scorpio-sting {
+  animation: scorpio-sting 0.5s ease-in-out;
+}
+
 /* Profile card hover effects */
 .profile-card {
   transition: all 0.3s ease;
@@ -414,6 +434,30 @@ form,
   transform: translate(-50%, -50%);
 }
 
+.cosmic-button:hover .particle-burst-1 {
+  animation: burst 1s ease-out forwards;
+  top: 50%;
+  left: 50%;
+  background: rgba(255, 105, 180, 0.8);
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-button:hover .particle-burst-2 {
+  animation: burst 1s ease-out forwards 0.2s;
+  top: 50%;
+  left: 50%;
+  background: rgba(255, 165, 0, 0.8);
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-button:hover .particle-burst-3 {
+  animation: burst 1s ease-out forwards 0.4s;
+  top: 50%;
+  left: 50%;
+  background: rgba(0, 191, 255, 0.8);
+  transform: translate(-50%, -50%);
+}
+
 .cosmic-menu-item {
   transition: background-color 0.2s ease;
 }
@@ -459,12 +503,39 @@ form,
   }
 }
 
+@keyframes burst {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(30px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes animate-pulse-glow {
+  0% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
 /* Planet Background Styles */
 .planet {
   position: absolute;
   border-radius: 50%;
   animation: orbit-planet linear infinite;
-  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.5) 100%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
 }
 
 .planet.venus {
@@ -510,15 +581,71 @@ form,
   animation: rotate-ring 10s linear infinite;
 }
 
+.comet-trail {
+  position: absolute;
+  inset: -10px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 50%;
+  animation: comet-trail 3s ease-in-out infinite;
+}
+
+@keyframes comet-trail {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Constellation Line Animation */
+.constellation-line {
+  position: absolute;
+  background: linear-gradient(
+    to right,
+    rgba(139, 92, 246, 0),
+    rgba(139, 92, 246, 0.8)
+  );
+  box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  animation: constellation-pulse 2s ease-in-out infinite;
+}
+
+@keyframes constellation-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @keyframes orbit-planet {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(10px, 20px); }
-  50% { transform: translate(0, 30px); }
-  75% { transform: translate(-10px, 20px); }
-  100% { transform: translate(0, 0); }
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, 20px);
+  }
+  50% {
+    transform: translate(0, 30px);
+  }
+  75% {
+    transform: translate(-10px, 20px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 
 @keyframes rotate-ring {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

@@ -4,7 +4,7 @@ export interface FeedItem {
   id: string;
   type: 'user_post' | 'sigil' | 'tarot' | 'zodiac' | 'video' | 'prompt';
   content: string | Record<string, unknown>;
-  user_id: string;
+  user_id: string | number;
   author: string;
   created_at: string;
   engagement: {
@@ -49,7 +49,7 @@ export interface CosmicProfile {
 
 export interface Badge {
   id: string;
-  user_id: string;
+  user_id: string | number;
   badge_name: string;
   badge_description: string;
   badge_icon: string;
@@ -111,14 +111,14 @@ export interface FeedResponse {
 }
 
 export interface CreatePostData {
-  user_id: string;
+  user_id: string | number;
   content: string;
   content_type?: string;
   media_url?: string;
 }
 
 export interface EngagementAction {
-  user_id: string;
+  user_id: string | number;
   post_id?: string;
   comment_id?: string;
   comment_text?: string;

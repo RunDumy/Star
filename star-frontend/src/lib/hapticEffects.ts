@@ -62,6 +62,11 @@ export class HapticManager {
     this.vibrate(20);
   }
 
+  // Light tap for subtle interactions
+  public light(): void {
+    this.vibrate(15);
+  }
+
   // Enable/disable haptic feedback
   public setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;

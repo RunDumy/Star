@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { FeedResponse } from '../types/feed';
+import { normalizeFeedResponse } from './normalize';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
@@ -16,6 +18,14 @@ api.interceptors.request.use((config) => {
     }
   }
   return config;
+});
+
+// Normalize feed responses
+api.interceptors.response.use((response) => {
+  if (response.config.url?.includes('/api/v1/feed')) {
+    response.data = normalizeFeedResponse(response.data);
+  }
+  return response;
 });
 
 export { api };
@@ -66,6 +76,36 @@ export async function followUser(userId: number | string) {
 
 export async function fetchProfile(userId: number | string) {
   const res = await api.get(`/api/v1/profile/${userId}`);
+  return res.data;
+}
+
+export async function fetchFeed(page: number = 1, userId?: number | string) {
+  const params: any = { page };
+  if (userId !== undefined) {
+    params.user_id = userId;
+  }
+  const res = await api.get<FeedResponse>(`/api/v1/feed`, { params });
+  return res.data;
+}
+
+export async function fetchGlobalFeed(page: number = 1, filters: { zodiacSigns?: string[]; elements?: string[]; contentTypes?: string[] } = {}, userId?: number | string) {
+  const params: Record<string, string | number> = { page };
+  if (userId !== undefined) {
+    params.user_id = userId;
+  }
+
+  // Add filter parameters
+  if (filters.zodiacSigns && filters.zodiacSigns.length > 0) {
+    params.zodiac_signs = filters.zodiacSigns.join(',');
+  }
+  if (filters.elements && filters.elements.length > 0) {
+    params.elements = filters.elements.join(',');
+  }
+  if (filters.contentTypes && filters.contentTypes.length > 0) {
+    params.content_types = filters.contentTypes.join(',');
+  }
+
+  const res = await api.get<FeedResponse>(`/api/v1/global-feed`, { params });
   return res.data;
 }
 

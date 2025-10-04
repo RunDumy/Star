@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo, forwardRef } from 'react';
-import { Stage, Layer, Line, Circle, Rect, Text } from 'react-konva';
-import { useSpring, animated, useTransition } from '@react-spring/web';
-import Konva from 'konva';
+import { animated, useSpring, useTransition } from '@react-spring/web';
 import axios from 'axios';
+import Konva from 'konva';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import { Circle, Layer, Line, Rect, Stage, Text } from 'react-konva';
 import { usePlanetaryHour } from '../hooks/usePlanetaryHour';
 
 interface Point {
@@ -21,7 +21,7 @@ interface SigilData {
 }
 
 interface SigilGeneratorProps {
-  userId: number;
+  userId: string | number;
   zodiacSign: string;
   onSigilGenerated?: (data: SigilData) => void;
   tarotCard?: string;
@@ -145,17 +145,17 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
   }, [elementConfig.glow.intensity, elementConfig.glow.pulsateDuration]);
 
   const generateSigil = async () => {
-    if (!userId) {
-      setError('User ID required for sigil generation');
-      return;
-    }
+      if (userId === undefined || userId === null || userId === '') {
+        setError('User ID required for sigil generation');
+        return;
+      }
 
     setIsGenerating(true);
     setError(null);
 
     try {
       const response = await axios.post('/api/v1/sigil/generate', {
-        user_id: userId,
+        user_id: typeof userId === 'string' ? parseInt(userId, 10) : userId,
         zodiac_sign: zodiacSign,
         planetary_data: { hour_planet: hourPlanet },
         tarot_card: tarotCard

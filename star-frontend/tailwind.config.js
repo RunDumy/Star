@@ -13,6 +13,7 @@ module.exports = {
           gold: '#ffb74d',
           accent: '#7c4dff',
           glow: '#00bcd4',
+          light: '#b0b0b0',
         },
         star: {
           white: '#ffffff',
@@ -32,11 +33,25 @@ module.exports = {
       animation: {
         'spin-slow': 'spin 3s linear infinite',
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite alternate',
+        'twinkle': 'twinkle 2s infinite',
+        'orbit': 'orbit 2s infinite linear',
       },
       keyframes: {
         'pulse-glow': {
-          '0%': { filter: 'brightness(1)', },
-          '100%': { filter: 'brightness(1.2)', },
+          '0%': { opacity: '0.25' },
+          '100%': { opacity: '0.5' },
+        },
+        'twinkle': {
+          '0%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+          '100%': { opacity: '1' },
+        },
+        'orbit': {
+          '0%': { transform: 'translate(-50%, -50%) translateX(0) translateY(0)' },
+          '25%': { transform: 'translate(-50%, -50%) translateX(20px) translateY(10px)' },
+          '50%': { transform: 'translate(-50%, -50%) translateX(0) translateY(20px)' },
+          '75%': { transform: 'translate(-50%, -50%) translateX(-20px) translateY(10px)' },
+          '100%': { transform: 'translate(-50%, -50%) translateX(0) translateY(0)' },
         },
       },
     },
