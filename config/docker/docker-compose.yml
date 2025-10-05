@@ -1,123 +1,39 @@
-version: "3.8"
+# star-backend/docker-compose.yml
+version: '3.8'
 
 services:
-  # Supabase Local Development
-  supabase:
-    image: supabase/postgres:15.1.0.147
-    container_name: star-supabase
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - supabase_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Supabase Studio (Web UI)
-  supabase-studio:
-    image: supabase/studio:latest
-    container_name: star-supabase-studio
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
-    environment:
-      - SUPABASE_URL=http://supabase:5432
-      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-    depends_on:
-      supabase:
-        condition: service_healthy
-
-  # Star Backend (Flask API)
-  backend:
+  flask:
     build:
-      context: ../../star-backend
+      context: .
       dockerfile: Dockerfile
-    container_name: star-backend
-    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=development
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - JWT_SECRET_KEY=dev-jwt-secret-key-change-in-production
-      - JWT_ALGORITHM=HS256
-      - SUPABASE_URL=http://supabase:5432
-      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
-      - DATABASE_URL=postgresql://postgres:postgres@supabase:5432/postgres
+      - PORT=5000
+      - AGORA_APP_ID=${AGORA_APP_ID}
+      - AGORA_APP_CERTIFICATE=${AGORA_APP_CERTIFICATE}
     depends_on:
-      supabase:
-        condition: service_healthy
+      - redis
     volumes:
-      - ../../star-backend:/app
-      - /app/__pycache__
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - .:/app
     networks:
       - star-network
 
-  # Star Frontend (Next.js)
-  frontend:
-    build:
-      context: ../../star-frontend
-      dockerfile: Dockerfile
-    container_name: star-frontend
-    restart: unless-stopped
+  redis:
+    image: redis:7.0-alpine
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
-    depends_on:
-      backend:
-        condition: service_healthy
+      - "6379:6379"
     volumes:
-      - ../../star-frontend:/app
-      - /app/node_modules
-      - /app/.next
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - star-network
-
-  # CI/CD Testing Service
-  ci:
-    build:
-      context: ../../
-      dockerfile: Dockerfile.ci
-    container_name: star-ci
-    profiles: ["ci"]
-    environment:
-      - NODE_ENV=test
-      - PYTHONPATH=/app/star-backend
-    volumes:
-      - ../../star-frontend:/app/star-frontend
-      - ../../star-backend:/app/star-backend
-      - /app/star-frontend/node_modules
-      - /app/star-backend/__pycache__
-    depends_on:
-      supabase:
-        condition: service_healthy
+      - redis-data:/data
     networks:
       - star-network
 
 volumes:
-  supabase_data:
-  redis_data:
+  redis-data:
 
 networks:
   star-network:

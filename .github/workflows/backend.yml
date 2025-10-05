@@ -1,53 +1,53 @@
 name: Backend CI/CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'star-backend/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'star-backend/**'
-  workflow_call:
+    push:
+        branches: [main]
+        paths:
+            - "star-backend/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "star-backend/**"
+    workflow_call:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./star-backend
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-mock
-      - name: Run tests
-        run: pytest tests/ --cov=star_backend_flask --cov-report=xml
-      - name: Lint
-        run: |
-          pip install black flake8
-          black --check .
-          flake8 .
+    test:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./star-backend
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - name: Install dependencies
+              run: |
+                  pip install -r requirements.txt
+                  pip install pytest pytest-mock
+            - name: Run tests
+              run: pytest tests/ --cov=star_backend_flask --cov-report=xml
+            - name: Lint
+              run: |
+                  pip install black flake8
+                  black --check .
+                  flake8 .
 
-  deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Render
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"serviceId": "${{ secrets.RENDER_SERVICE_ID }}", "branch": "main"}' \
-            https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+    deploy:
+        needs: test
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Deploy to Render
+              run: |
+                  curl -X POST \
+                    -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+                    -H "Content-Type: application/json" \
+                    -d '{"serviceId": "${{ secrets.RENDER_SERVICE_ID }}", "branch": "main"}' \
+                    https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys
+              env:
+                  RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+                  RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}

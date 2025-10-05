@@ -29,3 +29,9 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: AGORA_APP_ID
+        sync: false
+      - key: AGORA_APP_CERTIFICATE
+        sync: false
+      - key: REDIS_URL
+        sync: false

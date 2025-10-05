@@ -1,14 +1,72 @@
+# Add new imports for notifications and chat
+import logging
 import os
 import random
+import shutil
+import subprocess
+import tempfile
+import uuid
 from datetime import datetime, timezone
 
+import redis
 import requests
 from flask import Blueprint, g, jsonify, request
+from flask_socketio import SocketIO, emit, join_room
 from star_backend_flask.app import supabase
 
 from .star_auth import token_required
 
+
+def compress_and_generate_hls(video_file, post_id):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        input_path = os.path.join(temp_dir, video_file.filename)
+        video_file.save(input_path)
+        
+        # Compress video
+        compressed_path = os.path.join(temp_dir, f"compressed_{uuid.uuid4()}.mp4")
+        hls_path = os.path.join(temp_dir, f"hls_{post_id}")
+        os.makedirs(hls_path, exist_ok=True)
+        hls_playlist = os.path.join(hls_path, "playlist.m3u8")
+        
+        # FFmpeg command for compression
+        subprocess.run([
+            'ffmpeg', '-i', input_path, '-vcodec', 'h264', '-acodec', 'aac',
+            '-vf', 'scale=1280:720', '-b:v', '2M', '-b:a', '128k',
+            compressed_path
+        ], check=True)
+        
+        # Generate HLS playlist with multiple bitrates
+        subprocess.run([
+            'ffmpeg', '-i', compressed_path,
+            '-hls_time', '10', '-hls_list_size', '0',
+            '-hls_segment_filename', os.path.join(hls_path, 'segment_%03d.ts'),
+            '-hls_base_url', f'posts/{post_id}/hls/',
+            hls_playlist
+        ], check=True)
+        
+        # Upload compressed video and HLS segments to Supabase Storage
+        video_path = f"posts/{post_id}/video_{uuid.uuid4()}.mp4"
+        supabase.storage.from_('posts').upload(video_path, open(compressed_path, 'rb').read())
+        
+        # Upload HLS files
+        for file in os.listdir(hls_path):
+            file_path = os.path.join(hls_path, file)
+            supabase.storage.from_('posts').upload(f"posts/{post_id}/hls/{file}", open(file_path, 'rb').read())
+        
+        return supabase.storage.from_('posts').get_public_url(video_path), supabase.storage.from_('posts').get_public_url(f"posts/{post_id}/hls/playlist.m3u8")
+
 api_bp = Blueprint('api', __name__)
+
+# Initialize Socket.IO and Redis for real-time features
+try:
+    redis_client = redis.Redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'), decode_responses=True)
+    redis_client.ping()
+    logging.info("Redis connected successfully")
+    socketio = SocketIO(cors_allowed_origins="*", message_queue=os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
+except Exception as e:
+    logging.warning(f"Redis not available, using default Socket.IO: {e}")
+    socketio = SocketIO(cors_allowed_origins="*")
+    redis_client = None
 
 # Mock tarot card mapping
 TAROT_TRAIT_MAP = {
@@ -114,26 +172,65 @@ def get_posts():
 @api_bp.route('/api/v1/posts', methods=['POST'])
 @token_required
 def create_post():
-    data = request.get_json()
-    content = data.get('content')
-    media_url = data.get('media_url')
+    data = request.form
+    content = data.get('content', '').strip()
+    image_file = request.files.get('image')
+    video_file = request.files.get('video')
+    tags = data.get('tags', '').split(',')
     user_id = g.user['sub']
 
-    if not content:
-        return jsonify({'error': 'Content is required'}), 400
+    if not content and not image_file and not video_file:
+        return jsonify({'success': False, 'error': 'Content, image, or video required'}), 400
 
     try:
         # Fetch user's zodiac sign
         profile = supabase.table('profiles').select('zodiac_sign').eq('id', user_id).single().execute()
         zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Aries'
 
-        # Create post
-        response = supabase.table('posts').insert({
+        post_data = {
             'user_id': user_id,
             'content': content,
-            'media_url': media_url,
             'zodiac_sign': zodiac_sign
-        }).execute()
+        }
+
+        if image_file:
+            image_path = f"posts/{uuid.uuid4()}/image_{uuid.uuid4()}.{image_file.filename.split('.')[-1]}"
+            supabase.storage.from_('posts').upload(image_path, image_file.read())
+            post_data['image_url'] = supabase.storage.from_('posts').get_public_url(image_path)
+
+        if video_file:
+            if video_file.content_type not in ['video/mp4', 'video/webm']:
+                return jsonify({'success': False, 'error': 'Unsupported video format. Use MP4 or WebM'}), 400
+            video_url, hls_url = compress_and_generate_hls(video_file, str(uuid.uuid4()))
+            post_data['video_url'] = video_url
+            post_data['hls_url'] = hls_url
+
+        # Create post
+        response = supabase.table('posts').insert(post_data).execute()
+        post_id = response.data[0]['id']
+
+        # Store tags
+        for tag in tags:
+            if tag.strip():
+                supabase.table('post_tags').insert({
+                    'post_id': post_id,
+                    'tag': tag.strip()
+                }).execute()
+
+        # Notify followers
+        followers = supabase.table('follow').select('follower_id').eq('following_id', user_id).execute().data
+        for follower in followers:
+            notification = {
+                'id': str(uuid.uuid4()),
+                'user_id': follower['follower_id'],
+                'message': f"{zodiac_sign} created a new post!",
+                'type': 'post',
+                'related_id': post_id,
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'is_read': False
+            }
+            supabase.table('notification').insert(notification).execute()
+            socketio.emit('notification', notification, room=f"user_{follower['follower_id']}")
 
         return jsonify({'success': True, 'post': response.data[0]})
     except Exception as e:
@@ -176,6 +273,14 @@ def comment_post(post_id):
         return jsonify({'success': True, 'comment': response.data[0]})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/comments/<string:post_id>', methods=['GET'])
+@token_required
+def get_comments(current_user, post_id):
+    page = int(request.args.get('page', 1))
+    per_page = 20
+    comments = supabase.table('comment').select('*').eq('post_id', post_id).order('created_at', desc=True).range((page - 1) * per_page, page * per_page - 1).execute().data
+    return jsonify({'comments': comments}), 200
 
 @api_bp.route("/api/v1/zodiac-dna", methods=["POST"])
 @token_required
@@ -339,3 +444,190 @@ def get_mood(current_user):
     }).execute()
 
     return jsonify({"success": True, "mood": mood, "intensity": intensity})
+
+# New endpoints for notifications and live stream chat
+
+@api_bp.route('/api/v1/live-stream', methods=['POST'])
+@token_required
+def create_live_stream():
+    data = request.get_json()
+    stream_title = data.get('title', 'Live Cosmic Stream').strip()
+    user_id = g.user['sub']
+
+    if not stream_title:
+        return jsonify({'success': False, 'error': 'Stream title required'}), 400
+
+    try:
+        # Fetch user's zodiac sign
+        profile = supabase.table('profiles').select('zodiac_sign').eq('id', user_id).single().execute()
+        zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Aries'
+        username = profile.data.get('display_name', 'Cosmic Traveler') if profile.data else 'Cosmic Traveler'
+
+        stream_id = str(uuid.uuid4())
+        channel_name = f"stream_{stream_id}"
+
+        # Mock Agora token generation (replace with actual Agora implementation)
+        agora_token = f"mock_agora_token_{stream_id}"
+
+        stream = {
+            'id': stream_id,
+            'user_id': user_id,
+            'title': stream_title,
+            'channel_name': channel_name,
+            'agora_token': agora_token,
+            'zodiac_sign': zodiac_sign,
+            'username': username,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'is_active': True
+        }
+
+        supabase.table('live_stream').insert(stream).execute()
+        if redis_client:
+            redis_client.setex(f"stream_{stream_id}", 7200, stream_id)  # 2 hour expiry
+
+        socketio.emit('live_stream_started', stream)
+
+        # Notify followers
+        followers = supabase.table('follow').select('follower_id').eq('following_id', user_id).execute().data
+        for follower in followers:
+            notification = {
+                'id': str(uuid.uuid4()),
+                'user_id': follower['follower_id'],
+                'message': f"{zodiac_sign} is live now!",
+                'type': 'live_stream',
+                'related_id': stream_id,
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'is_read': False
+            }
+            supabase.table('notification').insert(notification).execute()
+            socketio.emit('notification', notification, room=f"user_{follower['follower_id']}")
+
+        return jsonify({'success': True, 'message': 'Live stream created', 'stream': stream}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/live-stream/<stream_id>', methods=['GET'])
+@token_required
+def get_live_stream(stream_id):
+    try:
+        if redis_client and redis_client.exists(f"stream_{stream_id}"):
+            stream_data = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
+            if stream_data:
+                return jsonify({'success': True, 'stream': stream_data}), 200
+        return jsonify({'success': False, 'error': 'Stream not found or inactive'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/live-stream/<stream_id>/end', methods=['POST'])
+@token_required
+def end_live_stream(stream_id):
+    user_id = g.user['sub']
+    try:
+        stream = supabase.table('live_stream').select('*').eq('id', stream_id).eq('user_id', user_id).single().execute().data
+        if not stream:
+            return jsonify({'success': False, 'error': 'Stream not found or unauthorized'}), 404
+
+        supabase.table('live_stream').update({'is_active': False}).eq('id', stream_id).execute()
+        if redis_client:
+            redis_client.delete(f"stream_{stream_id}")
+        socketio.emit('live_stream_ended', {'stream_id': stream_id})
+        return jsonify({'success': True, 'message': 'Live stream ended'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/notifications', methods=['GET'])
+@token_required
+def get_notifications():
+    user_id = g.user['sub']
+    try:
+        notifications = supabase.table('notification').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(50).execute().data
+        return jsonify({'success': True, 'notifications': notifications}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/notifications/<notification_id>/read', methods=['POST'])
+@token_required
+def mark_notification_read(notification_id):
+    user_id = g.user['sub']
+    try:
+        notification = supabase.table('notification').select('*').eq('id', notification_id).eq('user_id', user_id).single().execute().data
+        if not notification:
+            return jsonify({'success': False, 'error': 'Notification not found or unauthorized'}), 404
+
+        supabase.table('notification').update({'is_read': True}).eq('id', notification_id).execute()
+        return jsonify({'success': True, 'message': 'Notification marked as read'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/stream-chat/<stream_id>', methods=['POST'])
+@token_required
+def send_stream_chat(stream_id):
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    user_id = g.user['sub']
+
+    if not message:
+        return jsonify({'success': False, 'error': 'Message required'}), 400
+
+    try:
+        # Verify stream exists and is active
+        stream = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
+        if not stream:
+            return jsonify({'success': False, 'error': 'Stream not found or inactive'}), 404
+
+        # Fetch user profile
+        profile = supabase.table('profiles').select('zodiac_sign, display_name').eq('id', user_id).single().execute()
+        zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Unknown'
+        username = profile.data.get('display_name', 'Cosmic Traveler') if profile.data else 'Cosmic Traveler'
+
+        chat = {
+            'id': str(uuid.uuid4()),
+            'stream_id': stream_id,
+            'user_id': user_id,
+            'username': username,
+            'zodiac_sign': zodiac_sign,
+            'message': message,
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
+
+        supabase.table('stream_chat').insert(chat).execute()
+        socketio.emit('stream_chat_message', chat, room=f'stream_{stream_id}')
+        return jsonify({'success': True, 'message': 'Chat message sent', 'chat': chat}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Socket.IO event handlers
+@socketio.on('join_post')
+def handle_join_post(data):
+    post_id = data.get('post_id')
+    if post_id:
+        join_room(f'post_{post_id}')
+        emit('post_joined', {'post_id': post_id})
+
+@socketio.on('join_stream')
+def handle_join_stream(data):
+    stream_id = data.get('stream_id')
+    if stream_id:
+        join_room(f'stream_{stream_id}')
+        emit('stream_joined', {'stream_id': stream_id})
+
+@socketio.on('join_notifications')
+def handle_join_notifications(data):
+    user_id = data.get('user_id')
+    if user_id:
+        join_room(f'user_{user_id}')
+        emit('notifications_joined', {'user_id': user_id})
+
+@socketio.on('typing_start')
+def handle_typing_start(data):
+    post_id = data.get('post_id')
+    username = data.get('username')
+    if post_id and username:
+        emit('user_typing', {'username': username, 'post_id': post_id}, room=f'post_{post_id}', include_self=False)
+
+@socketio.on('typing_stop')
+def handle_typing_stop(data):
+    post_id = data.get('post_id')
+    username = data.get('username')
+    if post_id and username:
+        emit('user_stopped_typing', {'username': username, 'post_id': post_id}, room=f'post_{post_id}', include_self=False)

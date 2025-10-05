@@ -6,6 +6,5 @@ module.exports = {
   ],
   plugins: [
     // Add mock for canvas module
-    'babel-plugin-transform-js-imports'
   ],
 };

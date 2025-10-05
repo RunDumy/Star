@@ -12,6 +12,7 @@ from urllib.parse import quote
 
 import bcrypt
 import jwt
+import redis
 import requests
 # Import analytics blueprint
 from analytics import analytics_bp
@@ -65,8 +66,27 @@ if not app.config['SECRET_KEY']:
 # Limit uploads to 50MB for safety
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
+
+# Initialize Flask-RESTful API
 api = Api(app)
-cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_THRESHOLD': 1000})
+# Enhanced cache configuration with Redis support
+redis_url = os.environ.get('REDIS_URL')
+if redis_url:
+    cache_config = {
+        'CACHE_TYPE': 'RedisCache',
+        'CACHE_REDIS_URL': redis_url,
+        'CACHE_DEFAULT_TIMEOUT': 300,
+        'CACHE_THRESHOLD': 10000
+    }
+    logger.info("Using Redis cache")
+else:
+    cache_config = {
+        'CACHE_TYPE': 'SimpleCache',
+        'CACHE_THRESHOLD': 1000
+    }
+    logger.info("Using SimpleCache (Redis not available)")
+
+cache = Cache(config=cache_config)
 cache.init_app(app)
 limiter = Limiter(app=app, key_func=get_remote_address)
 limiter.init_app(app)
@@ -378,6 +398,65 @@ class Follow(db.Model):
     followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     __table_args__ = (db.UniqueConstraint('follower_id', 'followed_id', name='uq_follow_pair'),)
+
+class Spark(db.Model):
+    __tablename__ = 'spark'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        db.Index('idx_user_post_spark', 'user_id', 'post_id'),
+        db.Index('idx_post_sparks', 'post_id'),
+    )
+
+class Comment(db.Model):
+    __tablename__ = 'comment'
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    zodiac_sign = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        db.Index('idx_post_comments', 'post_id'),
+        db.Index('idx_user_comments', 'user_id'),
+    )
+
+class Notification(db.Model):
+    __tablename__ = 'notification'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # 'spark', 'comment', 'follow', 'echo'
+    source_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        db.Index('idx_user_notifications', 'user_id', 'read'),
+        db.Index('idx_notification_created', 'created_at'),
+    )
+
+# Add relationships to existing models
+User.following = db.relationship(
+    'Follow',
+    foreign_keys='Follow.follower_id',
+    backref='follower',
+    lazy='dynamic'
+)
+
+User.followers = db.relationship(
+    'Follow', 
+    foreign_keys='Follow.followed_id',
+    backref='followed',
+    lazy='dynamic'
+)
+
+Post.sparks = db.relationship('Spark', backref='post', lazy='dynamic')
+Post.comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
 # ==================== UTILITY FUNCTIONS ====================
 
@@ -763,6 +842,327 @@ class FollowResource(Resource):
             logger.error(f"Follow error: {str(e)}")
             return {'error': 'Failed to follow'}, 500
 
+class SparkResource(Resource):
+    @token_required
+    def post(self, current_user, post_id):
+        """Spark (like) a post"""
+        post = Post.query.get(post_id)
+        if not post:
+            return {'error': 'Post not found'}, 404
+        
+        existing_spark = Spark.query.filter_by(
+            user_id=current_user.id,
+            post_id=post_id
+        ).first()
+        
+        if existing_spark:
+            return {'error': 'Post already sparked'}, 400
+        
+        try:
+            new_spark = Spark(
+                user_id=current_user.id,
+                post_id=post_id
+            )
+            
+            post.spark_count += 1
+            
+            # Create notification if not own post
+            if post.user_id != current_user.id:
+                notification = Notification(
+                    user_id=post.user_id,
+                    type='spark',
+                    source_user_id=current_user.id,
+                    post_id=post_id,
+                    read=False
+                )
+                db.session.add(notification)
+            
+            db.session.add(new_spark)
+            db.session.commit()
+            
+            # Clear cache
+            cache.delete('posts')
+            cache.delete_memoized(PostResource.get)
+            
+            # Emit real-time update
+            socketio.emit('post_updated', {
+                'post_id': post_id,
+                'spark_count': post.spark_count,
+                'type': 'spark'
+            }, room=f'post_{post_id}')
+            
+            return {'message': 'Post sparked!', 'spark_count': post.spark_count}, 201
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Spark error: {str(e)}")
+            return {'error': 'Failed to spark post'}, 500
+
+class CommentResource(Resource):
+    @token_required
+    def post(self, current_user, post_id):
+        """Add comment to post"""
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return {'error': 'Comment content required'}, 400
+        
+        post = Post.query.get(post_id)
+        if not post:
+            return {'error': 'Post not found'}, 404
+        
+        try:
+            new_comment = Comment(
+                content=content,
+                user_id=current_user.id,
+                post_id=post_id,
+                zodiac_sign=current_user.zodiac_sign
+            )
+            
+            post.echo_count += 1
+            
+            # Create notification if not own post
+            if post.user_id != current_user.id:
+                notification = Notification(
+                    user_id=post.user_id,
+                    type='comment',
+                    source_user_id=current_user.id,
+                    post_id=post_id,
+                    read=False
+                )
+                db.session.add(notification)
+            
+            db.session.add(new_comment)
+            db.session.commit()
+            
+            # Clear cache
+            cache.delete('posts')
+            
+            # Emit real-time update
+            socketio.emit('new_comment', {
+                'post_id': post_id,
+                'comment': {
+                    'content': content,
+                    'username': current_user.username,
+                    'zodiac_sign': current_user.zodiac_sign,
+                    'created_at': new_comment.created_at.isoformat()
+                }
+            }, room=f'post_{post_id}')
+            
+            return {
+                'message': 'Comment added!',
+                'comment_id': new_comment.id,
+                'echo_count': post.echo_count
+            }, 201
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Comment error: {str(e)}")
+            return {'error': 'Failed to add comment'}, 500
+
+class FeedResource(Resource):
+    @token_required
+    @cache.memoize(timeout=60)  # Cache per user
+    def get(self, current_user):
+        """Get personalized feed for current user"""
+        try:
+            # Get followed users' posts
+            followed_posts = Post.query.join(
+                Follow, Follow.followed_id == Post.user_id
+            ).filter(
+                Follow.follower_id == current_user.id
+            ).order_by(Post.created_at.desc()).limit(50).all()
+            
+            # Get trending posts (from non-followed users)
+            trending_posts = Post.query.filter(
+                Post.user_id.notin_([f.followed_id for f in current_user.following] + [current_user.id])
+            ).order_by(
+                (Post.spark_count + Post.echo_count).desc()
+            ).limit(20).all()
+            
+            # Combine and deduplicate
+            all_posts = followed_posts + trending_posts
+            post_ids = set()
+            unique_posts = []
+            
+            for post in all_posts:
+                if post.id not in post_ids:
+                    post_ids.add(post.id)
+                    unique_posts.append(post)
+            
+            # Sort by engagement score
+            unique_posts.sort(
+                key=lambda p: (p.spark_count + p.echo_count) * 0.7 + 
+                            (1 if p.is_trend_hijack else 0) * 0.3,
+                reverse=True
+            )
+            
+            return {
+                'feed': [{
+                    'id': post.id,
+                    'content': post.content,
+                    'username': post.author.username,
+                    'zodiac_sign': post.zodiac_sign,
+                    'image_url': post.image_url,
+                    'spark_count': post.spark_count,
+                    'echo_count': post.echo_count,
+                    'comment_count': post.comments.count(),
+                    'created_at': post.created_at.isoformat(),
+                    'is_followed': True if post in followed_posts else False
+                } for post in unique_posts[:30]]  # Limit to 30 posts
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Feed error: {str(e)}")
+            return {'error': 'Failed to load feed'}, 500
+
+class CompatibilityResource(Resource):
+    @token_required
+    def get(self, current_user, target_user_id):
+        """Get compatibility with another user"""
+        target_user = User.query.get(target_user_id)
+        if not target_user:
+            return {'error': 'User not found'}, 404
+        
+        # Simple compatibility calculation based on zodiac signs
+        compatibility_score = self.calculate_compatibility(
+            current_user.zodiac_sign,
+            target_user.zodiac_sign
+        )
+        
+        return {
+            'user1': current_user.zodiac_sign,
+            'user2': target_user.zodiac_sign,
+            'compatibility_score': compatibility_score,
+            'analysis': self.get_compatibility_analysis(current_user.zodiac_sign, target_user.zodiac_sign, compatibility_score)
+        }, 200
+    
+    def calculate_compatibility(self, sign1, sign2):
+        """Simple compatibility calculation"""
+        # Basic compatibility matrix
+        compatible_pairs = [
+            ('Aries', 'Leo'), ('Aries', 'Sagittarius'), ('Taurus', 'Virgo'), ('Taurus', 'Capricorn'),
+            ('Gemini', 'Libra'), ('Gemini', 'Aquarius'), ('Cancer', 'Scorpio'), ('Cancer', 'Pisces'),
+            ('Leo', 'Sagittarius'), ('Virgo', 'Capricorn'), ('Libra', 'Aquarius'), ('Scorpio', 'Pisces'),
+            ('Sagittarius', 'Aries'), ('Capricorn', 'Taurus'), ('Aquarius', 'Gemini'), ('Pisces', 'Cancer')
+        ]
+        
+        if (sign1, sign2) in compatible_pairs or (sign2, sign1) in compatible_pairs:
+            return 85
+        elif sign1 == sign2:
+            return 75
+        else:
+            return 60
+    
+    def get_compatibility_analysis(self, sign1, sign2, score):
+        """Get compatibility analysis"""
+        if score >= 80:
+            return f"🌟 Excellent cosmic connection! {sign1} and {sign2} have great potential!"
+        elif score >= 70:
+            return f"💫 Good harmony! {sign1} and {sign2} complement each other well."
+        else:
+            return f"⚡ Interesting dynamic! {sign1} and {sign2} can learn from their differences."
+
+class HoroscopeResource(Resource):
+    @limiter.limit("60/hour")
+    @cache.memoize(timeout=3600)  # Cache for 1 hour
+    def get(self, zodiac_sign=None):
+        """Get daily horoscope for zodiac sign"""
+        if zodiac_sign and zodiac_sign not in ZODIAC_INFO:
+            return {'error': 'Invalid zodiac sign'}, 400
+        
+        if zodiac_sign:
+            horoscope = self.generate_daily_horoscope(zodiac_sign)
+            return {'horoscope': horoscope}, 200
+        else:
+            # Return all horoscopes
+            horoscopes = {}
+            for sign in ZODIAC_INFO.keys():
+                horoscopes[sign] = self.generate_daily_horoscope(sign)
+            return {'horoscopes': horoscopes}, 200
+    
+    def generate_daily_horoscope(self, zodiac_sign):
+        """Generate daily horoscope for a specific sign"""
+        import hashlib
+
+        # Use date and sign to create consistent daily horoscope
+        today = datetime.now(timezone.utc).date().isoformat()
+        seed = hashlib.md5(f"{today}_{zodiac_sign}".encode()).hexdigest()
+        random.seed(seed)
+        
+        love_advice = [
+            "Venus aligns in your sector of relationships, bringing harmony.",
+            "Unexpected encounters may lead to meaningful connections today.",
+            "Focus on self-love and your relationships will flourish naturally."
+        ][random.randint(0, 2)]
+        
+        career_advice = [
+            "Mars energizes your professional sector - take bold actions.",
+            "Collaboration with earth signs will bring stability to your projects.",
+            "Your innovative ideas are recognized by superiors today."
+        ][random.randint(0, 2)]
+        
+        health_advice = [
+            "Balance your energy with grounding exercises today.",
+            "Listen to your body's signals and rest when needed.",
+            "Water activities will help cleanse and rejuvenate your spirit."
+        ][random.randint(0, 2)]
+        
+        return {
+            'zodiac_sign': zodiac_sign,
+            'date': today,
+            'love': love_advice,
+            'career': career_advice,
+            'health': health_advice,
+            'lucky_number': random.randint(1, 9),
+            'compatibility_sign': random.choice(list(ZODIAC_INFO.keys()))
+        }
+
+class NotificationResource(Resource):
+    @token_required
+    def get(self, current_user):
+        """Get user notifications"""
+        try:
+            notifications = Notification.query.filter_by(
+                user_id=current_user.id
+            ).order_by(Notification.created_at.desc()).limit(50).all()
+            
+            unread_count = Notification.query.filter_by(
+                user_id=current_user.id, read=False
+            ).count()
+            
+            return {
+                'notifications': [{
+                    'id': n.id,
+                    'type': n.type,
+                    'source_user_id': n.source_user_id,
+                    'source_username': User.query.get(n.source_user_id).username,
+                    'post_id': n.post_id,
+                    'read': n.read,
+                    'created_at': n.created_at.isoformat(),
+                    'message': self.format_notification_message(n)
+                } for n in notifications],
+                'unread_count': unread_count
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Notifications error: {str(e)}")
+            return {'error': 'Failed to load notifications'}, 500
+    
+    def format_notification_message(self, notification):
+        """Format notification message based on type"""
+        source_username = User.query.get(notification.source_user_id).username
+        actions = ZODIAC_ACTIONS.get(User.query.get(notification.source_user_id).zodiac_sign, {})
+        
+        messages = {
+            'follow': f"{source_username} started following you",
+            'spark': f"{source_username} {actions.get('like', 'sparked')} your post",
+            'comment': f"{source_username} {actions.get('comment', 'commented on')} your post"
+        }
+        
+        return messages.get(notification.type, "New notification")
+
 class NumerologyResource(Resource):
     @limiter.limit("60/hour")
     @token_required
@@ -1017,6 +1417,12 @@ api.add_resource(Login, '/api/v1/login')
 api.add_resource(PostResource, '/api/v1/posts')
 api.add_resource(UploadResource, '/api/v1/upload')
 api.add_resource(FollowResource, '/api/v1/follow/<int:user_id>')
+api.add_resource(SparkResource, '/api/v1/spark/<int:post_id>')
+api.add_resource(CommentResource, '/api/v1/comment/<int:post_id>')
+api.add_resource(FeedResource, '/api/v1/feed')
+api.add_resource(CompatibilityResource, '/api/v1/compatibility/<int:target_user_id>')
+api.add_resource(HoroscopeResource, '/api/v1/horoscope', '/api/v1/horoscope/<zodiac_sign>')
+api.add_resource(NotificationResource, '/api/v1/notifications')
 api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
 api.add_resource(ProfileResource, '/api/v1/profile/<int:user_id>')
 api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')

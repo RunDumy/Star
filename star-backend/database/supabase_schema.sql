@@ -28,6 +28,8 @@ create table if not exists post (
   is_trend_hijack boolean default false,
   trend_category varchar(50) null,
   image_url varchar(255) null,
+  video_url varchar(255) null,
+  hls_url varchar(255) null,
   spark_count integer default 0,
   echo_count integer default 0,
   created_at timestamp with time zone default now()
@@ -286,3 +288,67 @@ CREATE POLICY "Users can insert their own analytics events" ON analytics_events 
 CREATE POLICY "Users can view their own analytics events" ON analytics_events FOR SELECT USING (
   auth.uid() = user_id
 );
+
+-- Live Stream table for real-time streaming
+CREATE TABLE IF NOT EXISTS live_stream (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  channel_name TEXT NOT NULL,
+  agora_token TEXT NOT NULL,
+  zodiac_sign TEXT,
+  username TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Stream Chat table for live stream messaging
+CREATE TABLE IF NOT EXISTS stream_chat (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  stream_id UUID REFERENCES live_stream(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  zodiac_sign TEXT,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Post Tags table for zodiac-specific content tagging
+CREATE TABLE IF NOT EXISTS post_tags (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+  tag TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_live_stream_user_id ON live_stream(user_id);
+CREATE INDEX IF NOT EXISTS idx_live_stream_is_active ON live_stream(is_active);
+CREATE INDEX IF NOT EXISTS idx_stream_chat_stream_id ON stream_chat(stream_id);
+CREATE INDEX IF NOT EXISTS idx_stream_chat_created_at ON stream_chat(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_tags_post_id ON post_tags(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_tags_tag ON post_tags(tag);
+
+-- RLS policies for new tables
+ALTER TABLE live_stream ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view active live streams" ON live_stream FOR SELECT USING (is_active = true);
+CREATE POLICY "Users can create their own live streams" ON live_stream FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own live streams" ON live_stream FOR UPDATE USING (auth.uid() = user_id);
+
+ALTER TABLE stream_chat ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view stream chat messages" ON stream_chat FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own chat messages" ON stream_chat FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE post_tags ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view post tags" ON post_tags FOR SELECT USING (true);
+CREATE POLICY "Users can insert tags on their own posts" ON post_tags FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM posts p
+    WHERE p.id = post_tags.post_id
+    AND p.user_id = auth.uid()
+  )
+);
+
+-- Enable Realtime for live streams and chat
+ALTER PUBLICATION supabase_realtime ADD TABLE live_stream;
+ALTER PUBLICATION supabase_realtime ADD TABLE stream_chat;

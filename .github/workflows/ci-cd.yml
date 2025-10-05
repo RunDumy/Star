@@ -1,31 +1,31 @@
 name: STAR Monorepo CI/CD
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 jobs:
-  frontend:
-    uses: ./.github/workflows/frontend.yml
+    frontend:
+        uses: ./.github/workflows/frontend.yml
 
-  backend:
-    uses: ./.github/workflows/backend.yml
+    backend:
+        uses: ./.github/workflows/backend.yml
 
-  supabase:
-    uses: ./.github/workflows/supabase.yml
+    supabase:
+        uses: ./.github/workflows/supabase.yml
 
-  success:
-    needs: [frontend, backend, supabase]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check All Jobs Passed
-        run: |
-          if [[ "${{ needs.frontend.result }}" == "success" && "${{ needs.backend.result }}" == "success" && "${{ needs.supabase.result }}" == "success" ]]; then
-            echo "All jobs passed!"
-          else
-            echo "Some jobs failed!"
-            exit 1
-          fi
+    success:
+        needs: [frontend, backend, supabase]
+        if: always()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check All Jobs Passed
+              run: |
+                  if [[ "${{ needs.frontend.result }}" == "success" && "${{ needs.backend.result }}" == "success" && "${{ needs.supabase.result }}" == "success" ]]; then
+                    echo "All jobs passed!"
+                  else
+                    echo "Some jobs failed!"
+                    exit 1
+                  fi

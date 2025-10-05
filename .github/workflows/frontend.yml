@@ -1,56 +1,56 @@
 name: Frontend CI/CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'star-frontend/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'star-frontend/**'
-  workflow_call:
+    push:
+        branches: [main]
+        paths:
+            - "star-frontend/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "star-frontend/**"
+    workflow_call:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./star-frontend
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'star-frontend/package-lock.json'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run linting
-        run: npm run lint
-      - name: Run tests
-        run: npm test -- --coverage
-      - name: Build
-        run: npm run build
+    test:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./star-frontend
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+                  cache: "npm"
+                  cache-dependency-path: "star-frontend/package-lock.json"
+            - name: Install dependencies
+              run: npm ci
+            - name: Run linting
+              run: npm run lint
+            - name: Run tests
+              run: npm test -- --coverage
+            - name: Build
+              run: npm run build
 
-  deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      - name: Install Vercel CLI
-        run: npm i -g vercel
-      - name: Deploy to Vercel
-        run: |
-          cd star-frontend
-          vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    deploy:
+        needs: test
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+                  cache: "npm"
+            - name: Install Vercel CLI
+              run: npm i -g vercel
+            - name: Deploy to Vercel
+              run: |
+                  cd star-frontend
+                  vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+              env:
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
