@@ -20,6 +20,8 @@
     "axios": "^1.12.2",
     "chart.js": "^4.5.0",
     "css-loader": "^6.8.1",
+    "dompurify": "^3.2.7",
+    "framer-motion": "^12.23.22",
     "lucide-react": "^0.544.0",
     "next": "^15.5.3",
     "postcss": "^8.4.32",
