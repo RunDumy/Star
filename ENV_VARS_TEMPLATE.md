@@ -1,5 +1,4 @@
-ENV Vars Template — Vercel & Render
-=================================
+# ENV Vars Template — Vercel & Render
 
 This file lists the environment variables required by the project and where to set them.
 
