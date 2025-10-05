@@ -94,20 +94,24 @@ services:
     networks:
       - star-network
 
-  # Redis for caching (optional)
-  redis:
-    image: redis:7-alpine
-    container_name: star-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
+  # CI/CD Testing Service
+  ci:
+    build:
+      context: ../../
+      dockerfile: Dockerfile.ci
+    container_name: star-ci
+    profiles: ["ci"]
+    environment:
+      - NODE_ENV=test
+      - PYTHONPATH=/app/star-backend
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ../../star-frontend:/app/star-frontend
+      - ../../star-backend:/app/star-backend
+      - /app/star-frontend/node_modules
+      - /app/star-backend/__pycache__
+    depends_on:
+      supabase:
+        condition: service_healthy
     networks:
       - star-network
 

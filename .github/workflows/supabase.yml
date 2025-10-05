@@ -1,0 +1,28 @@
+name: Supabase CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'star-backend/database/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'star-backend/database/**'
+  workflow_call:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        run: npm install -g supabase
+      - name: Login to Supabase
+        run: supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Link Project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+      - name: Run Migrations
+        run: supabase db push
+      - name: Test RLS Policies
+        run: supabase db test --file star-backend/database/supabase_schema.sql

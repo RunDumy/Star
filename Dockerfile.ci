@@ -1,0 +1,25 @@
+FROM node:18-alpine
+
+# Install Python and pip
+RUN apk add --no-cache curl py3-pip python3
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY star-frontend/package*.json ./star-frontend/
+COPY star-backend/requirements.txt ./star-backend/
+
+# Install dependencies
+RUN cd star-frontend && npm ci && \
+    cd ../star-backend && pip install -r requirements.txt pytest pytest-mock black flake8
+
+# Copy source code
+COPY . .
+
+# Set environment variables
+ENV NODE_ENV=test
+ENV PYTHONPATH=/app/star-backend
+
+# Default command
+CMD ["echo", "CI environment ready. Run tests with: docker-compose --profile ci run --rm ci npm test (in star-frontend) or docker-compose --profile ci run --rm ci pytest tests/ (in star-backend)"]
