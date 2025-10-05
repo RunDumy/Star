@@ -21,6 +21,7 @@ Backend (Render) - set in Render Dashboard → Service → Environment
 - SPOTIFY_CLIENT_SECRET
 - IPGEOLOCATION_API_KEY
 - ALLOWED_ORIGINS (comma-separated)
+- REDIS_URL
 - PORT (Render provides its own PORT, override only if required)
 
 Example notes:
