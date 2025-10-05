@@ -7,20 +7,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Please check your environment variables.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Only create client if credentials are available
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 // Helper functions for common operations
 export const getCurrentUser = async () => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
 
 export const signOut = async () => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
 
 export const signInWithEmail = async (email: string, password: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -30,6 +36,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 }
 
 export const signUpWithEmail = async (email: string, password: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -40,6 +47,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
 
 // Profile operations
 export const getProfile = async (userId: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -51,6 +59,7 @@ export const getProfile = async (userId: string) => {
 }
 
 export const updateProfile = async (userId: string, updates: any) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
@@ -63,6 +72,7 @@ export const updateProfile = async (userId: string, updates: any) => {
 }
 
 export const createProfile = async (profile: any) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('profiles')
     .insert(profile)
@@ -75,6 +85,7 @@ export const createProfile = async (profile: any) => {
 
 // Friends operations
 export const getFriends = async (userId: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('friends')
     .select(`
@@ -94,6 +105,7 @@ export const getFriends = async (userId: string) => {
 }
 
 export const sendFriendRequest = async (userId: string, friendId: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('friends')
     .insert({
@@ -109,6 +121,7 @@ export const sendFriendRequest = async (userId: string, friendId: string) => {
 }
 
 export const acceptFriendRequest = async (userId: string, friendId: string) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('friends')
     .update({ status: 'accepted' })
@@ -123,6 +136,7 @@ export const acceptFriendRequest = async (userId: string, friendId: string) => {
 
 // Posts operations
 export const getPosts = async (userId?: string, limit = 20, offset = 0) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   let query = supabase
     .from('posts')
     .select(`
@@ -146,6 +160,7 @@ export const getPosts = async (userId?: string, limit = 20, offset = 0) => {
 }
 
 export const createPost = async (post: any) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('posts')
     .insert(post)
@@ -158,6 +173,7 @@ export const createPost = async (post: any) => {
 
 // Interactions operations
 export const addInteraction = async (interaction: any) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('interactions')
     .insert(interaction)
@@ -169,6 +185,7 @@ export const addInteraction = async (interaction: any) => {
 }
 
 export const getInteractions = async (userId: string, limit = 50) => {
+  if (!supabase) throw new Error('Supabase client not initialized')
   const { data, error } = await supabase
     .from('interactions')
     .select(`

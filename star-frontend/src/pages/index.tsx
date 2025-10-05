@@ -1,13 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { NotificationPanel } from '../components/cosmic/NotificationPanel';
 import CosmicButton from '../components/CosmicButton';
 import CosmicFeed from '../components/CosmicFeed';
-import CosmicNotifications from '../components/CosmicNotifications';
 import StarBackground from '../components/StarBackground';
 import { supabase } from '../lib/supabase';
 
@@ -21,7 +20,6 @@ export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [zodiacFilter, setZodiacFilter] = useState('all');
   const [elementFilter, setElementFilter] = useState('all');
 
@@ -42,7 +40,6 @@ export default function Home() {
   }, []);
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
-  const toggleNotifications = () => setNotificationsOpen(!notificationsOpen);
 
   const zodiacSigns = ['all', 'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
   const elements = ['all', 'fire', 'earth', 'air', 'water'];
@@ -75,9 +72,9 @@ export default function Home() {
             )}
           </div>
           {user && (
-            <CosmicButton variant="secondary" size="sm" zodiacSign={user?.zodiac_sign} onClick={toggleNotifications}>
-              <Bell className="w-5 h-5" />
-            </CosmicButton>
+            <div className="text-sm text-cosmic-light">
+              Welcome, {user.username} ({user.zodiac_sign})
+            </div>
           )}
         </nav>
 
@@ -104,10 +101,8 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* Notifications Dropdown */}
-        {user && notificationsOpen && (
-          <CosmicNotifications />
-        )}
+        {/* Notifications Panel */}
+        {user && <NotificationPanel />}
 
         {/* Planet Buttons */}
         <div className="flex justify-center space-x-8 mb-8">

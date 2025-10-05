@@ -16,6 +16,9 @@ interface Post {
   zodiacEmoji: string;
   emotionalTone: string;
   timestamp: string;
+  image_url?: string;
+  video_url?: string;
+  hls_url?: string;
 }
 
 interface FloatingPostIslandsProps {

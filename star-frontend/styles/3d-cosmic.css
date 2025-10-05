@@ -1,0 +1,384 @@
+/* styles/3d-cosmic.css */
+@keyframes floatXYZ {
+  0% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
+      rotateZ(0deg);
+  }
+  25% {
+    transform: translate3d(5px, -8px, 10px) rotateX(2deg) rotateY(3deg)
+      rotateZ(-1deg);
+  }
+  50% {
+    transform: translate3d(-3px, -12px, 15px) rotateX(-1deg) rotateY(-2deg)
+      rotateZ(1deg);
+  }
+  75% {
+    transform: translate3d(4px, -6px, 8px) rotateX(1deg) rotateY(4deg)
+      rotateZ(-2deg);
+  }
+  100% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
+      rotateZ(0deg);
+  }
+}
+
+@keyframes floatXYZReverse {
+  0% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
+      rotateZ(0deg);
+  }
+  25% {
+    transform: translate3d(-6px, -10px, 12px) rotateX(-3deg) rotateY(2deg)
+      rotateZ(1deg);
+  }
+  50% {
+    transform: translate3d(4px, -14px, 18px) rotateX(2deg) rotateY(-3deg)
+      rotateZ(-1deg);
+  }
+  75% {
+    transform: translate3d(-5px, -8px, 10px) rotateX(-1deg) rotateY(1deg)
+      rotateZ(2deg);
+  }
+  100% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
+      rotateZ(0deg);
+  }
+}
+
+.cosmic-float-3d {
+  animation: floatXYZ 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.cosmic-float-3d-reverse {
+  animation: floatXYZReverse 9s ease-in-out infinite;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.cosmic-float-3d-slow {
+  animation: floatXYZ 12s ease-in-out infinite;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+/* 3D Hover Effects */
+.cosmic-post-3d {
+  --mouse-rotate-x: 0deg;
+  --mouse-rotate-y: 0deg;
+  --mouse-translate-z: 0px;
+  transform-style: preserve-3d;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: var(--base-transform, none) rotateX(var(--mouse-rotate-x))
+    rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
+}
+
+.cosmic-post-3d:hover {
+  --hover-transform: translate3d(0px, -10px, 20px) rotateX(5deg) rotateY(5deg)
+    scale(1.02);
+  transform: var(--hover-transform) rotateX(var(--mouse-rotate-x))
+    rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
+  z-index: 50;
+}
+
+/* Depth layer transforms with mouse interaction */
+.depth-1 {
+  --depth-z: 10px;
+  transform: translateZ(var(--depth-z)) translateZ(var(--depth-mouse-z, 0px));
+}
+
+.depth-2 {
+  --depth-z: 20px;
+  transform: translateZ(var(--depth-z)) translateZ(var(--depth-mouse-z, 0px));
+}
+
+.depth-3 {
+  --depth-z: 30px;
+  transform: translateZ(var(--depth-z)) translateZ(var(--depth-mouse-z, 0px));
+}
+
+.depth-4 {
+  --depth-z: 40px;
+  transform: translateZ(var(--depth-z)) translateZ(var(--depth-mouse-z, 0px));
+}
+
+/* Parallax Scrolling Effect */
+.parallax-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.parallax-layer {
+  transform-style: preserve-3d;
+}
+
+/* Cosmic Feed 3D Styles */
+.cosmic-feed-3d {
+  --scroll-y: 0px;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Cosmic Particles */
+.cosmic-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #a855f7, #3b82f6);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: cosmic-float-particle 8s ease-in-out infinite;
+}
+
+.particle-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.particle-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+  width: 6px;
+  height: 6px;
+}
+
+.particle-3 {
+  top: 40%;
+  left: 70%;
+  animation-delay: 4s;
+  width: 3px;
+  height: 3px;
+}
+
+@keyframes cosmic-float-particle {
+  0%,
+  100% {
+    transform: translateY(0px) translateZ(0px) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) translateZ(10px) scale(1.2);
+    opacity: 0.9;
+  }
+}
+
+/* Cosmic Nebulae */
+.cosmic-nebula {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  filter: blur(40px);
+}
+
+.nebula-1 {
+  top: 10%;
+  left: 20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #7c3aed, #1e1b4b);
+}
+
+.nebula-2 {
+  bottom: 20%;
+  right: 10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #3b82f6, #1e40af);
+}
+
+/* Post Wrapper with Staggered Animation */
+.cosmic-post-wrapper {
+  --stagger-delay: 0s;
+  --scroll-offset: 0px;
+  animation: cosmic-post-enter 0.8s ease-out var(--stagger-delay) both;
+  transform: translateY(var(--scroll-offset));
+}
+
+@keyframes cosmic-post-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) translateZ(-100px) rotateX(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) translateZ(0px) rotateX(0deg);
+  }
+}
+
+/* Load More Spinner */
+.cosmic-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid #a855f7;
+  border-radius: 50%;
+  animation: cosmic-spin 1s linear infinite;
+}
+
+@keyframes cosmic-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Spark Button 3D Styles */
+.spark-button-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  position: relative;
+  overflow: visible;
+}
+
+.spark-button-3d::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.spark-button-3d:hover::before {
+  opacity: 1;
+}
+
+/* Cosmic spark glow effect */
+.cosmic-spark-glow {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.cosmic-spark-glow:hover {
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(168, 85, 247, 0.3),
+    inset 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
+/* Spark burst animation */
+.spark-burst {
+  animation: spark-burst-pulse 0.6s ease-out;
+}
+
+@keyframes spark-burst-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Spark icon pulse */
+.spark-icon-pulse {
+  animation: spark-icon-pulse 0.6s ease-out;
+}
+
+@keyframes spark-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(90deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(180deg);
+  }
+  75% {
+    transform: scale(1.15) rotate(270deg);
+  }
+}
+
+/* Spark particles */
+.spark-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #fbbf24, #f59e0b);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: spark-particle-burst 1s ease-out var(--particle-delay, 0s) both;
+  pointer-events: none;
+}
+
+@keyframes spark-particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--particle-x, 0px)),
+        calc(-50% + var(--particle-y, 0px))
+      )
+      scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--particle-x, 0px)),
+        calc(-50% + var(--particle-y, 0px))
+      )
+      scale(0.5);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cosmic-feed-3d {
+    perspective: 500px;
+  }
+
+  .cosmic-particle {
+    display: none; /* Hide particles on mobile for performance */
+  }
+
+  .cosmic-nebula {
+    opacity: 0.05;
+  }
+
+  .spark-button-3d {
+    perspective: 500px;
+  }
+
+  .cosmic-spark-glow {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3),
+      inset 0 0 15px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Header parallax effects */
+.cosmic-feed-header h1 {
+  transform: translateY(var(--scroll-y, 0px));
+}
+
+.cosmic-feed-header p {
+  transform: translateY(calc(var(--scroll-y, 0px) * 0.5));
+}
+
+/* Load more and empty state parallax */
+.cosmic-load-more {
+  transform: translateY(calc(var(--scroll-y, 0px) * 0.2));
+}
+
+.cosmic-empty-state {
+  transform: translateY(calc(var(--scroll-y, 0px) * 0.3));
+}

@@ -4,6 +4,9 @@ import fetchMock from 'jest-fetch-mock';
 // Enable fetch mocking
 fetchMock.enableMocks();
 
+// Mock process.env
+process.env.VITE_API_URL = 'http://localhost:5000';
+
 // Mock Konva Stage for canvas testing
 jest.mock('konva', () => ({
   Stage: jest.fn().mockImplementation(() => ({

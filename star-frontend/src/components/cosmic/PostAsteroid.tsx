@@ -3,6 +3,7 @@
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
+import LazyLoad from 'react-lazyload';
 import { Mesh, Vector3 } from 'three';
 
 interface PostData {
@@ -15,6 +16,9 @@ interface PostData {
   engagementScore: number;
   likes: number;
   comments: number;
+  image_url?: string;
+  video_url?: string;
+  hls_url?: string;
 }
 
 interface PostAsteroidProps {
@@ -143,6 +147,32 @@ export const PostAsteroid: React.FC<PostAsteroidProps> = ({
             </div>
 
             <p className="text-sm text-white mb-3">{post.content}</p>
+
+            {/* Media Content */}
+            {post.image_url && (
+              <img
+                src={post.image_url}
+                alt="Post media"
+                className="w-full h-32 object-cover rounded mb-3"
+              />
+            )}
+
+            {post.video_url && (
+              <LazyLoad height={200} offset={100}>
+                <video
+                  controls
+                  className="w-full h-32 object-cover rounded mb-3"
+                  preload="metadata"
+                >
+                  <source src={post.video_url} type="video/mp4" />
+                  {post.hls_url && (
+                    <source src={post.hls_url} type="application/x-mpegURL" />
+                  )}
+                  <track kind="captions" srcLang="en" label="English" />
+                  Your browser does not support the video tag.
+                </video>
+              </LazyLoad>
+            )}
 
             <div className="flex items-center gap-4 text-xs text-purple-300">
               <span>❤️ {post.likes}</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { CosmicFeed3D } from "@/components/CosmicFeed3D";
 import { useAuth } from "@/lib/AuthContext";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -147,17 +148,19 @@ export default function FeedPage() {
   if (error) return <p className="text-red-500 p-4">{error}</p>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
-      <Link href="/home" className="text-blue-400 hover:underline mb-4 inline-block">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <Link href="/home" className="text-blue-400 hover:underline mb-4 inline-block p-4">
         Back to Cosmic Home
       </Link>
-      <h1 className="text-3xl font-bold mb-4">Cosmic Feed ({user.zodiacSign || "Unknown"})</h1>
-      <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+
+      {/* Post Creation Form */}
+      <div className="max-w-2xl mx-auto mb-8 p-6 bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-purple-500/30">
+        <h2 className="text-xl font-bold text-white mb-4">Share Your Cosmic Thoughts</h2>
         <textarea
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           placeholder="Share your cosmic thoughts..."
-          className="w-full p-2 rounded bg-gray-900 text-white mb-2"
+          className="w-full p-3 rounded-lg bg-gray-900/50 text-white mb-3 border border-purple-500/30 focus:border-purple-400 focus:outline-none"
           rows={4}
         />
         <input
@@ -165,77 +168,30 @@ export default function FeedPage() {
           value={newMediaUrl}
           onChange={(e) => setNewMediaUrl(e.target.value)}
           placeholder="Optional Spotify track URL (e.g., https://open.spotify.com/track/xyz)"
-          className="w-full p-2 rounded bg-gray-900 text-white mb-2"
+          className="w-full p-3 rounded-lg bg-gray-900/50 text-white mb-3 border border-purple-500/30 focus:border-purple-400 focus:outline-none"
         />
         <button
           onClick={createPost}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105"
         >
-          Post
+          Post to the Cosmos
         </button>
       </div>
-      <div className="space-y-4">
-        {posts.map((post) => (
-          <div key={post.id} className="p-4 bg-gray-800 rounded-lg relative">
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
-              backgroundImage: `url(/constellations/${post.zodiac_sign.toLowerCase()}.png)`,
-              backgroundSize: 'cover',
-            }} />
-            <p className="font-semibold">{post.profiles.display_name} ({post.zodiac_sign})</p>
-            <p className="mt-1">{post.content}</p>
-            {(() => {
-              const spotifyMatch = post.media_url?.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/);
-              return spotifyMatch && (
-                <iframe
-                  src={`https://open.spotify.com/embed/track/${spotifyMatch[1]}`}
-                  width="100%"
-                  height="80"
-                  frameBorder="0"
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  loading="lazy"
-                  className="mt-2 rounded"
-                />
-              );
-            })()}
-            <div className="mt-2 flex space-x-4">
-              <button
-                onClick={() => toggleLike(post.id, post.liked_by_user)}
-                className={`flex items-center ${post.liked_by_user ? 'text-red-500' : 'text-gray-400'} hover:text-red-600`}
-              >
-                <svg className="w-5 h-5 mr-1" fill={post.liked_by_user ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                {post.like_count} Likes
-              </button>
-              <button className="text-gray-400 hover:text-blue-600">
-                {post.comments.length} Comments
-              </button>
-            </div>
-            <div className="mt-2">
-              {post.comments.map((comment) => (
-                <p key={comment.id} className="text-sm text-gray-300">
-                  <span className="font-semibold">{comment.profiles.display_name}:</span> {comment.content}
-                </p>
-              ))}
-              <div className="mt-2 flex">
-                <input
-                  type="text"
-                  value={newComments[post.id] || ""}
-                  onChange={(e) => setNewComments({ ...newComments, [post.id]: e.target.value })}
-                  placeholder="Add a comment..."
-                  className="flex-1 p-2 rounded bg-gray-900 text-white mr-2"
-                />
-                <button
-                  onClick={() => addComment(post.id)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Comment
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+
+      {/* 3D Cosmic Feed */}
+      <CosmicFeed3D
+        posts={posts.map(post => ({
+          id: post.id,
+          content: post.content,
+          username: post.profiles.display_name,
+          zodiac_sign: post.zodiac_sign,
+          image_url: post.media_url,
+          spark_count: post.like_count,
+          echo_count: 0, // Not implemented yet
+          comment_count: post.comments.length,
+          created_at: post.created_at
+        }))}
+      />
     </div>
   );
 }

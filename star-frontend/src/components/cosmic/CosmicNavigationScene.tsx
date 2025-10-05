@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Loader, OrbitControls, Stars } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Stars, OrbitControls, Loader } from '@react-three/drei';
+import { Suspense } from 'react';
 import { OrbitSystem } from './OrbitSystem';
 import { PlanetButton } from './PlanetButton';
 

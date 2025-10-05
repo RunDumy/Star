@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { animated, useSpring } from '@react-spring/three';
 import { Text } from '@react-three/drei';
-import { useSpring, animated } from '@react-spring/three';
+import { useFrame } from '@react-three/fiber';
+import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 interface PlanetButtonProps {

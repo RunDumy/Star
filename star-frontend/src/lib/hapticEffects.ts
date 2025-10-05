@@ -3,13 +3,18 @@ export class HapticManager {
   private isEnabled: boolean = true;
 
   constructor() {
-    // Check if vibration is supported
-    this.isEnabled = 'vibrate' in navigator;
+    // Check if vibration is supported - defer to method calls to avoid SSR issues
+    this.isEnabled = true;
+  }
+
+  private get isVibrationSupported(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return 'vibrate' in navigator && typeof navigator.vibrate === 'function';
   }
 
   // Vibration pattern: array of [duration, pause, duration, pause, ...] in milliseconds
   private vibrate(pattern: number | number[]): void {
-    if (!this.isEnabled || !navigator.vibrate) return;
+    if (!this.isVibrationSupported) return;
 
     try {
       navigator.vibrate(pattern);
@@ -74,11 +79,12 @@ export class HapticManager {
 
   // Check if haptics are supported and enabled
   public getIsEnabled(): boolean {
-    return this.isEnabled && 'vibrate' in navigator;
+    return this.isEnabled && this.isVibrationSupported;
   }
 
   // Get platform-specific feedback
   public getPlatform(): 'ios' | 'android' | 'unknown' {
+    if (typeof navigator === 'undefined') return 'unknown';
     const userAgent = navigator.userAgent.toLowerCase();
     if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
       return 'ios';

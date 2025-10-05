@@ -17,4 +17,12 @@ module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!react-konva|konva)',
   ],
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel.config.js' }],
+  },
+  globals: {
+    'import.meta.env': {
+      VITE_API_URL: 'http://localhost:5000',
+    },
+  },
 };
