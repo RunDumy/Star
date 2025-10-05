@@ -4,7 +4,7 @@ version: "3.8"
 services:
   flask:
     build:
-      context: .
+      context: ../../star-backend
       dockerfile: Dockerfile
     ports:
       - "5000:5000"

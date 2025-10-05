@@ -1,4 +1,5 @@
 # Add new imports for notifications and chat
+import json
 import logging
 import os
 import random
@@ -6,10 +7,11 @@ import shutil
 import subprocess
 import tempfile
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import redis
 import requests
+from agora_token_builder import Role_Attendee, Role_Publisher, RtcTokenBuilder
 from flask import Blueprint, g, jsonify, request
 from flask_socketio import SocketIO, emit, join_room
 from star_backend_flask.app import supabase
@@ -466,8 +468,23 @@ def create_live_stream():
         stream_id = str(uuid.uuid4())
         channel_name = f"stream_{stream_id}"
 
-        # Mock Agora token generation (replace with actual Agora implementation)
-        agora_token = f"mock_agora_token_{stream_id}"
+        # Generate real AgoraRTC token
+        agora_app_id = os.environ.get('AGORA_APP_ID')
+        agora_app_certificate = os.environ.get('AGORA_APP_CERTIFICATE')
+
+        if not agora_app_id or not agora_app_certificate:
+            return jsonify({'success': False, 'error': 'AgoraRTC configuration missing'}), 500
+
+        # Token valid for 24 hours
+        expiration_time = int((datetime.now(timezone.utc) + timedelta(hours=24)).timestamp())
+        agora_token = RtcTokenBuilder.buildTokenWithUid(
+            agora_app_id,
+            agora_app_certificate,
+            channel_name,
+            0,  # uid 0 for publisher
+            Role_Publisher,
+            expiration_time
+        )
 
         stream = {
             'id': stream_id,
@@ -483,7 +500,7 @@ def create_live_stream():
 
         supabase.table('live_stream').insert(stream).execute()
         if redis_client:
-            redis_client.setex(f"stream_{stream_id}", 7200, stream_id)  # 2 hour expiry
+            redis_client.setex(f"stream_{stream_id}", 7200, json.dumps(stream))  # 2 hour expiry with full stream data
 
         socketio.emit('live_stream_started', stream)
 
@@ -510,10 +527,21 @@ def create_live_stream():
 @token_required
 def get_live_stream(stream_id):
     try:
-        if redis_client and redis_client.exists(f"stream_{stream_id}"):
-            stream_data = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
-            if stream_data:
-                return jsonify({'success': True, 'stream': stream_data}), 200
+        # Check Redis cache first
+        cache_key = f"stream_{stream_id}"
+        if redis_client:
+            cached_stream = redis_client.get(cache_key)
+            if cached_stream:
+                return jsonify({'success': True, 'stream': json.loads(cached_stream)}), 200
+
+        # Fetch from Supabase if not in cache
+        stream_data = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
+        if stream_data:
+            # Cache the stream data for 5 minutes
+            if redis_client:
+                redis_client.setex(cache_key, 300, json.dumps(stream_data))
+            return jsonify({'success': True, 'stream': stream_data}), 200
+
         return jsonify({'success': False, 'error': 'Stream not found or inactive'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -532,6 +560,28 @@ def end_live_stream(stream_id):
             redis_client.delete(f"stream_{stream_id}")
         socketio.emit('live_stream_ended', {'stream_id': stream_id})
         return jsonify({'success': True, 'message': 'Live stream ended'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/v1/live-streams', methods=['GET'])
+@token_required
+def get_live_streams():
+    try:
+        # Check Redis cache first
+        cache_key = "active_live_streams"
+        if redis_client:
+            cached_streams = redis_client.get(cache_key)
+            if cached_streams:
+                return jsonify({'success': True, 'streams': json.loads(cached_streams)}), 200
+
+        # Fetch active live streams from Supabase
+        streams = supabase.table('live_stream').select('*').eq('is_active', True).order('created_at', desc=True).execute().data
+
+        # Cache the result for 30 seconds
+        if redis_client and streams:
+            redis_client.setex(cache_key, 30, json.dumps(streams))
+
+        return jsonify({'success': True, 'streams': streams or []}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

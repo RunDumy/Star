@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   # Development backend with hot reload
-  backend:
+  flask:
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
@@ -15,6 +15,9 @@ services:
 
   # Development frontend with hot reload
   frontend:
+    build:
+      context: ../../star-frontend
+      dockerfile: Dockerfile
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true

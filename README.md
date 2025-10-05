@@ -165,6 +165,20 @@ npm test
 # Backend tests
 cd ../star-backend
 pytest test/api.test.py -v
+
+# AgoraRTC Live Streaming Tests
+# 1. Start the application with Docker
+docker-compose -f config/docker/docker-compose.yml up --build
+
+# 2. Visit the Agora test page
+# http://localhost:3000/agora-test
+
+# 3. Test live streaming workflow:
+# - Go to Collaborative Cosmos page
+# - Create a new live stream
+# - Copy the stream ID
+# - Use the Agora test page to join the stream
+# - Verify video/audio functionality
 ```
 
 ## 📦 **Production Deployment**

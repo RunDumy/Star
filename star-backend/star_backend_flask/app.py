@@ -14,8 +14,6 @@ import bcrypt
 import jwt
 import redis
 import requests
-# Import analytics blueprint
-from analytics import analytics_bp
 # Import birth chart calculation functions
 from birth_chart import calculate_birth_chart, geocode_location
 from dotenv import load_dotenv
@@ -35,6 +33,8 @@ from group_chat import group_chat_bp
 from marshmallow import Schema, ValidationError, fields, validate, validates
 # Import notifications blueprint
 from notifications import notifications
+# Import Redis utilities
+from redis_utils import get_redis, init_redis
 # Import star points blueprint
 from star_points import star_points
 # Import tarot interactions
@@ -90,7 +90,38 @@ cache = Cache(config=cache_config)
 cache.init_app(app)
 limiter = Limiter(app=app, key_func=get_remote_address)
 limiter.init_app(app)
-socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='eventlet')
+
+# Redis configuration for Socket.IO message queue
+redis_url = os.environ.get('REDIS_URL')
+socketio_config = {
+    'cors_allowed_origins': os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','),
+    'async_mode': 'eventlet'
+}
+
+# Configure Redis as message queue for Socket.IO (for multi-server scalability)
+if redis_url:
+    try:
+        # Parse Redis URL for Socket.IO
+        from urllib.parse import urlparse
+        parsed = urlparse(redis_url)
+        redis_host = parsed.hostname
+        redis_port = parsed.port or 6379
+        redis_password = parsed.password
+        redis_username = parsed.username
+
+        socketio_config.update({
+            'message_queue': f'redis://{redis_username}:{redis_password}@{redis_host}:{redis_port}',
+            'channel': 'socketio'
+        })
+        logger.info("Socket.IO configured with Redis message queue")
+    except Exception as e:
+        logger.warning(f"Failed to configure Redis for Socket.IO: {e}")
+
+socketio = SocketIO(app, **socketio_config)
+
+# Initialize Redis manager
+redis_url = os.environ.get('REDIS_URL')
+init_redis(redis_url)
 
 # Supabase client (for Storage uploads)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
