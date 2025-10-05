@@ -9,9 +9,9 @@ import { CollaborationProvider, useCollaboration } from '@/contexts/Collaboratio
 import { CosmicThemeProvider, useCosmicTheme } from '@/contexts/CosmicThemeContext';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ToastContainer, toast } from 'react-toastify';
+import { useEffect, useRef, useState } from 'react';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Dynamically import components that use browser APIs
