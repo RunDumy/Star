@@ -1,7 +1,7 @@
 "use client";
 
-import { CosmicInterface } from '../components/cosmic/CosmicInterface';
 import { ContentNebula } from '../components/cosmic/ContentNebula';
+import { CosmicInterface } from '../components/cosmic/CosmicInterface';
 import { PostAsteroid } from '../components/cosmic/PostAsteroid';
 
 // Mock post data for testing

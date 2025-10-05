@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useMemo, useRef } from 'react';
 import { Group, Vector3 } from 'three';
-import { GravitationalField } from './GravitationalField';
 import { ArchaeologyToolkit } from './ArchaeologyToolkit';
+import { GravitationalField } from './GravitationalField';
 
 interface ContentNebulaProps {
   children?: React.ReactNode;

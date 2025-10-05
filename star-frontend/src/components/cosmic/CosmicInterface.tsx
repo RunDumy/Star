@@ -1,7 +1,7 @@
 "use client";
 
-import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
 import { Suspense } from 'react';
 import { CosmicScene } from './components/cosmic/CosmicScene';
 

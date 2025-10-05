@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useMemo, useRef } from 'react';
 import { Group } from 'three';
 
 interface GravitationalFieldProps {
@@ -18,29 +18,30 @@ export const GravitationalField: React.FC<GravitationalFieldProps> = ({
   const fieldRef = useRef<Group>(null);
 
   // Create gravitational field visualization
-  const fieldRings = Array.from({ length: 5 }, (_, i) => ({
-    radius: (i + 1) * 10,
-    opacity: (5 - i) * 0.1,
-    speed: (i + 1) * 0.001
-  }));
+  const rings = useMemo(() => {
+    return Array.from({ length: 5 }, (_, i) => ({
+      radius: 2 + i * 1.5,
+      opacity: 0.3 - i * 0.05
+    }));
+  }, []);
 
+  // Animate the gravitational field
   useFrame((state) => {
     if (fieldRef.current) {
-      // Rotate the field slowly
-      fieldRef.current.rotation.y += 0.002;
+      fieldRef.current.rotation.y += 0.005;
     }
   });
 
   return (
     <group ref={fieldRef} position={center}>
       {/* Gravitational field rings */}
-      {fieldRings.map((ring, index) => (
-        <mesh key={`gravity-ring-${index}`} rotation={[Math.PI / 2, 0, 0]}>
+      {rings.map((ring, ringIndex) => (
+        <mesh key={`gravity-ring-${ringIndex}`} rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[ring.radius - 0.5, ring.radius + 0.5, 64]} />
           <meshBasicMaterial
-            color="#4f46e5"
             transparent
             opacity={ring.opacity}
+            color="#8b5cf6"
           />
         </mesh>
       ))}
@@ -49,16 +50,14 @@ export const GravitationalField: React.FC<GravitationalFieldProps> = ({
       <mesh>
         <sphereGeometry args={[1, 16, 16]} />
         <meshBasicMaterial
-          color="#1e1b4b"
           transparent
-          opacity={0.3}
+          opacity={0.5}
+          color="#7c3aed"
         />
       </mesh>
 
       {/* Render children within the field */}
-      <group>
-        {children}
-      </group>
+      {children}
     </group>
   );
 };

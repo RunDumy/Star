@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 interface CosmicObject {
   id: string;
