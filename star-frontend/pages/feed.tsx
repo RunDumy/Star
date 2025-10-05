@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/lib/supabase";
+import { useAuth } from "@/lib/AuthContext";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -239,4 +239,3 @@ export default function FeedPage() {
     </div>
   );
 }
-
