@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 
-export function LiveStreamCreation({ onStreamCreated }: { onStreamCreated: () => void }) {
+export function LiveStreamCreation({ onStreamCreated }: { onStreamCreated: (stream: any) => void }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -32,9 +32,10 @@ export function LiveStreamCreation({ onStreamCreated }: { onStreamCreated: () =>
       });
 
       if (response.ok) {
+        const streamData = await response.json();
         setTitle('');
         setDescription('');
-        onStreamCreated();
+        onStreamCreated(streamData.stream);
       }
     } catch (error) {
       console.error('Error creating live stream:', error);
@@ -46,8 +47,9 @@ export function LiveStreamCreation({ onStreamCreated }: { onStreamCreated: () =>
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Stream Title</label>
+        <label htmlFor="stream-title" className="block text-sm font-medium mb-1">Stream Title</label>
         <input
+          id="stream-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -57,8 +59,9 @@ export function LiveStreamCreation({ onStreamCreated }: { onStreamCreated: () =>
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Description</label>
+        <label htmlFor="stream-description" className="block text-sm font-medium mb-1">Description</label>
         <textarea
+          id="stream-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe your cosmic stream..."

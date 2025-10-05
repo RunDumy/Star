@@ -18,6 +18,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const NotificationPanel = dynamic(() => import('@/components/cosmic/NotificationPanel').then(mod => ({ default: mod.NotificationPanel })), { ssr: false });
 const LiveStreamCreation = dynamic(() => import('@/components/cosmic/LiveStreamCreation').then(mod => ({ default: mod.LiveStreamCreation })), { ssr: false });
 const PostCreation = dynamic(() => import('@/components/cosmic/PostCreation').then(mod => ({ default: mod.PostCreation })), { ssr: false });
+const AgoraUIKitLiveStream = dynamic(() => import('@/components/cosmic/AgoraUIKitLiveStream').then(mod => ({ default: mod.AgoraUIKitLiveStream })), { ssr: false });
 
 // Inner component that uses the contexts
 const CollaborativeCosmosScene = () => {
@@ -28,6 +29,7 @@ const CollaborativeCosmosScene = () => {
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [showPostCreation, setShowPostCreation] = useState(false);
   const [showLiveStream, setShowLiveStream] = useState(false);
+  const [activeStream, setActiveStream] = useState(null);
   const canvasRef = useRef();
 
   // Handle avatar clicks
@@ -251,15 +253,33 @@ const CollaborativeCosmosScene = () => {
       {/* Live Stream Modal */}
       {showLiveStream && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-          <div className="bg-black/90 text-white p-6 rounded-lg backdrop-blur-sm border border-green-500/30">
+          <div className="bg-black/90 text-white p-6 rounded-lg backdrop-blur-sm border border-green-500/30 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">Live Stream Controls</h3>
-            <LiveStreamCreation onStreamCreated={() => setShowLiveStream(false)} />
-            <button
-              onClick={() => setShowLiveStream(false)}
-              className="mt-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
-            >
-              Close
-            </button>
+            
+            {activeStream ? (
+              <div>
+                <AgoraUIKitLiveStream 
+                  streamId={activeStream.id} 
+                  isHost={true} 
+                />
+                <button
+                  onClick={() => setActiveStream(null)}
+                  className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
+                >
+                  End Stream
+                </button>
+              </div>
+            ) : (
+              <div>
+                <LiveStreamCreation onStreamCreated={(stream) => setActiveStream(stream)} />
+                <button
+                  onClick={() => setShowLiveStream(false)}
+                  className="mt-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
