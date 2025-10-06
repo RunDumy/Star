@@ -1,7 +1,6 @@
 'use client';
 import { MessageCircle, Share2, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
-import HlsPlayer from 'react-hls-player';
 import LazyLoad from 'react-lazyload';
 import { SparkButton3D } from './SparkButton3D';
 import { CommentSection } from './cosmic/CommentSection';
@@ -28,7 +27,6 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const postRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<HTMLVideoElement>(null);
 
   // Determine animation class based on post index for variety
   const getAnimationClass = () => {
@@ -151,23 +149,19 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
           } as React.CSSProperties}
         >
           <LazyLoad height={384} offset={100}>
-            {post.hls_url ? (
-              <HlsPlayer
-                playerRef={playerRef}
-                src={post.hls_url}
-                autoPlay={false}
-                controls
-                width="100%"
-                height="auto"
-                className="max-h-96 object-cover"
-              />
-            ) : (
+            {post.hls_url || post.video_url ? (
               <video
-                src={post.video_url}
+                src={post.hls_url || post.video_url}
                 controls
                 className="w-full h-auto max-h-96 object-cover"
               />
-            )}
+            ) : post.image_url ? (
+              <img
+                src={post.image_url}
+                alt={post.content}
+                className="w-full h-auto max-h-96 object-cover"
+              />
+            ) : null}
           </LazyLoad>
         </figure>
       )}
