@@ -1,0 +1,36 @@
+[build]
+  builder = "NIXPACKS"
+
+[deploy]
+  startCommand = "gunicorn --threads 4 -b 0.0.0.0:$PORT app:app"
+  healthcheckPath = "/api/health"
+  healthcheckTimeout = 300
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 10
+
+[[services]]
+  id = "star-backend"
+  name = "star-backend"
+  source = { repo = "github.com/RunDumy/Star", path = "star-backend/star_backend_flask" }
+  instanceCount = 1
+  instanceSizeSlug = "CPU_0.5"
+
+  [services.http]
+    port = 5000
+    forceHttps = true
+
+  [[services.env]]
+    key = "PYTHON_VERSION"
+    value = "3.13.4"
+
+  [[services.env]]
+    key = "PORT"
+    value = "5000"
+
+  [[services.env]]
+    key = "AGORA_APP_ID"
+    value = "d146ac692e604e7b9a99c9568ccbcd23"
+
+  [[services.env]]
+    key = "AGORA_APP_CERTIFICATE"
+    value = "f5e4c9a8466141d588644f9043ce4a84"
