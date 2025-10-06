@@ -15,12 +15,15 @@ flask-caching==1.10.1
 flask-limiter==3.8.0
 flask-migrate==4.0.5
 flask-sqlalchemy==3.1.1
+flask-restful==0.3.10
+marshmallow==3.20.1
 
 # Database and caching
 redis==4.0.2
 supabase==1.0.3
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.43
+cachetools==5.3.0
 
 # Authentication and security
 bcrypt==4.0.1
@@ -43,6 +46,9 @@ geopy==2.4.1
 
 # AgoraRTC for live streaming
 agora-token-builder==1.0.0
+
+# Spotify integration
+spotipy==2.23.0
 
 # Testing dependencies
 pytest==7.4.3

@@ -2,18 +2,17 @@ services:
   - type: web
     name: star-backend
     runtime: python
-    rootDir: star-backend/star_backend_flask
     repo: https://github.com/RunDumy/Star
     plan: free
     region: virginia
-    buildCommand: pip install -r requirements.txt -c constraints.txt
-    preDeployCommand: python init_db.py
-    startCommand: exec gunicorn --threads 4 -b 0.0.0.0:$PORT app:app
-    autoDeployTrigger: "commit"
+    buildCommand: pip install -r star-backend/requirements.txt -c star-backend/constraints.txt
+    preDeployCommand: python star-backend/star_backend_flask/init_db.py
+    startCommand: gunicorn --threads 4 -b 0.0.0.0:$PORT star_backend_flask.app:app
+    autoDeployTrigger: commit
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.0
+        value: 3.13.4
       - key: SECRET_KEY
         sync: false
       - key: JWT_SECRET
@@ -24,19 +23,26 @@ services:
         sync: false
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_ANON_KEY
+      - key: SUPABASE_KEY
         sync: false
-      - key: SPOTIFY_CLIENT_ID
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: star-redis
+          property: connectionString
+      - key: AGORA_APP_ID
+        value: 5d835f5e1f244f259d6e8681479c54cf
+      - key: AGORA_APP_CERTIFICATE
+        value: 99c4d072d6694249a72d1716a75ffab5
+      - key: AGORA_SECONDARY_CERTIFICATE
+        value: e1b94cedc7ab4aa48544a2378cd60fb8
+      - key: SPOTIPY_CLIENT_ID
         sync: false
-      - key: SPOTIFY_CLIENT_SECRET
+      - key: SPOTIPY_CLIENT_SECRET
         sync: false
       - key: IPGEOLOCATION_API_KEY
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
-      - key: AGORA_APP_ID
-        sync: false
-      - key: AGORA_APP_CERTIFICATE
-        sync: false
-      - key: REDIS_URL
-        sync: false
+      - key: PORT
+        value: 5000
