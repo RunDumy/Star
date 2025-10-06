@@ -1,4 +1,4 @@
-import swisseph as swe
+import pyswisseph as swe
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 import datetime
