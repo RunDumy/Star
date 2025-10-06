@@ -15,23 +15,15 @@ services:
 
   # Development frontend with hot reload
   frontend:
-    build:
-      context: ../../star-frontend
-      dockerfile: Dockerfile
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
-    volumes:
-      - ../../star-frontend:/app
-      - /app/node_modules
     command: ["npm", "run", "dev"]
 
   # Supabase with local development settings
   supabase:
     environment:
       - POSTGRES_PASSWORD=dev_password_change_me
-    ports:
-      - "54322:5432" # Use different port to avoid conflicts
 
   # Additional development tools
   pgadmin:
