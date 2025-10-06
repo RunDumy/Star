@@ -5,9 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1e25606-5b67-4241-a5bc-8d6e38cf8090" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Star.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Star.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-frontend/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/node_modules/.package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.mcp.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/migrate_transit_expansion.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/api/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/api/posts.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_archetype_oracle.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_import.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_main_api.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
