@@ -6,8 +6,8 @@ services:
     plan: free
     region: virginia
     buildCommand: pip install -r star-backend/requirements.txt -c star-backend/constraints.txt
-    preDeployCommand: python star-backend/star_backend_flask/init_db.py
-    startCommand: gunicorn -b 0.0.0.0:$PORT star_backend_flask.app:app
+    preDeployCommand: cd star-backend/star_backend_flask && python init_db.py
+    startCommand: cd star-backend/star_backend_flask && gunicorn -b 0.0.0.0:$PORT app:app
     autoDeployTrigger: "commit"
     healthCheckPath: /api/health
     envVars:
