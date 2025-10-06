@@ -5,12 +5,9 @@ services:
     repo: https://github.com/RunDumy/Star
     plan: free
     region: virginia
-    buildCommand:
-      cd star-backend && pip install -r requirements.txt -c constraints.txt
-    preDeployCommand:
-      cd star-backend/star_backend_flask && python init_db.py
-    startCommand:
-      cd star-backend/star_backend_flask && gunicorn --chdir star_backend_flask app:app --bind 0.0.0.0:$PORT
+    buildCommand: cd star-backend && pip install -r requirements.txt -c constraints.txt
+    preDeployCommand: cd star-backend/star_backend_flask && python init_db.py
+    startCommand: cd star-backend/star_backend_flask && gunicorn --chdir star_backend_flask app:app --bind 0.0.0.0:$PORT
     autoDeployTrigger: "commit"
     healthCheckPath: /api/health
     envVars:
