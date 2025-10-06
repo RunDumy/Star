@@ -95,7 +95,7 @@ limiter.init_app(app)
 redis_url = os.environ.get('REDIS_URL')
 socketio_config = {
     'cors_allowed_origins': os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','),
-    'async_mode': 'eventlet',
+    'async_mode': 'threading',
     'logger': True,
     'engineio_logger': True
 }
