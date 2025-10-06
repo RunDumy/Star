@@ -34,3 +34,31 @@
   [[services.env]]
     key = "AGORA_APP_CERTIFICATE"
     value = "f5e4c9a8466141d588644f9043ce4a84"
+
+  [[services.env]]
+    key = "REDIS_URL"
+    value = "redis://default:dpQqYc6wimd8CoOazLDvrE6TlNt4un6b@redis-11341.c246.us-east-1-4.ec2.redns.redis-cloud.com:11341"
+
+  [[services.env]]
+    key = "SUPABASE_URL"
+    value = "https://hiwmpmvqcxzshdmhhlsb.supabase.co"
+
+  [[services.env]]
+    key = "SUPABASE_ANON_KEY"
+    value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE"
+
+  [[services.env]]
+    key = "SECRET_KEY"
+    value = "your-secret-key-here-generate-random"
+
+  [[services.env]]
+    key = "JWT_SECRET"
+    value = "your-jwt-secret-here-generate-random"
+
+  [[services.env]]
+    key = "JWT_ALGORITHM"
+    value = "HS256"
+
+  [[services.env]]
+    key = "ALLOWED_ORIGINS"
+    value = "https://star-frontend.vercel.app,http://localhost:3000"
