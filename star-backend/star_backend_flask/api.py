@@ -70,6 +70,10 @@ except Exception as e:
     socketio = SocketIO(cors_allowed_origins="*")
     redis_client = None
 
+@api_bp.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok'}), 200
+
 # Mock tarot card mapping
 TAROT_TRAIT_MAP = {
     "The Emperor": {"trait_name": "Courage", "zodiac_sign": "Aries", "strength_boost": 0.2},
