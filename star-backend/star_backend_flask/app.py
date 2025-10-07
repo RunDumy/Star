@@ -1521,6 +1521,51 @@ def health_check():
         logger.error(f"Health check failed: {e}")
         return {"status": "error", "message": str(e)}, 503
 
+@app.route('/api/redis-test')
+def redis_test():
+    """
+    Dedicated endpoint to test Redis functionality.
+    Returns the test value stored in Redis.
+    """
+    logger.info("Redis test endpoint called")
+    try:
+        redis_manager = get_redis()
+        if redis_manager and redis_manager.is_connected():
+            # Set a test value
+            test_key = "api_test_key"
+            test_value = f"Redis test at {datetime.datetime.now().isoformat()}"
+            
+            redis_manager.set(test_key, test_value, ex=300)  # Expires in 5 minutes
+            
+            # Retrieve the value to verify
+            retrieved_value = redis_manager.get(test_key)
+            
+            if retrieved_value == test_value:
+                logger.info(f"Redis test successful: {retrieved_value}")
+                return {
+                    "status": "ok", 
+                    "message": "Redis connection successful",
+                    "value": retrieved_value
+                }, 200
+            else:
+                logger.error(f"Redis test failed: retrieved value '{retrieved_value}' does not match stored value '{test_value}'")
+                return {
+                    "status": "error", 
+                    "message": "Redis test failed: retrieved value does not match stored value"
+                }, 500
+        else:
+            logger.error("Redis test failed: not connected")
+            return {
+                "status": "error", 
+                "message": "Redis not connected"
+            }, 503
+    except Exception as e:
+        logger.error(f"Redis test failed with exception: {e}")
+        return {
+            "status": "error", 
+            "message": f"Redis test exception: {str(e)}"
+        }, 500
+
 # ==================== API ROUTES ====================
 
 api.add_resource(Health, '/api/v1/health')
