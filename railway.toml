@@ -37,15 +37,15 @@
 
   [[services.env]]
     key = "REDIS_URL"
-    value = "redis://default:dpQqYc6wimd8CoOazLDvrE6TlNt4un6b@redis-11341.c246.us-east-1-4.ec2.redns.redis-cloud.com:11341"
+    value = "${{shared.REDIS_URL}}"
 
   [[services.env]]
     key = "SUPABASE_URL"
-    value = "https://hiwmpmvqcxzshdmhhlsb.supabase.co"
+    value = "${{shared.SUPABASE_URL}}"
 
   [[services.env]]
     key = "SUPABASE_ANON_KEY"
-    value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE"
+    value = "${{shared.SUPABASE_ANON_KEY}}"
 
   [[services.env]]
     key = "SECRET_KEY"
@@ -65,8 +65,8 @@
 
   [[services.env]]
     key = "SPOTIPY_CLIENT_ID"
-    value = "dcc37439570a47b1a79db76e3bd35a22"
+    value = "${{shared.SPOTIPY_CLIENT_ID}}"
 
   [[services.env]]
     key = "SPOTIPY_CLIENT_SECRET"
-    value = "c2e06d864bca407bab4a6dfbf80993d5"
+    value = "${{shared.SPOTIPY_CLIENT_SECRET}}"
