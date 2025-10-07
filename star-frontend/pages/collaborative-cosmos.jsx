@@ -13,6 +13,8 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { supabase } from '../lib/supabase';
+import Login from '../components/Login';
 
 // Dynamically import components that use browser APIs
 const NotificationPanel = dynamic(() => import('@/components/cosmic/NotificationPanel').then(mod => ({ default: mod.NotificationPanel })), { ssr: false });
@@ -30,6 +32,7 @@ const CollaborativeCosmosScene = () => {
   const [showPostCreation, setShowPostCreation] = useState(false);
   const [showLiveStream, setShowLiveStream] = useState(false);
   const [activeStream, setActiveStream] = useState(null);
+  const [posts, setPosts] = useState([]);
   const canvasRef = useRef();
 
   // Handle avatar clicks
@@ -71,6 +74,37 @@ const CollaborativeCosmosScene = () => {
       });
     }
   }, [constellations.size, currentUser, createConstellation]);
+
+  // Fetch posts from Supabase
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const { data, error } = await supabase
+          .from('post')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setPosts(data);
+      } catch (error) {
+        console.error('Error fetching posts:', error.message);
+      }
+    }
+    fetchPosts();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel('post-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'post' },
+        (payload) => {
+          setPosts((prev) => [payload.new, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, []);
 
   return (
     <div className="w-full h-screen relative bg-black">
@@ -153,6 +187,22 @@ const CollaborativeCosmosScene = () => {
             >
               {showLiveStream ? 'Hide' : 'Show'} Live Stream
             </button>
+          </div>
+          {/* Posts Section */}
+          <div className="mt-4">
+            <h2 className="text-lg font-semibold mb-2">Recent Posts</h2>
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {posts.map((post) => (
+                <div key={post.id} className="bg-gray-800 p-2 rounded text-sm">
+                  <h3 className="font-medium">{post.title}</h3>
+                  <p className="opacity-80">{post.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Login Section */}
+          <div className="mt-4">
+            <Login />
           </div>
         </div>
       </div>
