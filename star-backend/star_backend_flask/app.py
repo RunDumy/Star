@@ -1783,6 +1783,7 @@ if __name__ == '__main__':
     # Register analytics blueprint
     app.register_blueprint(analytics_bp, url_prefix='/api/v1')
 
+if __name__ == '__main__':
     logger.info("Starting Star App server...")
     logger.info(f"Available at: http://localhost:{os.environ.get('PORT', 5000)}")
     debug_mode = os.environ.get('FLASK_DEBUG', '1') == '1'
