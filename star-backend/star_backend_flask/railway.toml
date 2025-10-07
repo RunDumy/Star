@@ -47,4 +47,4 @@
     ALLOWED_ORIGINS = "https://star-frontend.vercel.app"
 
   [services.start]
-    command = "pip install gunicorn && gunicorn --threads 4 -b 0.0.0.0:$PORT railway:app"
+    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT railway:app"
