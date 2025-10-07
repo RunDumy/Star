@@ -1,15 +1,20 @@
-# Wrapper file for Railway deployment
-# This file imports the Flask app instance from app_simple.py
-# and exposes it as 'app' for Railway to use
+# Simple wrapper for Railway deployment
+from flask import Flask, jsonify
+from flask_cors import CORS
 
-try:
-    from .app_simple import app
-except ImportError:
-    from app_simple import app
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/api/health')
+def health():
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/')
+def root():
+    return jsonify({"message": "Star Backend API", "version": "1.0.0"}), 200
 
 if __name__ == '__main__':
-    # This block won't be executed when imported by gunicorn
-    # but would be useful for local development
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
