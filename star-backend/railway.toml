@@ -44,3 +44,6 @@
     SPOTIPY_CLIENT_ID = "dcc37439570a47b1a79db76e3bd35a22"
     SPOTIPY_CLIENT_SECRET = "c2e06d864bca407bab4a6dfbf80993d5"
     ALLOWED_ORIGINS = "https://star-frontend.vercel.app"
+
+  [services.start]
+    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT --chdir star_backend_flask app:app"
