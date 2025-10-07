@@ -1474,7 +1474,47 @@ class Health(Resource):
 @app.route('/api/health')
 def health_check():
     logger.info("Railway health check endpoint called")
-    return {'status': 'ok'}, 200
+    try:
+        # Test Supabase connection
+        if supabase:
+            # Simple test - try to get current user (should fail gracefully for anonymous)
+            try:
+                supabase.auth.get_user()
+                logger.info("Supabase connection test passed")
+            except Exception as e:
+                logger.warning(f"Supabase auth test failed (expected for anonymous): {e}")
+
+        # Test Redis connection
+        try:
+            redis_client = get_redis()
+            if redis_client:
+                redis_client.ping()
+                logger.info("Redis connection test passed")
+            else:
+                logger.warning("Redis client not available")
+        except Exception as e:
+            logger.error(f"Redis connection test failed: {e}")
+            return {"status": "error", "message": f"Redis connection failed: {str(e)}"}, 503
+
+        # Test Spotify connection (optional - don't fail health check if Spotify fails)
+        try:
+            import spotipy
+            from spotipy.oauth2 import SpotifyClientCredentials
+            if os.environ.get('SPOTIPY_CLIENT_ID') and os.environ.get('SPOTIPY_CLIENT_SECRET'):
+                sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+                    client_id=os.environ.get('SPOTIPY_CLIENT_ID'),
+                    client_secret=os.environ.get('SPOTIPY_CLIENT_SECRET')
+                ))
+                # Simple test - try to get a playlist (this should work with client credentials)
+                sp.playlist('spotify:playlist:37i9dQZF1DXcBWIGoYBM5M')  # Today's Top Hits
+                logger.info("Spotify connection test passed")
+        except Exception as e:
+            logger.warning(f"Spotify connection test failed: {e}")
+
+        return {"status": "ok"}, 200
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {"status": "error", "message": str(e)}, 503
 
 # ==================== API ROUTES ====================
 
