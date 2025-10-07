@@ -2,7 +2,7 @@
   builder = "NIXPACKS"
 
 [deploy]
-  startCommand = "gunicorn --threads 4 -b 0.0.0.0:$PORT app:app"
+  startCommand = "gunicorn --chdir star_backend_flask --threads 4 -b 0.0.0.0:$PORT app:app"
   healthcheckPath = "/api/health"
   healthcheckTimeout = 300
   restartPolicyType = "ON_FAILURE"
