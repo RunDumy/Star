@@ -46,4 +46,4 @@
     ALLOWED_ORIGINS = "https://star-frontend.vercel.app"
 
   [services.start]
-    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT app:app"
+    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT app_simple:app"
