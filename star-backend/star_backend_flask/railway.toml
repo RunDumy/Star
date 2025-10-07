@@ -1,7 +1,7 @@
 # railway.toml - Updated configuration for Star Backend Flask
 [build]
-  builder = "DOCKERFILE"
-  dockerfilePath = "Dockerfile"
+  builder = "NIXPACKS"
+  watchPatterns = ["**"]
 
 [[services]]
   internalHostname = "star-backend"
@@ -11,13 +11,6 @@
   [services.source]
     git = "github.com/RunDumy/Star"
     dir = "star-backend/star_backend_flask"
-    rootDir = "star-backend"
-
-  [services.assignments]
-    [[services.assignments.deploy]]
-      deploymentStrategy = "BLUE_GREEN"
-    [[services.assignments.deploy]]
-      service = "star-backend"
 
   [services.http]
     port = 5000
@@ -47,4 +40,4 @@
     ALLOWED_ORIGINS = "https://star-frontend.vercel.app"
 
   [services.start]
-    command = "./railway_start.sh"
+    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT app:app"

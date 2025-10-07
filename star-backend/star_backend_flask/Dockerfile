@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn==23.0.0 redis==5.0.8
 COPY . .
 ENV PORT=5000
 
-# Make the start script executable
-RUN chmod +x railway_start.sh
+# Ensure the application is ready to run
+RUN echo "Starting Star Backend for pretty-gentleness project"
 
-# Use our custom start script that includes Redis testing
-CMD ["./railway_start.sh"]
+# Use gunicorn to run the application
+CMD ["gunicorn", "--threads", "4", "-b", "0.0.0.0:5000", "app:app"]
