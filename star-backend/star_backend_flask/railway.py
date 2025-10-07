@@ -2,7 +2,10 @@
 # This file imports the Flask app instance from app_simple.py
 # and exposes it as 'app' for Railway to use
 
-from app_simple import app
+try:
+    from .app_simple import app
+except ImportError:
+    from app_simple import app
 
 if __name__ == '__main__':
     # This block won't be executed when imported by gunicorn
