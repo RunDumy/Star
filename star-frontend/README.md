@@ -25,3 +25,17 @@ A minimal, beginner-friendly Next.js frontend for the Star App with a starry bac
 - Deploy
 
 Tip: Compress public images and keep particles count low for best performance on free plans.
+
+## Licenses
+
+This project uses the following open-source packages:
+
+- **@supabase/supabase-js**: MIT License - Supabase client library
+- **react**: MIT License - React framework
+- **next**: MIT License - Next.js framework
+- **@react-three/fiber**: MIT License - React Three Fiber for 3D rendering
+- **tsparticles**: MIT License - Particle effects library
+
+All dependencies are compatible and licensed under permissive open-source licenses (MIT, ISC, BSD, Apache-2.0). No GPL or restrictive licenses are used.
+
+Portions of the Supabase integration code in `pages/collaborative-cosmos.jsx` and `components/Login.js` are based on Supabase documentation examples, which are licensed under the MIT License. See <https://github.com/supabase/supabase> for details.
