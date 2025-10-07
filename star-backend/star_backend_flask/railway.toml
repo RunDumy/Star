@@ -1,6 +1,6 @@
 [build]
-  builder = "NIXPACKS"
-  watchPatterns = ["star_backend_flask/**"]
+  builder = "DOCKERFILE"
+  dockerfilePath = "Dockerfile"
 
 [[services]]
   internalHostname = "star-backend"
