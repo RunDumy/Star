@@ -5,11 +5,13 @@ This supplementary guide covers deploying the Star app backend to Railway and co
 ## 🛤️ Railway Backend Deployment
 
 ### 1. Install Railway CLI
+
 ```bash
 npm install -g @railway/cli
 ```
 
 ### 2. Deploy Backend
+
 ```bash
 # From project root
 cd star-backend
@@ -25,6 +27,7 @@ railway up
 ```
 
 ### 3. Railway Configuration File
+
 Create a `railway.toml` file in the root of your backend directory:
 
 ```toml
@@ -34,21 +37,21 @@ Create a `railway.toml` file in the root of your backend directory:
 [[services]]
   internalPort = 5000
   autoStart = true
-  
+
   [services.concurrency]
     type = "connections"
     hard_limit = 25
     soft_limit = 20
-  
+
   [[services.ports]]
     port = 80
     handlers = ["http"]
     force_https = true
-  
+
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
-  
+
   [[services.http_checks]]
     interval = 10000
     grace_period = "5s"
@@ -58,7 +61,48 @@ Create a `railway.toml` file in the root of your backend directory:
     timeout = 2000
 ```
 
-### 4. Troubleshooting Railway Deployment
+### 4. Redis Configuration
+
+The Star app uses Redis for caching, session management, and Socket.IO message queue. Here's how to set it up:
+
+#### Redis Environment Variables
+
+Add these to your Railway project environment variables:
+
+```env
+REDIS_URL=redis://default:dpQqYc6wimd8CoOazLDvrE6TlNt4un6b@redis-11341.c246.us-east-1-4.ec2.redns.redis-cloud.com:11341
+REDIS_HOST=redis-11341.c246.us-east-1-4.ec2.redns.redis-cloud.com
+REDIS_PORT=11341
+REDIS_USERNAME=default
+REDIS_PASSWORD=dpQqYc6wimd8CoOazLDvrE6TlNt4un6b
+```
+
+#### Testing Redis Connection
+
+1. **Local Testing**: Run the test script to verify Redis connectivity:
+
+   ```bash
+   # From project root with activated virtual environment
+   python test_redis.py
+   ```
+
+2. **API Endpoint Testing**: Once deployed, test the Redis connection using the API endpoint:
+
+   ```bash
+   curl https://star-backend-production.up.railway.app/api/redis-test
+   ```
+
+   Expected successful response:
+   
+   ```json
+   {
+     "status": "ok",
+     "message": "Redis connection successful",
+     "value": "Redis test at 2025-10-07T12:30:45.123456"
+   }
+   ```
+
+### 5. Troubleshooting Railway Deployment
 
 If the health endpoint returns 404, try these approaches:
 
@@ -121,6 +165,7 @@ After enabling Realtime and setting up RLS policies, test collaborative features
 For immediate deployment, you can bypass the backend and use Supabase directly:
 
 1. Update the frontend environment variables to connect to Supabase:
+
    ```
    # .env.local
    # Use Supabase directly for initial deployment
@@ -134,10 +179,10 @@ For immediate deployment, you can bypass the backend and use Supabase directly:
    ```javascript
    // Example of real-time subscription
    const channel = supabase
-     .channel('post-changes')
+     .channel("post-changes")
      .on(
-       'postgres_changes',
-       { event: 'INSERT', schema: 'public', table: 'post' },
+       "postgres_changes",
+       { event: "INSERT", schema: "public", table: "post" },
        (payload) => {
          setPosts((prev) => [payload.new, ...prev]);
        }
