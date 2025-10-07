@@ -13,8 +13,8 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { supabase } from '../lib/supabase';
 import Login from '../components/Login';
+import { supabase } from '../lib/supabase';
 
 // Dynamically import components that use browser APIs
 const NotificationPanel = dynamic(() => import('@/components/cosmic/NotificationPanel').then(mod => ({ default: mod.NotificationPanel })), { ssr: false });
