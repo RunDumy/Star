@@ -72,9 +72,9 @@ logger.info(f"ALLOWED_ORIGINS: {os.environ.get('ALLOWED_ORIGINS', 'http://localh
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-if not app.config['SECRET_KEY']:
-    raise ValueError("SECRET_KEY environment variable is required")
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+if not app.config['SECRET_KEY'] or app.config['SECRET_KEY'] == 'dev-secret-key-change-in-production':
+    logger.warning("SECRET_KEY not set or using default - this is insecure for production!")
 # Limit uploads to 50MB for safety
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
@@ -1485,17 +1485,21 @@ def health_check():
             except Exception as e:
                 logger.warning(f"Supabase auth test failed (expected for anonymous): {e}")
 
-        # Test Redis connection
-        try:
-            redis_manager = get_redis()
-            if redis_manager and redis_manager.is_connected():
-                logger.info("Redis connection test passed")
-            else:
-                logger.error("Redis connection test failed: not connected")
-                return {"status": "error", "message": "Redis connection failed"}, 503
-        except Exception as e:
-            logger.error(f"Redis connection test failed: {e}")
-            return {"status": "error", "message": f"Redis connection failed: {str(e)}"}, 503
+        # Test Redis connection (only if Redis is configured)
+        redis_url = os.environ.get('REDIS_URL')
+        if redis_url:
+            try:
+                redis_manager = get_redis()
+                if redis_manager and redis_manager.is_connected():
+                    logger.info("Redis connection test passed")
+                else:
+                    logger.error("Redis connection test failed: not connected")
+                    return {"status": "error", "message": "Redis connection failed"}, 503
+            except Exception as e:
+                logger.error(f"Redis connection test failed: {e}")
+                return {"status": "error", "message": f"Redis connection failed: {str(e)}"}, 503
+        else:
+            logger.warning("REDIS_URL not set - Redis functionality will be disabled")
 
         # Test Spotify connection (optional - don't fail health check if Spotify fails)
         try:
