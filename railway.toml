@@ -29,11 +29,11 @@
 
   [[services.env]]
     key = "AGORA_APP_ID"
-    value = "d146ac692e604e7b9a99c9568ccbcd23"
+    value = "${{shared.AGORA_APP_ID}}"
 
   [[services.env]]
     key = "AGORA_APP_CERTIFICATE"
-    value = "f5e4c9a8466141d588644f9043ce4a84"
+    value = "${{shared.AGORA_APP_CERTIFICATE}}"
 
   [[services.env]]
     key = "REDIS_URL"
@@ -49,11 +49,11 @@
 
   [[services.env]]
     key = "SECRET_KEY"
-    value = "8d6448401426f23350520f5b4d4dadb088a9e6be0fb2ecc86a206b7cb358b722"
+    value = "${{shared.SECRET_KEY}}"
 
   [[services.env]]
     key = "JWT_SECRET"
-    value = "55bd7933fcfd0f10912b92788a36e0124a2e7c2330b586bfae32d2d28e9da16e"
+    value = "${{shared.JWT_SECRET}}"
 
   [[services.env]]
     key = "JWT_ALGORITHM"
