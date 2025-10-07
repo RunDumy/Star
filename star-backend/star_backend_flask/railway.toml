@@ -1,3 +1,4 @@
+# railway.toml - Updated configuration for Star Backend Flask
 [build]
   builder = "DOCKERFILE"
   dockerfilePath = "Dockerfile"
@@ -46,4 +47,4 @@
     ALLOWED_ORIGINS = "https://star-frontend.vercel.app"
 
   [services.start]
-    command = "gunicorn --threads 4 -b 0.0.0.0:$PORT railway:app"
+    command = "pip install gunicorn && gunicorn --threads 4 -b 0.0.0.0:$PORT railway:app"
