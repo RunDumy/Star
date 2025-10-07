@@ -58,6 +58,18 @@ try:
 except Exception as e:
     logger.warning(f"Failed to load .env file: {e}. Using environment variables directly.")
 
+# Log critical environment variables (without exposing secrets)
+logger.info(f"SUPABASE_URL set: {bool(os.environ.get('SUPABASE_URL'))}")
+logger.info(f"SUPABASE_ANON_KEY set: {bool(os.environ.get('SUPABASE_ANON_KEY'))}")
+logger.info(f"REDIS_URL set: {bool(os.environ.get('REDIS_URL'))}")
+logger.info(f"SECRET_KEY set: {bool(os.environ.get('SECRET_KEY'))}")
+logger.info(f"JWT_SECRET set: {bool(os.environ.get('JWT_SECRET'))}")
+logger.info(f"SPOTIPY_CLIENT_ID set: {bool(os.environ.get('SPOTIPY_CLIENT_ID'))}")
+logger.info(f"SPOTIPY_CLIENT_SECRET set: {bool(os.environ.get('SPOTIPY_CLIENT_SECRET'))}")
+logger.info(f"AGORA_APP_ID set: {bool(os.environ.get('AGORA_APP_ID'))}")
+logger.info(f"AGORA_APP_CERTIFICATE set: {bool(os.environ.get('AGORA_APP_CERTIFICATE'))}")
+logger.info(f"ALLOWED_ORIGINS: {os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')}")
+
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -124,6 +136,21 @@ socketio = SocketIO(app, **socketio_config)
 # Initialize Redis manager
 redis_url = os.environ.get('REDIS_URL')
 init_redis(redis_url)
+
+# Test Redis connection
+try:
+    redis_client = get_redis()
+    if redis_client:
+        redis_client.set('health_check', 'ok', ex=60)  # expires in 60 seconds
+        test_value = redis_client.get('health_check')
+        if test_value == 'ok':
+            logger.info("Redis connection test successful")
+        else:
+            logger.warning("Redis connection test failed - could not set/get value")
+    else:
+        logger.warning("Redis client not available for testing")
+except Exception as e:
+    logger.error(f"Redis connection test failed: {e}")
 
 # Supabase client (for Storage uploads)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -1440,7 +1467,14 @@ class BirthChartResource(Resource):
 
 class Health(Resource):
     def get(self):
+        logger.info("Health check endpoint called")
         return {'status': 'ok'}, 200
+
+# Add a simple health check route for Railway (expects /api/health, not /api/v1/health)
+@app.route('/api/health')
+def health_check():
+    logger.info("Railway health check endpoint called")
+    return {'status': 'ok'}, 200
 
 # ==================== API ROUTES ====================
 
