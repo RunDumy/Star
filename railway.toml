@@ -62,3 +62,11 @@
   [[services.env]]
     key = "ALLOWED_ORIGINS"
     value = "https://star-frontend.vercel.app,http://localhost:3000"
+
+  [[services.env]]
+    key = "SPOTIPY_CLIENT_ID"
+    value = "dcc37439570a47b1a79db76e3bd35a22"
+
+  [[services.env]]
+    key = "SPOTIPY_CLIENT_SECRET"
+    value = "c2e06d864bca407bab4a6dfbf80993d5"
