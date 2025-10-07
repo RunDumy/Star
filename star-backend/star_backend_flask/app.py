@@ -135,6 +135,7 @@ socketio = SocketIO(app, **socketio_config)
 
 # Initialize Redis manager
 redis_url = os.environ.get('REDIS_URL')
+logger.info(f"REDIS_URL from environment: {redis_url}")
 init_redis(redis_url)
 
 # Test Redis connection
@@ -1486,12 +1487,12 @@ def health_check():
 
         # Test Redis connection
         try:
-            redis_client = get_redis()
-            if redis_client:
-                redis_client.ping()
+            redis_manager = get_redis()
+            if redis_manager and redis_manager.is_connected():
                 logger.info("Redis connection test passed")
             else:
-                logger.warning("Redis client not available")
+                logger.error("Redis connection test failed: not connected")
+                return {"status": "error", "message": "Redis connection failed"}, 503
         except Exception as e:
             logger.error(f"Redis connection test failed: {e}")
             return {"status": "error", "message": f"Redis connection failed: {str(e)}"}, 503
