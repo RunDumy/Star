@@ -7,9 +7,8 @@ on:
 env:
   JWT_SECRET_KEY: ${{ secrets.JWT_SECRET }}
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-  DATABASE_URL: sqlite:///test.db
+  COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }}
+  COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
   SECRET_KEY: test-secret-key
   REDIS_URL: ${{ secrets.REDIS_URL }}
   TESTING: "true"
@@ -33,9 +32,8 @@ jobs:
       - name: Run tests
         env:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          DATABASE_URL: sqlite:///test.db
+          COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }}
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
           SECRET_KEY: test-secret-key
           TESTING: "true"
         run: |
