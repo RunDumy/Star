@@ -1,56 +1,61 @@
 name: STAR Backend CI/CD for Azure
 on:
-    push:
-        branches:
-            - main
-    workflow_dispatch:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 jobs:
-    build-and-test:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v2
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: "3.12"
-            - name: Install dependencies
-              run: |
-                  cd star-backend
-                  python -m pip install --upgrade pip
-                  pip install -r requirements.txt
-            - name: Set PYTHONPATH
-              run: echo "PYTHONPATH=${{ github.workspace }}/star-backend:${{ github.workspace }}/star-backend/star_backend_flask" >> $GITHUB_ENV
-            - name: Run tests
-              run: |
-                  cd star-backend
-                  pytest tests/ -v
-            - name: Build Docker image
-              run: |
-                  cd star-backend
-                  docker build -t star-backend-test .
-    deploy-production:
-        needs: build-and-test
-        runs-on: ubuntu-latest
-        environment: production
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v2
-            - name: Log in to Azure
-              uses: azure/login@v1
-              with:
-                  creds: ${{ secrets.AZURE_CREDENTIALS }}
-            - name: Deploy to Azure Production
-              uses: azure/webapps-deploy@v2
-              with:
-                  app-name: star-app-backend
-                  slot-name: production
-                  package: ./star-backend
-            - name: Post-deployment health check
-              run: |
-                  sleep 30
-                  response=$(curl -s -o /dev/null -w "%{http_code}" https://star-app-backend.azurewebsites.net/api/health)
-                  if [ "$response" != "200" ]; then
-                    echo "Health check failed: $response"
-                    exit 1
-                  fi
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          cd star-backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}/star-backend:${{ github.workspace }}/star-backend/star_backend_flask" >> $GITHUB_ENV
+      - name: Run tests
+        env:
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cd star-backend
+          pytest tests/ -v
+      - name: Build Docker image
+        run: |
+          cd star-backend
+          docker build -t star-backend-test .
+  deploy-production:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy to Azure Production
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: star-app-backend
+          slot-name: production
+          package: ./star-backend
+      - name: Post-deployment health check
+        run: |
+          sleep 30
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://star-app-backend.azurewebsites.net/api/health)
+          if [ "$response" != "200" ]; then
+            echo "Health check failed: $response"
+            exit 1
+          fi
