@@ -14,7 +14,7 @@ import requests
 from agora_token_builder import Role_Attendee, Role_Publisher, RtcTokenBuilder
 from flask import Blueprint, g, jsonify, request
 from flask_socketio import SocketIO, emit, join_room
-from star_backend_flask.app import supabase
+from .main import supabase
 
 from .star_auth import token_required
 
@@ -57,7 +57,7 @@ def compress_and_generate_hls(video_file, post_id):
         
         return supabase.storage.from_('posts').get_public_url(video_path), supabase.storage.from_('posts').get_public_url(f"posts/{post_id}/hls/playlist.m3u8")
 
-api_bp = Blueprint('api', __name__)
+api_bp = Blueprint('api_bp', __name__)
 
 # Initialize Socket.IO and Redis for real-time features
 try:

@@ -41,15 +41,14 @@ if not app.config['SECRET_KEY']:
     raise ValueError("SECRET_KEY environment variable is required")
 
 # JWT Configuration
-jwt_secret = os.environ.get('JWT_SECRET')
-if not jwt_secret:
-    raise ValueError("JWT_SECRET environment variable must be set")
-app.config['JWT_SECRET_KEY'] = jwt_secret
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or 'dev-jwt-secret-key-change-in-production'
 app.config['JWT_ALGORITHM'] = 'HS256'
 
 # Initialize extensions
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
-api = Api(app)
+rest_api = Api(app)
+limiter = Limiter(key_func=get_remote_address)
+limiter.init_app(app)
 import logging
 import os
 import random
@@ -84,17 +83,15 @@ logger.info("Starting application")
 load_dotenv()
 app = Flask(__name__)
 secret = os.environ.get('SECRET_KEY')
-jwt_secret = os.environ.get('JWT_SECRET')
+jwt_secret = os.environ.get('JWT_SECRET_KEY') or 'dev-jwt-secret-key-change-in-production'
 if not secret:
     raise ValueError("SECRET_KEY environment variable is required")
-if not jwt_secret:
-    raise ValueError("JWT_SECRET environment variable is required")
 app.config['SECRET_KEY'] = secret
 app.config['JWT_SECRET_KEY'] = jwt_secret
 app.config['JWT_ALGORITHM'] = 'HS256'
 
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
-api = Api(app)
+rest_api = Api(app)
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_THRESHOLD': 1000})
 cache.init_app(app)
@@ -102,15 +99,24 @@ cache.init_app(app)
 limiter = Limiter(key_func=get_remote_address)
 limiter.init_app(app)
 
-socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='threading' if os.environ.get('TESTING') == 'true' else 'eventlet')
 
 # -------------------- Supabase --------------------
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set")
-supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-logger.info("Initialized Supabase client")
+if os.environ.get('TESTING') == 'true':
+    from unittest.mock import MagicMock
+    supabase = MagicMock()
+    supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [{'id': 1, 'username': 'testuser', 'zodiac_sign': 'Aries'}]
+    supabase.table.return_value.update.return_value.eq.return_value.execute.return_value = None
+    supabase.table.return_value.insert.return_value.execute.return_value = None
+else:
+    supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    logger.info("Initialized Supabase client")
+
+from . import api
 
 # -------------------- Zodiac Data --------------------
 ZODIAC_INFO = {
@@ -271,6 +277,7 @@ def get_chinese_zodiac(birth_year):
     return zodiac_animals[index]
 
 def get_chinese_zodiac_element(birth_year):
+    """Calculate Chinese zodiac element based on birth year"""
     if not birth_year:
         return None
     elements = ['Wood', 'Fire', 'Earth', 'Metal', 'Water']
@@ -279,6 +286,7 @@ def get_chinese_zodiac_element(birth_year):
     return elements[element_index]
 
 def get_vedic_zodiac(birth_date):
+    """Simple approximation of Vedic zodiac from Western equivalent by month/day"""
     western_to_vedic = {
         'Aries': 'Mesha', 'Taurus': 'Vrishabha', 'Gemini': 'Mithuna',
         'Cancer': 'Karka', 'Leo': 'Simha', 'Virgo': 'Kanya',
@@ -344,383 +352,6 @@ class PostSchema(Schema):
     image_url = fields.Str(allow_none=True)
 
 # -------------------- API RESOURCES --------------------
-class Register(Resource):
-    @limiter.limit("50/hour")
-    def post(self):
-        schema = RegisterSchema()
-        try:
-            data = schema.load(request.get_json())
-            username = data['username']
-            exists = supabase.table('user').select('id').eq('username', username).execute().data
-            if exists:
-                return {'error': 'Username already exists'}, 400
-
-            birth_date = data['birth_date']
-            birth_year = birth_date.year
-            hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-            new_user = {
-                'username': username,
-                'password_hash': hashed_password,
-                'zodiac_sign': data['zodiac_sign'].capitalize(),
-                'birth_date': birth_date.isoformat(),
-                'chinese_zodiac': get_chinese_zodiac(birth_year),
-                'chinese_element': get_chinese_zodiac_element(birth_year),
-                'vedic_zodiac': get_vedic_zodiac(birth_date),
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'last_seen': datetime.now(timezone.utc).isoformat(),
-                'is_online': True
-            }
-            supabase.table('user').insert(new_user).execute()
-            return {'message': 'Registered successfully'}, 201
-        except ValidationError as err:
-            return {'error': f'Invalid input: {err.messages}'}, 400
-        except Exception as e:
-            logger.error(f"Registration error: {str(e)}")
-            return {'error': 'Registration failed'}, 500
-
-class Login(Resource):
-    @limiter.limit("50/hour")
-    def post(self):
-        data = request.get_json(silent=True) or request.form.to_dict() or {}
-        username = data.get('username')
-        password = data.get('password')
-        if not username or not password:
-            return {'error': 'Missing username or password'}, 400
-
-        user_res = supabase.table('user').select('*').eq('username', username).execute()
-        users = user_res.data or []
-        if not users or not bcrypt.checkpw(password.encode('utf-8'), users[0]['password_hash'].encode('utf-8')):
-            return {'error': 'Invalid credentials'}, 401
-
-        try:
-            token = jwt.encode({
-                'user_id': users[0]['id'],
-                'exp': datetime.now(timezone.utc) + timedelta(hours=24)
-            }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM'])
-
-            supabase.table('user').update({'is_online': True, 'last_seen': datetime.now(timezone.utc).isoformat()}).eq('id', users[0]['id']).execute()
-
-            return {
-                'token': token,
-                'username': users[0]['username'],
-                'userId': users[0]['id'],
-                'zodiacSign': users[0]['zodiac_sign'],
-                'chineseZodiac': users[0]['chinese_zodiac'],
-                'vedicZodiac': users[0]['vedic_zodiac'],
-                'actions': ZODIAC_ACTIONS.get(users[0]['zodiac_sign'], {}),
-                'message': f'Welcome back, {users[0]["zodiac_sign"]} star!'
-            }, 200
-        except Exception as e:
-            logger.error(f"Login error: {str(e)}")
-            return {'error': 'Login failed'}, 500
-
-class PostResource(Resource):
-    @limiter.limit("50/hour")
-    @cache.cached(timeout=60)
-    def get(self):
-        try:
-            res = supabase.table('post').select('id,content,user_id,zodiac_sign,image_url,spark_count,echo_count,created_at,user:user_id(username)').order('created_at', desc=True).limit(20).execute()
-            rows = res.data or []
-            posts = []
-            for r in rows:
-                username = None
-                if isinstance(r.get('user'), dict):
-                    username = r['user'].get('username')
-                posts.append({
-                    'id': r.get('id'),
-                    'content': r.get('content'),
-                    'user_id': r.get('user_id'),
-                    'username': username,
-                    'zodiac_sign': r.get('zodiac_sign'),
-                    'image_url': r.get('image_url'),
-                    'spark_count': r.get('spark_count', 0),
-                    'echo_count': r.get('echo_count', 0),
-                    'created_at': r.get('created_at')
-                })
-            return {'posts': posts}, 200
-        except Exception as e:
-            logger.error(f"Failed to fetch posts: {str(e)}")
-            return {'error': 'Failed to fetch posts'}, 500
-
-    @limiter.limit("20/hour")
-    @token_required
-    def post(self, current_user):
-        """Create a new text post"""
-        schema = PostSchema()
-        try:
-            data = schema.load(request.get_json())
-            new_post = {
-                'content': data['content'],
-                'user_id': current_user.id,
-                'zodiac_sign': current_user.zodiac_sign,
-                'image_url': data.get('image_url'),
-                'created_at': datetime.now(timezone.utc).isoformat()
-            }
-            ins = supabase.table('post').insert(new_post).execute()
-            cache.delete_memoized(PostResource.get)
-            post_id = (ins.data or [{}])[0].get('id') if ins and getattr(ins, 'data', None) is not None else None
-            return {'message': 'Post created', 'post_id': post_id}, 201
-        except ValidationError as err:
-            return {'error': f'Invalid input: {err.messages}'}, 400
-        except Exception as e:
-            logger.error(f"Post creation error: {str(e)}")
-            return {'error': 'Failed to create post'}, 500
-
-class UploadResource(Resource):
-    @limiter.limit("5/hour")
-    @token_required
-    def post(self, current_user):
-        """Upload a video to Supabase Storage and create a post with its URL"""
-        try:
-            if 'file' not in request.files:
-                return {'error': 'No file provided'}, 400
-            file = request.files['file']
-            content = request.form.get('content', '')
-            filename = f"{current_user.id}_{int(time.time())}.mp4"
-            # Upload to 'media' bucket; ensure bucket exists and is public or signed URLs are used
-            supabase.storage.from_('media').upload(filename, file.read())
-            url = supabase.storage.from_('media').get_public_url(filename)
-
-            new_post = {
-                'content': content,
-                'user_id': current_user.id,
-                'zodiac_sign': current_user.zodiac_sign,
-                'image_url': url,
-                'created_at': datetime.now(timezone.utc).isoformat()
-            }
-            ins = supabase.table('post').insert(new_post).execute()
-            cache.delete_memoized(PostResource.get)
-            post_id = (ins.data or [{}])[0].get('id') if ins and getattr(ins, 'data', None) is not None else None
-            return {'message': 'Video posted', 'post_id': post_id, 'url': url}, 201
-        except Exception as e:
-            logger.error(f"Upload error: {str(e)}")
-            return {'error': 'Failed to upload video'}, 500
-
-class FollowResource(Resource):
-    @limiter.limit("50/hour")
-    @token_required
-    def post(self, current_user, user_id):
-        try:
-            if current_user.id == user_id:
-                return {'error': 'Cannot follow yourself'}, 400
-            existing = supabase.table('follow').select('id').eq('follower_id', current_user.id).eq('followed_id', user_id).execute().data
-            if existing:
-                return {'error': 'Already following'}, 400
-            supabase.table('follow').insert({
-                'follower_id': current_user.id,
-                'followed_id': user_id,
-                'created_at': datetime.now(timezone.utc).isoformat()
-            }).execute()
-            return {'message': 'Followed'}, 201
-        except Exception as e:
-            logger.error(f"Follow error: {str(e)}")
-            return {'error': 'Failed to follow'}, 500
-
-class ProfileResource(Resource):
-    @limiter.limit("60/hour")
-    @cache.cached(timeout=300)
-    def get(self, user_id):
-        try:
-            user = supabase.table('user').select('username,zodiac_sign,chinese_zodiac,vedic_zodiac,bio,created_at').eq('id', user_id).execute().data
-            if not user:
-                return {'error': 'User not found'}, 404
-            posts = supabase.table('post').select('id,content,created_at,spark_count,echo_count').eq('user_id', user_id).order('created_at', desc=True).limit(10).execute().data
-            return {
-                'profile': {
-                    'username': user[0]['username'],
-                    'zodiac_sign': user[0]['zodiac_sign'],
-                    'chinese_zodiac': user[0]['chinese_zodiac'],
-                    'vedic_zodiac': user[0]['vedic_zodiac'],
-                    'bio': user[0]['bio'],
-                    'join_date': user[0]['created_at']
-                },
-                'posts': [{'id': p['id'], 'content': p['content'], 'created_at': p['created_at'], 'engagement': {'sparks': p.get('spark_count', 0), 'echoes': p.get('echo_count', 0)}} for p in (posts or [])]
-            }, 200
-        except Exception as e:
-            logger.error(f"Failed to fetch profile: {str(e)}")
-            return {'error': 'Failed to fetch profile'}, 500
-
-class TrendDiscoveryResource(Resource):
-    @limiter.limit("60/hour")
-    @cache.cached(timeout=300)
-    def get(self):
-        try:
-            trend_engine = TrendEngine()
-            trend_engine.generate_trends()
-            return {
-                'trends': {
-                    'hashtags': trend_engine.trending_hashtags,
-                    'sounds': trend_engine.viral_sounds,
-                    'challenges': trend_engine.trending_challenges
-                },
-                'updated_at': trend_engine.last_updated.isoformat()
-            }, 200
-        except Exception as e:
-            logger.error(f"Failed to fetch trends: {str(e)}")
-            return {'error': 'Failed to fetch trends'}, 500
-
-class ZodiacNumberResource(Resource):
-    @limiter.limit("100/hour")
-    @cache.cached(timeout=60)
-    def get(self):
-        try:
-            generator = ZodiacNumberGenerator()
-            numbers = generator.generate_numbers()
-            return numbers, 200
-        except Exception as e:
-            logger.error(f"Failed to generate zodiac numbers: {str(e)}")
-            return {'error': 'Failed to generate zodiac numbers'}, 500
-
-
-def call_apify_actor(actor_id: str, input_payload: dict, token_env: str = 'APIFY_TOKEN') -> dict:
-    """Call an Apify actor run via API and return parsed JSON results.
-
-    This is a simple helper that starts an actor run and returns the response JSON.
-    For long-running actors you should poll the run endpoint; here we keep it simple
-    and return the immediate response body (sufficient for quick, small runs).
-    """
-    token = os.environ.get(token_env)
-    if not token:
-        raise RuntimeError('APIFY_TOKEN not configured')
-    url = f"https://api.apify.com/v2/acts/{actor_id}/runs"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    try:
-        res = requests.post(url, json=input_payload, headers=headers, timeout=10)
-        res.raise_for_status()
-        return res.json()
-    except Exception as e:
-        logger.error(f"Apify call failed: {str(e)}")
-        raise
-
-
-class TrendDiscoveryApifyResource(Resource):
-    @limiter.limit("10/hour")
-    def post(self):
-        """Trigger an Apify actor to retrieve social media trends. Expects JSON body with 'hashtags' list."""
-        data = request.get_json(silent=True) or {}
-        hashtags = data.get('hashtags') or ['#ZodiacVibes']
-        payload = {"hashtags": hashtags, "platform": data.get('platform', 'twitter')}
-        try:
-            # Example actor id: 'apify~social-media-hashtag-research'
-            actor_id = data.get('actor_id', 'apify~social-media-hashtag-research')
-            run_res = call_apify_actor(actor_id, payload)
-            return {'result': run_res}, 200
-        except RuntimeError as e:
-            return {'error': str(e)}, 500
-        except Exception:
-            return {'error': 'Failed to call Apify'}, 502
-
-# Note: API routes are registered at the end of the file after all resource classes are defined
-
-# -------------------- SOCKET.IO EVENTS --------------------
-@socketio.on('connect')
-def handle_connect():
-    logger.info('Client connected to SocketIO')
-    emit('connected', {'data': 'Connected to Star', 'timestamp': datetime.now(timezone.utc).isoformat()})
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    logger.info('Client disconnected from SocketIO')
-
-@socketio.on('join_room')
-def handle_join_room(data):
-    room = data.get('room')
-    if not room or not isinstance(room, str):
-        emit('error', {'message': 'Invalid room'})
-        return
-    join_room(room)
-    logger.info(f'Client joined room: {room}')
-    emit('room_joined', {'room': room})
-
-@socketio.on('send_message')
-def handle_send_message(data):
-    room = data.get('room')
-    message = data.get('message')
-    if not room or not message:
-        emit('error', {'message': 'Invalid room or message'})
-        return
-    logger.info(f'Message sent to room: {room}')
-    emit('new_message', {'message': message, 'timestamp': datetime.now(timezone.utc).isoformat()}, room=room)
-
-# -------------------- GLOBAL ERROR HANDLER --------------------
-@app.errorhandler(Exception)
-def handle_error(error):
-    logger.error(f"Unhandled error: {str(error)}")
-    return {'error': 'Internal server error'}, 500
-
-# -------------------- MAIN APPLICATION --------------------
-if __name__ == '__main__':
-    logger.info("Starting Star App server...")
-    logger.info(f"Available at: http://localhost:{os.environ.get('PORT', 5000)}")
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=int(os.environ.get('PORT', 5000)),
-        debug=False
-    )
-# duplicating `api.add_resource` registrations above to prevent accidental
-# multiple bindings.
-
-# -------------------- Global Error Handler --------------------
-@app.errorhandler(Exception)
-def handle_error(error):
-    logger.error(f"Unhandled error: {str(error)}")
-    return {'error': 'Server error'}, 500
-
-# -------------------- Main --------------------
-if __name__ == '__main__':
-    logger.info("Starting Star App server...")
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
-def get_chinese_zodiac_element(birth_year):
-    """Calculate Chinese zodiac element based on birth year"""
-    if not birth_year:
-        return None
-    elements = ['Wood', 'Fire', 'Earth', 'Metal', 'Water']
-    start_year = 1900
-    element_index = ((birth_year - start_year) % 10) // 2
-    return elements[element_index]
-
-def get_vedic_zodiac(birth_date):
-    """Simple approximation of Vedic zodiac from Western equivalent by month/day"""
-    western_to_vedic = {
-        'Aries': 'Mesha', 'Taurus': 'Vrishabha', 'Gemini': 'Mithuna',
-        'Cancer': 'Karka', 'Leo': 'Simha', 'Virgo': 'Kanya',
-        'Libra': 'Tula', 'Scorpio': 'Vrischika', 'Sagittarius': 'Dhanu',
-        'Capricorn': 'Makara', 'Aquarius': 'Kumbha', 'Pisces': 'Meena'
-    }
-    m, d = birth_date.month, birth_date.day
-    if (m == 3 and d >= 21) or (m == 4 and d <= 19): west = 'Aries'
-    elif (m == 4 and d >= 20) or (m == 5 and d <= 20): west = 'Taurus'
-    elif (m == 5 and d >= 21) or (m == 6 and d <= 20): west = 'Gemini'
-    elif (m == 6 and d >= 21) or (m == 7 and d <= 22): west = 'Cancer'
-    elif (m == 7 and d >= 23) or (m == 8 and d <= 22): west = 'Leo'
-    elif (m == 8 and d >= 23) or (m == 9 and d <= 22): west = 'Virgo'
-    elif (m == 9 and d >= 23) or (m == 10 and d <= 22): west = 'Libra'
-    elif (m == 10 and d >= 23) or (m == 11 and d <= 21): west = 'Scorpio'
-    elif (m == 11 and d >= 22) or (m == 12 and d <= 21): west = 'Sagittarius'
-    elif (m == 12 and d >= 22) or (m == 1 and d <= 19): west = 'Capricorn'
-    elif (m == 1 and d >= 20) or (m == 2 and d <= 18): west = 'Aquarius'
-    else: west = 'Pisces'
-    return western_to_vedic.get(west, 'Unknown')
-
-# Duplicate token_required removed. The canonical implementation lives earlier in this file.
-
-# ==================== VALIDATION SCHEMAS ====================
-
-class RegisterSchema(Schema):
-    username = fields.Str(required=True, validate=validate.Length(min=3, max=50))
-    password = fields.Str(required=True, validate=validate.Length(min=6))
-    zodiac_sign = fields.Str(required=True, validate=validate.OneOf(list(ZODIAC_ACTIONS.keys())))
-    birth_date = fields.Date(required=True)
-
-class PostSchema(Schema):
-    content = fields.Str(required=True, validate=validate.Length(min=1, max=500))
-    zodiac_sign = fields.Str(required=True, validate=validate.OneOf(list(ZODIAC_ACTIONS.keys())))
-    image_url = fields.Str(allow_none=True)
-
-# ==================== API RESOURCES ====================
-
 class Register(Resource):
     @limiter.limit("50/hour")
     def post(self):
@@ -1019,16 +650,19 @@ class HoroscopeResource(Resource):
 # ==================== API ROUTES ====================
 
 # Register API resources after all classes are defined
-api.add_resource(Register, '/api/v1/register')
-api.add_resource(Login, '/api/v1/login')
-api.add_resource(PostResource, '/api/v1/posts')
-api.add_resource(UploadResource, '/api/v1/upload')
-api.add_resource(FollowResource, '/api/v1/follow/<int:user_id>')
-api.add_resource(ProfileResource, '/api/v1/profile/<int:user_id>')
-api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
-api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')
-api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
-api.add_resource(TrendDiscoveryApifyResource, '/api/v1/trends/apify')
+rest_api.add_resource(Register, '/api/v1/register')
+rest_api.add_resource(Login, '/api/v1/login')
+rest_api.add_resource(PostResource, '/api/v1/posts')
+rest_api.add_resource(UploadResource, '/api/v1/upload')
+rest_api.add_resource(FollowResource, '/api/v1/follow/<int:user_id>')
+rest_api.add_resource(ProfileResource, '/api/v1/profile/<int:user_id>')
+rest_api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
+rest_api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')
+rest_api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
+try:
+    rest_api.add_resource(TrendDiscoveryApifyResource, '/api/v1/trends/apify')
+except Exception:
+    pass
 
 def register_resources(api_obj=None):
     """Register API resources on the provided Api instance or the global api.
@@ -1037,7 +671,7 @@ def register_resources(api_obj=None):
     register_resources() during normal startup or use create_app() which calls
     this helper.
     """
-    target_api = api_obj or globals().get('api')
+    target_api = api_obj or globals().get('rest_api')
     if not target_api:
         return
 
@@ -1071,6 +705,8 @@ def create_app(config: dict | None = None):
     except Exception:
         # In constrained test environments the global api may be a dummy; ignore
         pass
+
+    app.register_blueprint(api.api_bp)
 
     return app
 

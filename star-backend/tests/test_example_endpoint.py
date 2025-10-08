@@ -3,9 +3,9 @@ import sys
 import pytest
 
 # Ensure the backend package path is importable during tests
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'star-backend', 'star_backend_flask')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import app
+from star_backend_flask.app import app
 
 
 @pytest.fixture

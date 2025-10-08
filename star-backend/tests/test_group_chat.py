@@ -18,11 +18,15 @@ def client():
 
 @pytest.fixture
 def auth_headers():
-    from star_backend_flask.star_auth import create_token
+    from star_backend_flask.main import create_app
 
-    # Mock token creation for testing
-    token = create_token(1)
-    return {'Authorization': f'Bearer {token}'}
+    app = create_app()
+    with app.app_context():
+        from star_backend_flask.star_auth import create_token
+
+        # Mock token creation for testing
+        token = create_token(1)
+        return {'Authorization': f'Bearer {token}'}
 
 
 def test_create_private_room(client, auth_headers):
@@ -94,7 +98,7 @@ class TestPrivateRooms:
     def test_create_private_room_success(self, mock_supabase, mock_current_user):
         """Test successful private room creation"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g, \
+             patch('flask.g') as mock_g, \
              patch('star_backend_flask.group_chat.socketio') as mock_socketio:
 
             mock_g.current_user = mock_current_user
@@ -123,7 +127,7 @@ class TestPrivateRooms:
     def test_create_private_room_already_exists(self, mock_supabase, mock_current_user):
         """Test creating a room that already exists"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 
@@ -145,7 +149,7 @@ class TestPrivateRooms:
     def test_get_private_room_messages_success(self, mock_supabase, mock_current_user):
         """Test successfully getting private room messages"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 
@@ -173,7 +177,7 @@ class TestPrivateRooms:
     def test_get_private_room_messages_access_denied(self, mock_supabase, mock_current_user):
         """Test access denied when trying to get messages from unauthorized room"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 
@@ -192,7 +196,7 @@ class TestPrivateRooms:
     def test_send_private_room_message_success(self, mock_supabase, mock_current_user):
         """Test successfully sending a private message"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g, \
+             patch('flask.g') as mock_g, \
              patch('star_backend_flask.group_chat.socketio') as mock_socketio:
 
             mock_g.current_user = mock_current_user
@@ -225,7 +229,7 @@ class TestPrivateRooms:
     def test_send_private_room_message_no_content(self, mock_supabase, mock_current_user):
         """Test sending message without content"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 
@@ -242,7 +246,7 @@ class TestPrivateRooms:
     def test_list_private_rooms(self, mock_supabase, mock_current_user):
         """Test listing private rooms for a user"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 
@@ -271,7 +275,7 @@ class TestPrivateRooms:
     def test_get_private_room_unread_count(self, mock_supabase, mock_current_user):
         """Test getting unread count for a private room"""
         with patch('star_backend_flask.group_chat.token_required', lambda f: f), \
-             patch('star_backend_flask.group_chat.g') as mock_g:
+             patch('flask.g') as mock_g:
 
             mock_g.current_user = mock_current_user
 

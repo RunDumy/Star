@@ -1,11 +1,10 @@
 from unittest.mock import patch, MagicMock
+from star_backend_flask.app import app
 
 
 def test_horoscope_endpoint_structure():
     # Import app factory and create test client
-    from main import create_app
-
-    app = create_app({'TESTING': True})
+    app.config['TESTING'] = True
     # Patch requests.get to avoid real network calls; return minimal HTML
     with patch('requests.get') as mock_get:
         mock_get.return_value = MagicMock(content=b'<html></html>')

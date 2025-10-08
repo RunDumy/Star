@@ -8,7 +8,8 @@ Write-Host "===================================================" -ForegroundColo
 try {
     $null = docker info
     Write-Host "[INFO] Docker is running." -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[ERROR] Docker is not running. Please start Docker Desktop." -ForegroundColor Red
     exit 1
 }
@@ -23,7 +24,7 @@ $env:REDIS_PASSWORD = "dpQqYc6wimd8CoOazLDvrE6TlNt4un6b"
 $env:SUPABASE_URL = "https://hiwmpmvqcxzshdmhhlsb.supabase.co"
 $env:SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE"
 $env:SECRET_KEY = "8d6448401426f23350520f5b4d4dadb088a9e6be0fb2ecc86a206b7cb358b722"
-$env:JWT_SECRET = "55bd7933fcfd0f10912b92788a36e0124a2e7c2330b586bfae32d2d28e9da16e"
+$env:JWT_SECRET_KEY = "55bd7933fcfd0f10912b92788a36e0124a2e7c2330b586bfae32d2d28e9da16e"
 $env:JWT_ALGORITHM = "HS256"
 $env:AGORA_APP_ID = "d146ac692e604e7b9a99c9568ccbcd23"
 $env:AGORA_APP_CERTIFICATE = "f5e4c9a8466141d588644f9043ce4a84"

@@ -95,7 +95,7 @@ The following environment variables are required in Railway:
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_USERNAME`, `REDIS_PASSWORD`: Redis connection details
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`: For Supabase connectivity
 - `SECRET_KEY`: For Flask session security
-- `JWT_SECRET`, `JWT_ALGORITHM`: For JWT token generation
+- `JWT_SECRET_KEY`, `JWT_ALGORITHM`: For JWT token generation
 - `AGORA_APP_ID`, `AGORA_APP_CERTIFICATE`: For Agora integration
 - `SPOTIPY_CLIENT_ID`, `SPOTIPY_CLIENT_SECRET`: For Spotify API integration
 - `ALLOWED_ORIGINS`: CORS configuration (e.g., `https://star-frontend.vercel.app`)

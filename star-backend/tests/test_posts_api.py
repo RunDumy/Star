@@ -1,9 +1,17 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from main import create_app
+from star_backend_flask.main import create_app
 import sys
 import os
 from types import ModuleType
+
+
+# Mock agora_token_builder
+m_agora = ModuleType('agora_token_builder')
+m_agora.Role_Attendee = None
+m_agora.Role_Publisher = None
+m_agora.RtcTokenBuilder = None
+sys.modules['agora_token_builder'] = m_agora
 
 
 @pytest.fixture
@@ -31,7 +39,8 @@ def client():
     if backend_folder not in sys.path:
         sys.path.insert(0, backend_folder)
 
-    app = create_app({'TESTING': True})
+    app = create_app()
+    app.config['TESTING'] = True
     with app.test_client() as c:
         with app.app_context():  # Provide application context for tests
             yield c

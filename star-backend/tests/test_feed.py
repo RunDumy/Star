@@ -1,7 +1,16 @@
 from unittest.mock import patch
+import sys
+from types import ModuleType
+
+# Mock agora_token_builder
+m_agora = ModuleType('agora_token_builder')
+m_agora.Role_Attendee = None
+m_agora.Role_Publisher = None
+m_agora.RtcTokenBuilder = None
+sys.modules['agora_token_builder'] = m_agora
 
 import pytest
-from star_backend_flask.app import create_app
+from star_backend_flask.main import create_app
 
 
 @pytest.fixture
@@ -11,7 +20,7 @@ def client():
     with app.test_client() as client:
         yield client
 
-@patch('star_backend_flask.app.supabase')
+@patch('star_backend_flask.main.supabase')
 def test_get_posts(mock_supabase, client):
     mock_supabase.table.return_value.select.return_value.order.return_value.execute.return_value.data = [
         {
@@ -33,7 +42,7 @@ def test_get_posts(mock_supabase, client):
     assert response.json['posts'][0]['like_count'] == 0
     assert response.json['posts'][0]['liked_by_user'] is False
 
-@patch('star_backend_flask.app.supabase')
+@patch('star_backend_flask.main.supabase')
 def test_create_post(mock_supabase, client):
     mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value.data = {'zodiac_sign': 'Aries'}
     mock_supabase.table.return_value.insert.return_value.execute.return_value.data = [{'id': 1, 'content': 'New post'}]

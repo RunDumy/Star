@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-os.environ['JWT_SECRET'] = 'test_secret'
+os.environ['JWT_SECRET_KEY'] = 'test_secret'
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Mock modules before importing app
@@ -96,7 +96,10 @@ m_numerology.NumerologyCalculator.calculate_comprehensive_readings = Mock(return
     'birth_day': {'number': 1}
 })
 
-from star_backend_flask.app import app
+from star_backend_flask.main import create_app
+
+app = create_app()
+app.config['TESTING'] = True
 
 
 class DummyRes:
@@ -154,33 +157,34 @@ def client():
     return app.test_client()
 
 
-def test_register_and_login(client):
-    # Register
-    import time
-    unique_suffix = str(int(time.time() * 1000) % 1000)
-    payload = {
-        'username': f'testuser{unique_suffix}',
-        'password': 'secret123',
-        'zodiac_sign': 'Leo',
-        'birth_date': '1990-08-01',
-        'full_name': 'Test User'
-    }
-    rv = client.post('/api/v1/register', data=json.dumps(payload), content_type='application/json')
-    if rv.status_code != 201:
-        print(f"Response status: {rv.status_code}, data: {rv.get_json()}")
-    assert rv.status_code == 201
-    data = rv.get_json()
-    assert 'message' in data and 'Registered' in data['message']
+def test_register_and_login():
+    with app.test_client() as client:
+        # Register
+        import time
+        unique_suffix = str(int(time.time() * 1000) % 1000)
+        payload = {
+            'username': f'testuser{unique_suffix}',
+            'password': 'secret123',
+            'zodiac_sign': 'Leo',
+            'birth_date': '1990-08-01',
+            'full_name': 'Test User'
+        }
+        rv = client.post('/api/v1/register', data=json.dumps(payload), content_type='application/json')
+        if rv.status_code != 201:
+            print(f"Response status: {rv.status_code}, data: {rv.get_json()}")
+        assert rv.status_code == 201
+        data = rv.get_json()
+        assert 'message' in data and 'Registered' in data['message']
 
-    # Emulate stored user for login: set password_hash to bcrypt hash
-    import bcrypt
-    import star_backend_flask.app as app_module
-    users = list(app_module.supabase.table('user').storage.values())
-    assert users
-    users[0]['password_hash'] = bcrypt.hashpw(payload['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Emulate stored user for login: set password_hash to bcrypt hash
+        import bcrypt
+        import star_backend_flask.main as app_module
+        users = list(app_module.supabase.table('user').storage.values())
+        assert users
+        users[0]['password_hash'] = bcrypt.hashpw(payload['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    # Login
-    rv2 = client.post('/api/v1/login', data=json.dumps({'username': payload['username'], 'password': 'secret123'}), content_type='application/json')
-    assert rv2.status_code == 200
-    data2 = rv2.get_json()
-    assert 'token' in data2
+        # Login
+        rv2 = client.post('/api/v1/login', data=json.dumps({'username': payload['username'], 'password': 'secret123'}), content_type='application/json')
+        assert rv2.status_code == 200
+        data2 = rv2.get_json()
+        assert 'token' in data2

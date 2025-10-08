@@ -1,22 +1,34 @@
 import json
+import sys
+from types import ModuleType
+
+# Mock agora_token_builder
+m_agora = ModuleType('agora_token_builder')
+m_agora.Role_Attendee = None
+m_agora.Role_Publisher = None
+m_agora.RtcTokenBuilder = None
+sys.modules['agora_token_builder'] = m_agora
 
 import pytest
 from star_backend_flask.star_auth import create_token
-from star_backend_flask.app import app
+from star_backend_flask.main import create_app
 
 
 @pytest.fixture
 def client():
+    app = create_app()
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
 
 @pytest.fixture
-def auth_headers():
-    # Mock user ID for testing
-    user_id = 1
-    token = create_token(user_id)
-    return {'Authorization': f'Bearer {token}'}
+def auth_headers(client):
+    with client.application.app_context():
+        # Mock user ID for testing
+        user_id = 1
+        token = create_token(user_id)
+        return {'Authorization': f'Bearer {token}'}
+
 
 def test_get_star_points(client, auth_headers):
     """Test getting user's star points"""

@@ -21,7 +21,7 @@ def token_required(f):
             # Application should provide a 'supabase' or DB access on the app module
             supabase = app.extensions.get('supabase') if hasattr(app, 'extensions') else None
             # Fallback to reading from global if present
-            from main import supabase as global_supabase
+            from .main import supabase as global_supabase
             supabase = supabase or global_supabase
             user_res = supabase.table('user').select('*').eq('id', data['user_id']).execute()
             user_data = user_res.data or []

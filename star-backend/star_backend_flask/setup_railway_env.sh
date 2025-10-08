@@ -23,7 +23,7 @@ railway variables set SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
 
 # Security configuration
 railway variables set SECRET_KEY="8d6448401426f23350520f5b4d4dadb088a9e6be0fb2ecc86a206b7cb358b722"
-railway variables set JWT_SECRET="55bd7933fcfd0f10912b92788a36e0124a2e7c2330b586bfae32d2d28e9da16e"
+railway variables set JWT_SECRET_KEY="55bd7933fcfd0f10912b92788a36e0124a2e7c2330b586bfae32d2d28e9da16e"
 railway variables set JWT_ALGORITHM="HS256"
 
 # Agora configuration

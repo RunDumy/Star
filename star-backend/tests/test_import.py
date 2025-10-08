@@ -2,12 +2,17 @@
 
 import sys
 from pathlib import Path
+import os
+
+os.environ['TESTING'] = 'true'
+os.environ['SUPABASE_URL'] = 'dummy'
+os.environ['SUPABASE_ANON_KEY'] = 'dummy'
 
 print(sys.path)
 
 try:
     # Attempt import assuming backend is already on PYTHONPATH or marked as Source Root
-    from star_backend.api import posts
+    from star_backend_flask.main import create_app
 except ModuleNotFoundError as e:
     # If api isn't found, add the backend directory to sys.path and retry
     project_root = Path(__file__).resolve().parent
@@ -17,17 +22,21 @@ except ModuleNotFoundError as e:
         if backend_str not in sys.path:
             sys.path.insert(0, backend_str)
         try:
-            from star_backend.api import posts  # retry after fixing sys.path
+            from star_backend_flask.main import create_app  # retry after fixing sys.path
         except ModuleNotFoundError:
             # Give a clear error with guidance
             raise ModuleNotFoundError(
-                "Could not import 'star_backend'. Ensure the 'backend' directory is on PYTHONPATH "
+                "Could not import 'star_backend_flask'. Ensure the 'star-backend' directory is on PYTHONPATH "
                 "or marked as a Sources Root in your IDE, or install the package. "
                 f"Tried adding to sys.path: {backend_str}"
             ) from e
     else:
         raise FileNotFoundError(
-            f"'backend' directory not found at expected location: {backend_dir}"
+            f"'star-backend' directory not found at expected location: {backend_dir}"
         ) from e
+
+def test_import():
+    app = create_app()
+    assert app is not None
 
 print('Import successful')

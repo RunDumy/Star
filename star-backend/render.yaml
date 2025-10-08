@@ -16,7 +16,7 @@ services:
         value: 3.13.4
       - key: SECRET_KEY
         sync: false
-      - key: JWT_SECRET
+      - key: JWT_SECRET_KEY
         sync: false
       - key: JWT_ALGORITHM
         sync: false

@@ -1,15 +1,18 @@
 from unittest.mock import patch, MagicMock
+from star_backend_flask.main import create_app
+
+app = create_app()
+app.config['TESTING'] = True
 
 
 def test_horoscope_timeout_handling():
-    from main import create_app
-    app = create_app({'TESTING': True})
+    app.config['TESTING'] = True
     import requests as _requests
     with patch('requests.get') as mock_get:
         mock_get.side_effect = _requests.exceptions.Timeout('timeout')
         # Ensure cached responses are cleared in case prior tests populated the cache
         try:
-            from main import cache as _cache
+            from star_backend_flask.main import cache as _cache
             _cache.clear()
         except Exception:
             pass
@@ -21,9 +24,7 @@ def test_horoscope_timeout_handling():
 
 
 def test_apify_resource_posts_and_returns_json(monkeypatch):
-    from main import create_app
-
-    app = create_app({'TESTING': True})
+    app.config['TESTING'] = True
 
     fake_response = {'data': {'items': [{'hashtag': '#ZodiacVibes', 'count': 123}]}}
 
