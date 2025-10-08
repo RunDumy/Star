@@ -10,7 +10,7 @@ sys.path.insert(0, backend_path)
 from datetime import datetime
 
 # Import after path modification
-from archetype_oracle import ArchetypeOracle  # type: ignore
+from star_backend_flask.archetype_oracle import ArchetypeOracle  # type: ignore
 
 
 def test_archetype_oracle():

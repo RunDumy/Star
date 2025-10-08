@@ -7,7 +7,7 @@ print(sys.path)
 
 try:
     # Attempt import assuming backend is already on PYTHONPATH or marked as Source Root
-    from api import posts
+    from star_backend.api import posts
 except ModuleNotFoundError as e:
     # If api isn't found, add the backend directory to sys.path and retry
     project_root = Path(__file__).resolve().parent
@@ -17,7 +17,7 @@ except ModuleNotFoundError as e:
         if backend_str not in sys.path:
             sys.path.insert(0, backend_str)
         try:
-            from api import posts  # retry after fixing sys.path
+            from star_backend.api import posts  # retry after fixing sys.path
         except ModuleNotFoundError:
             # Give a clear error with guidance
             raise ModuleNotFoundError(
