@@ -1,0 +1,364 @@
+name: STAR Backend CI/CD for Azure
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "star-backend/**"
+            - ".github/workflows/azure-deploy.yml"
+    pull_request:
+        branches: [main]
+        paths:
+            - "star-backend/**"
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Environment to deploy to"
+                required: true
+                default: "staging"
+                type: choice
+                options:
+                    - staging
+                    - production
+
+env:
+    PYTHON_VERSION: "3.12"
+    AZURE_WEBAPP_NAME_STAGING: star-app-backend-staging
+    AZURE_WEBAPP_NAME_PROD: star-app-backend
+    WORKING_DIRECTORY: "./star-backend"
+
+jobs:
+    test:
+        name: Run Tests
+        runs-on: ubuntu-latest
+
+        services:
+            redis:
+                image: redis
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+                  cache: "pip"
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install pytest pytest-cov
+              working-directory: ${{ env.WORKING_DIRECTORY }}
+
+            - name: Run tests with coverage
+              run: |
+                  pytest --cov=star_backend_flask --cov-report=xml
+              working-directory: ${{ env.WORKING_DIRECTORY }}
+              env:
+                  FLASK_APP: star_backend_flask/app.py
+                  FLASK_ENV: testing
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+                  REDIS_URL: redis://localhost:6379
+
+            - name: Upload coverage report
+              uses: codecov/codecov-action@v3
+              with:
+                  file: ${{ env.WORKING_DIRECTORY }}/coverage.xml
+                  fail_ci_if_error: false
+
+    lint:
+        name: Lint Code
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+                  cache: "pip"
+
+            - name: Install linting dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install flake8 black isort
+
+            - name: Lint with flake8
+              run: |
+                  flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+                  flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+              working-directory: ${{ env.WORKING_DIRECTORY }}
+
+            - name: Check formatting with black
+              run: |
+                  black --check --diff .
+              working-directory: ${{ env.WORKING_DIRECTORY }}
+
+            - name: Check imports with isort
+              run: |
+                  isort --check-only --profile black .
+              working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    build:
+        name: Build and Push
+        runs-on: ubuntu-latest
+        needs: [test, lint]
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Log in to Azure
+              uses: azure/login@v1
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v2
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v4
+              with:
+                  context: ${{ env.WORKING_DIRECTORY }}
+                  push: false
+                  tags: star-backend:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  outputs: type=docker,dest=/tmp/star-backend-image.tar
+
+            - name: Upload artifact for deployment job
+              uses: actions/upload-artifact@v3
+              with:
+                  name: star-backend-image
+                  path: /tmp/star-backend-image.tar
+
+    deploy-staging:
+        name: Deploy to Staging
+        runs-on: ubuntu-latest
+        needs: build
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+        environment:
+            name: staging
+            url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+        steps:
+            - name: Log in to Azure
+              uses: azure/login@v1
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Download artifact from build job
+              uses: actions/download-artifact@v3
+              with:
+                  name: star-backend-image
+                  path: /tmp
+
+            - name: Load Docker image
+              run: |
+                  docker load --input /tmp/star-backend-image.tar
+                  docker tag star-backend:latest ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Login to Container Registry
+              uses: docker/login-action@v2
+              with:
+                  registry: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+                  username: ${{ secrets.REGISTRY_USERNAME }}
+                  password: ${{ secrets.REGISTRY_PASSWORD }}
+
+            - name: Push image to Container Registry
+              run: |
+                  docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Deploy to Azure Web App
+              id: deploy-to-webapp
+              uses: azure/webapps-deploy@v2
+              with:
+                  app-name: ${{ env.AZURE_WEBAPP_NAME_STAGING }}
+                  images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Run post-deployment health check
+              run: |
+                  # Wait for deployment to stabilize
+                  sleep 60
+
+                  # Check health endpoint
+                  response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME_STAGING }}.azurewebsites.net/health)
+
+                  if [ "$response" = "200" ]; then
+                    echo "Health check passed!"
+                  else
+                    echo "Health check failed with status: $response"
+                    exit 1
+                  fi
+
+    deploy-production:
+        name: Deploy to Production
+        runs-on: ubuntu-latest
+        needs: [deploy-staging]
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+        environment:
+            name: production
+            url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+        steps:
+            - name: Log in to Azure
+              uses: azure/login@v1
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Download artifact from build job
+              uses: actions/download-artifact@v3
+              with:
+                  name: star-backend-image
+                  path: /tmp
+
+            - name: Load Docker image
+              run: |
+                  docker load --input /tmp/star-backend-image.tar
+                  docker tag star-backend:latest ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Login to Container Registry
+              uses: docker/login-action@v2
+              with:
+                  registry: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+                  username: ${{ secrets.REGISTRY_USERNAME }}
+                  password: ${{ secrets.REGISTRY_PASSWORD }}
+
+            - name: Push image to Container Registry
+              run: |
+                  docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Deploy to Azure Web App
+              id: deploy-to-webapp
+              uses: azure/webapps-deploy@v2
+              with:
+                  app-name: ${{ env.AZURE_WEBAPP_NAME_PROD }}
+                  images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/star-backend:${{ github.sha }}
+
+            - name: Run post-deployment health check
+              run: |
+                  # Wait for deployment to stabilize
+                  sleep 60
+
+                  # Check health endpoint
+                  response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME_PROD }}.azurewebsites.net/health)
+
+                  if [ "$response" = "200" ]; then
+                    echo "Health check passed!"
+                  else
+                    echo "Health check failed with status: $response"
+                    exit 1
+                  fi
+
+    notify:
+        name: Notify Team
+        runs-on: ubuntu-latest
+        needs: [deploy-staging, deploy-production]
+        if: always()
+        steps:
+            - name: Notify on success
+              if: ${{ success() }}
+              uses: slackapi/slack-github-action@v1
+              with:
+                  payload: |
+                      {
+                        "text": "✅ STAR Backend deployment to ${{ github.event.inputs.environment || 'staging' }} succeeded!",
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "✅ Deployment Successful",
+                              "emoji": true
+                            }
+                          },
+                          {
+                            "type": "section",
+                            "fields": [
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Repository:*\n${{ github.repository }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Environment:*\n${{ github.event.inputs.environment || 'staging' }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Commit:*\n${{ github.sha }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Triggered by:*\n${{ github.actor }}"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+              env:
+                  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+            - name: Notify on failure
+              if: ${{ failure() }}
+              uses: slackapi/slack-github-action@v1
+              with:
+                  payload: |
+                      {
+                        "text": "❌ STAR Backend deployment to ${{ github.event.inputs.environment || 'staging' }} failed!",
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "❌ Deployment Failed",
+                              "emoji": true
+                            }
+                          },
+                          {
+                            "type": "section",
+                            "fields": [
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Repository:*\n${{ github.repository }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Environment:*\n${{ github.event.inputs.environment || 'staging' }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Commit:*\n${{ github.sha }}"
+                              },
+                              {
+                                "type": "mrkdwn",
+                                "text": "*Triggered by:*\n${{ github.actor }}"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "section",
+                            "text": {
+                              "type": "mrkdwn",
+                              "text": "👉 <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+                            }
+                          }
+                        ]
+                      }
+              env:
+                  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
