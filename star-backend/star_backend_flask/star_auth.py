@@ -1,5 +1,5 @@
 from functools import wraps
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from flask import request, current_app
 import jwt
 
@@ -44,3 +44,13 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
 
     return decorated
+
+
+def create_token(user_id):
+    """Create a JWT token for testing purposes"""
+    app = current_app
+    token = jwt.encode({
+        'user_id': user_id,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
+    }, app.config['JWT_SECRET_KEY'], algorithm=app.config.get('JWT_ALGORITHM', 'HS256'))
+    return token

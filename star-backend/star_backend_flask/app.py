@@ -78,13 +78,9 @@ logger.info(f"ALLOWED_ORIGINS: {os.environ.get('ALLOWED_ORIGINS', 'http://localh
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'test-secret-key'
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-if not app.config['JWT_SECRET_KEY']:
-    if os.environ.get('TESTING'):
-        app.config['JWT_SECRET_KEY'] = 'test-jwt-secret'
-    else:
-        raise ValueError("JWT_SECRET_KEY environment variable must be set")
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'test-secret-key')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', os.environ.get('JWT_SECRET', 'test-jwt-secret'))
+app.config['TESTING'] = os.environ.get('TESTING', 'false').lower() == 'true'
 # Limit uploads to 50MB for safety
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
