@@ -26,8 +26,11 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: sqlite:///test.db
+          SECRET_KEY: test-secret-key
+          TESTING: "true"
         run: |
+          export PYTHONPATH="${{ github.workspace }}/star-backend:${{ github.workspace }}/star-backend/star_backend_flask:$PYTHONPATH"
           cd star-backend
           pytest tests/ -v
       - name: Build Docker image

@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from star_auth import create_token
+from star_backend_flask.star_auth import create_token
 from star_backend_flask.app import app
 
 

@@ -14,8 +14,14 @@ import bcrypt
 import jwt
 import redis
 import requests
-# Import birth chart calculation functions
-from birth_chart import calculate_birth_chart, geocode_location
+# Import birth chart calculation functions (optional)
+try:
+    from birth_chart import calculate_birth_chart, geocode_location
+    BIRTH_CHART_AVAILABLE = True
+except ImportError:
+    calculate_birth_chart = None
+    geocode_location = None
+    BIRTH_CHART_AVAILABLE = False
 from dotenv import load_dotenv
 # Import feed blueprint
 from feed import feed
@@ -63,7 +69,7 @@ logger.info(f"SUPABASE_URL set: {bool(os.environ.get('SUPABASE_URL'))}")
 logger.info(f"SUPABASE_ANON_KEY set: {bool(os.environ.get('SUPABASE_ANON_KEY'))}")
 logger.info(f"REDIS_URL set: {bool(os.environ.get('REDIS_URL'))}")
 logger.info(f"SECRET_KEY set: {bool(os.environ.get('SECRET_KEY'))}")
-logger.info(f"JWT_SECRET set: {bool(os.environ.get('JWT_SECRET'))}")
+logger.info(f"JWT_SECRET_KEY set: {bool(os.environ.get('JWT_SECRET_KEY'))}")
 logger.info(f"SPOTIPY_CLIENT_ID set: {bool(os.environ.get('SPOTIPY_CLIENT_ID'))}")
 logger.info(f"SPOTIPY_CLIENT_SECRET set: {bool(os.environ.get('SPOTIPY_CLIENT_SECRET'))}")
 logger.info(f"AGORA_APP_ID set: {bool(os.environ.get('AGORA_APP_ID'))}")
@@ -72,9 +78,13 @@ logger.info(f"ALLOWED_ORIGINS: {os.environ.get('ALLOWED_ORIGINS', 'http://localh
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-if not app.config['SECRET_KEY'] or app.config['SECRET_KEY'] == 'dev-secret-key-change-in-production':
-    logger.warning("SECRET_KEY not set or using default - this is insecure for production!")
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'test-secret-key'
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+if not app.config['JWT_SECRET_KEY']:
+    if os.environ.get('TESTING'):
+        app.config['JWT_SECRET_KEY'] = 'test-jwt-secret'
+    else:
+        raise ValueError("JWT_SECRET_KEY environment variable must be set")
 # Limit uploads to 50MB for safety
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
@@ -168,22 +178,12 @@ except Exception as e:
     supabase = None
 
 # Database configuration
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-else:
-    db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'star.db')
-    database_url = f'sqlite:///{db_path}'
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///test.db').replace('postgres://', 'postgresql+psycopg2://').replace('postgresql://', 'postgresql+psycopg2://')
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 logger.info(f"Using database URI: {database_url}")
 
 # JWT Configuration
-jwt_secret = os.environ.get('JWT_SECRET')
-if not jwt_secret:
-    raise ValueError("JWT_SECRET environment variable must be set")
-app.config['JWT_SECRET_KEY'] = jwt_secret
 app.config['JWT_ALGORITHM'] = 'HS256'
 
 # Initialize database
@@ -1456,6 +1456,8 @@ class BirthChartResource(Resource):
                 return {'error': 'Invalid birth_date format. Use YYYY-MM-DD'}, 400
 
             # Calculate birth chart
+            if not BIRTH_CHART_AVAILABLE:
+                return {'error': 'Birth chart calculation not available'}, 503
             chart_data = calculate_birth_chart(birth_date, birth_time, location)
             if not chart_data:
                 return {'error': 'Failed to calculate birth chart'}, 500
