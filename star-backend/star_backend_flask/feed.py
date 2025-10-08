@@ -1,132 +1,45 @@
 import os
 from datetime import datetime, timedelta, timezone
 
+from azure.cosmos import CosmosClient, exceptions
 from flask import Blueprint, current_app, jsonify, request
 # Import notification function
 from notifications import create_notification
 from star_auth import token_required
 from werkzeug.exceptions import BadRequest
 
-from supabase import Client, create_client
-
 feed = Blueprint('feed', __name__)
 
-# Initialize Supabase client
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
+# Initialize Cosmos DB client
+COSMOS_ENDPOINT = os.environ.get('COSMOS_ENDPOINT')
+COSMOS_KEY = os.environ.get('COSMOS_KEY')
 
-if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    print("Supabase credentials not found, feed functionality disabled")
-    supabase = None
+if not COSMOS_ENDPOINT or not COSMOS_KEY:
+    print("Cosmos DB credentials not found, feed functionality disabled")
+    cosmos_client = None
+    database = None
 else:
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        cosmos_client = CosmosClient(COSMOS_ENDPOINT, COSMOS_KEY)
+        database = cosmos_client.get_database_client("StarDB")
     except Exception as e:
-        print(f"Failed to initialize Supabase client: {e}")
-        supabase = None
+        print(f"Failed to initialize Cosmos DB client: {e}")
+        cosmos_client = None
+        database = None
 
 @feed.route('/api/v1/feed', methods=['GET'])
 def get_feed():
-    """Get infinite scroll feed with mixed content types"""
+    if not database:
+        return jsonify({"error": "Cosmos DB not configured"}), 500
     try:
-        # Get current planetary hour for FOMO/context
-        page = int(request.args.get('page', 1))
-        user_id = request.args.get('user_id')
-        per_page = 20
-
-        if not user_id:
-            return jsonify({'error': 'user_id required'}), 400
-
-        # Build complex query with multiple content types
-        query_parts = []
-        params = []
-
-        # Get user posts
-        user_posts_query = """
-            SELECT id, user_id, content, content_type, media_url, zodiac_sign,
-                   likes, comments, shares, saves, is_featured, planetary_hour,
-                   created_at, 'user_post' as type
-            FROM user_posts
-            WHERE user_id = %s::integer
-            ORDER BY created_at DESC
-            LIMIT %s::integer OFFSET %s::integer
-        """
-        query_parts.append(user_posts_query)
-        params.extend([user_id, per_page, (page - 1) * per_page])
-
-        # Combine all content types into one feed
-        full_query = f"""
-        WITH combined_content AS (
-            {user_posts_query}
-            UNION ALL
-            SELECT id, user_id, prompt as content, 'prompt' as content_type, '' as media_url, zodiac_sign,
-                   0 as likes, response_count as comments, 0 as shares, 0 as saves, false as is_featured, planetary_hour,
-                   created_at::timestamptz, 'prompt' as type
-            FROM prompts
-            WHERE user_id = %s::integer
-            ORDER BY created_at DESC
-            LIMIT %s::integer OFFSET %s::integer
-            UNION ALL
-            SELECT id, user_id, content, 'sigil' as content_type, media_url, zodiac_sign,
-                   likes, comments, shares, saves, false as is_featured, planetary_hour,
-                   created_at::timestamptz, 'sigil' as type
-            FROM sigils
-            WHERE user_id = %s::integer
-            ORDER BY created_at DESC
-            LIMIT %s::integer OFFSET %s::integer
-        )
-        SELECT * FROM combined_content
-        ORDER BY created_at DESC
-        """
-        params.extend([user_id, per_page, (page - 1) * per_page])
-        params.extend([user_id, per_page, (page - 1) * per_page])
-
-        # Execute query
-        result = supabase.table('user_posts').select('*').eq('user_id', user_id).order('created_at.desc').range((page-1)*per_page, page*per_page-1).execute()
-
-        if result.data is None:
-            result.data = []
-
-        # Get author's username for each post
-        feed_items = []
-        for item in result.data:
-            # Get user info
-            user_result = supabase.table('user').select('username').eq('id', item['user_id']).execute()
-            if user_result.data:
-                username = user_result.data[0]['username']
-            else:
-                username = 'Unknown'
-
-            feed_items.append({
-                'id': item['id'],
-                'type': item.get('content_type', 'user_post'),
-                'content': item,
-                'user_id': item['user_id'],
-                'author': username,
-                'created_at': item['created_at'],
-                'engagement': {
-                    'likes': item.get('likes', 0),
-                    'comments': item.get('comments', 0),
-                    'shares': item.get('shares', 0),
-                    'saves': item.get('saves', 0)
-                },
-                'metadata': {
-                    'zodiac_sign': item.get('zodiac_sign'),
-                    'planetary_hour': item.get('planetary_hour'),
-                    'is_featured': item.get('is_featured', False)
-                }
-            })
-
-        return jsonify({
-            'items': feed_items,
-            'has_more': len(feed_items) == per_page,
-            'page': page,
-            'planetary_context': get_current_planetary_context()
-        })
-
-    except Exception as e:
-        current_app.logger.error(f"Feed error: {str(e)}")
-        return jsonify({'error': 'Failed to fetch feed', 'details': str(e)}), 500
+        container = database.get_container_client("Posts")
+        # Optimized query: specific fields, pagination, single partition
+        query = "SELECT c.id, c.user_id, c.content, c.timestamp FROM c WHERE c.user_id = @user_id ORDER BY c.timestamp DESC OFFSET 0 LIMIT 10"
+        params = [{"name": "@user_id", "value": request.args.get("user_id", "default_user")}]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        return jsonify(items)
+    except exceptions.CosmosHttpResponseError as e:
+        return jsonify({"error": f"Feed query failed: {str(e)}"}), 500
 
 @feed.route('/api/v1/posts', methods=['POST'])
 def create_post():
