@@ -1,31 +1,57 @@
 name: STAR Backend CI/CD for Azure
-
 on:
-    push:
-        branches: [main]
-        paths:
-            - "star-backend/**"
-            - ".github/workflows/azure-deploy.yml"
-    pull_request:
-        branches: [main]
-        paths:
-            - "star-backend/**"
-    workflow_dispatch:
-        inputs:
-            environment:
-                description: "Environment to deploy to"
-                required: true
-                default: "staging"
-                type: choice
-                options:
-                    - staging
-                    - production
-
-env:
-    PYTHON_VERSION: "3.12"
-    AZURE_WEBAPP_NAME_STAGING: star-app-backend-staging
-    AZURE_WEBAPP_NAME_PROD: star-app-backend
-    WORKING_DIRECTORY: "./star-backend"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          cd star-backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          cd star-backend
+          pytest tests/ -v
+      - name: Build Docker image
+        run: |
+          cd star-backend
+          docker build -t star-backend-test .
+  deploy-production:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy to Azure Production
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: star-app-backend
+          slot-name: production
+          package: ./star-backend
+      - name: Post-deployment health check
+        run: |
+          sleep 30
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://star-app-backend.azurewebsites.net/api/health)
+          if [ "$response" != "200" ]; then
+            echo "Health check failed: $response"
+            exit 1
+          fi
 
 jobs:
     test:
