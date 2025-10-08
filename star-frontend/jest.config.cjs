@@ -18,7 +18,7 @@ module.exports = {
     '/node_modules/(?!react-konva|konva)',
   ],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel.config.js' }],
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel.config.cjs' }],
   },
   globals: {
     'import.meta.env': {
