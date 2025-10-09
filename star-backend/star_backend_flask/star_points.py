@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from flask import Blueprint, current_app, jsonify, request
 from star_auth import token_required
 
-from supabase import create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client
 
 star_points = Blueprint('star_points', __name__)
 
@@ -17,8 +18,9 @@ supabase = None
 
 def get_supabase_client():
     global supabase
-    if supabase is None and SUPABASE_URL and SUPABASE_ANON_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    # TODO: Replace with Azure Cosmos DB client initialization
+    # if supabase is None and SUPABASE_URL and SUPABASE_ANON_KEY:
+    #     supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
     return supabase
 
 @star_points.route('/api/v1/star-points', methods=['GET'])

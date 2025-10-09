@@ -5,18 +5,21 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from star_auth import token_required
 
-from supabase import create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client
 
 group_chat_bp = Blueprint('group_chat', __name__)
 
 # Initialize Supabase client
 supabase_url = os.environ.get('SUPABASE_URL')
 supabase_key = os.environ.get('SUPABASE_ANON_KEY')
-try:
-    supabase = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
-except Exception as e:
-    print(f"Failed to initialize Supabase client: {e}")
-    supabase = None
+# TODO: Replace with Azure Cosmos DB client initialization
+# try:
+#     supabase = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
+# except Exception as e:
+#     print(f"Failed to initialize Supabase client: {e}")
+#     supabase = None
+supabase = None  # Temporarily disabled during Azure migration
 
 # Constants
 INVALID_ZODIAC_ELEMENT = 'Invalid zodiac element'

@@ -20,7 +20,8 @@ from flask_restful import Api, Resource
 from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields, validate
 
-from supabase import Client, create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import Client, create_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -70,7 +71,8 @@ from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields, validate
 import requests
 
-from supabase import create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client
 
 # -------------------- Logging --------------------
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')

@@ -5,16 +5,18 @@ import socketio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from supabase import create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client
 
 router = APIRouter()
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=["http://localhost:3000", "https://star-app.vercel.app"])
 
-# Initialize Supabase client
-supabase = create_client(
-    os.getenv("SUPABASE_URL", "https://your-supabase-url.supabase.co"),
-    os.getenv("SUPABASE_ANON_KEY", "your-supabase-anon-key")
-)
+# TODO: Replace with Azure Cosmos DB client initialization
+# supabase = create_client(
+#     os.getenv("SUPABASE_URL", "https://your-supabase-url.supabase.co"),
+#     os.getenv("SUPABASE_ANON_KEY", "your-supabase-anon-key")
+# )
+supabase = None  # Temporarily disabled during Azure migration
 
 # Socket.IO event handlers
 @sio.event

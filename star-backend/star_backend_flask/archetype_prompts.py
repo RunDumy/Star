@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from supabase import create_client, Client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client, Client
 from datetime import datetime, timezone
 import random
 import os
@@ -8,7 +9,9 @@ archetype_prompts = Blueprint('archetype_prompts', __name__)
 
 supabase_url = os.getenv('SUPABASE_URL', 'https://hiwmpmvqcxzshdmhhlsb.supabase.co')
 supabase_key = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE')
-supabase: Client = create_client(supabase_url, supabase_key)
+# TODO: Replace with Azure Cosmos DB client initialization
+# supabase: Client = create_client(supabase_url, supabase_key)
+supabase = None  # Temporarily disabled during Azure migration
 
 archetypes = ['Mystic', 'Warrior', 'Sage', 'Lover', 'Explorer', 'Creator']
 

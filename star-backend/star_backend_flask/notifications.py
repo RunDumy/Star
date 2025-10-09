@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from flask import Blueprint, current_app, jsonify, request
 from star_auth import token_required
 
-from supabase import create_client
+# TODO: Replace with Azure Cosmos DB imports
+# from supabase import create_client
 
 notifications = Blueprint('notifications', __name__)
 
@@ -17,8 +18,9 @@ supabase = None
 
 def get_supabase_client():
     global supabase
-    if supabase is None and SUPABASE_URL and SUPABASE_ANON_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    # TODO: Replace with Azure Cosmos DB client initialization
+    # if supabase is None and SUPABASE_URL and SUPABASE_ANON_KEY:
+    #     supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
     return supabase
 
 def create_notification(user_id, notification_type, title, message, related_id=None, related_type=None, metadata=None):

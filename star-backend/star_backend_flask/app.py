@@ -159,19 +159,19 @@ try:
 except Exception as e:
     logger.error(f"Redis connection test failed: {e}")
 
-# Supabase client (for Storage uploads)
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
-supabase = None
-try:
-    if SUPABASE_URL and SUPABASE_ANON_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-        logger.info("Supabase client initialized")
-    else:
-        logger.warning("SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.")
-except Exception as e:
-    logger.error(f"Failed to initialize Supabase client: {e}")
-    supabase = None
+# Supabase client (for Storage uploads) - TODO: Replace with Azure Blob Storage
+# SUPABASE_URL = os.environ.get('SUPABASE_URL')
+# SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
+# supabase = None
+# try:
+#     if SUPABASE_URL and SUPABASE_ANON_KEY:
+#         supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+#         logger.info("Supabase client initialized")
+#     else:
+#         logger.warning("SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.")
+# except Exception as e:
+#     logger.error(f"Failed to initialize Supabase client: {e}")
+#     supabase = None
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///test.db').replace('postgres://', 'postgresql+psycopg2://').replace('postgresql://', 'postgresql+psycopg2://')
@@ -775,37 +775,38 @@ class PostResource(Resource):
             logger.error(f"Post creation error: {str(e)}")
             return {'error': 'Failed to create post'}, 500
 
-class UploadResource(Resource):
-    @limiter.limit("5/hour")
-    @token_required
-    def post(self, current_user):
-        """Upload a video to Supabase Storage and create a post with its URL"""
-        try:
-            if supabase is None:
-                return {'error': 'Uploads are not configured'}, 503
-            if 'file' not in request.files:
-                return {'error': 'No file provided'}, 400
-            file = request.files['file']
-            if not file or file.mimetype != 'video/mp4':
-                return {'error': 'Only MP4 videos allowed'}, 400
-            content = request.form.get('content', '')
-            filename = f"{current_user.id}_{int(time.time())}.mp4"
-            supabase.storage.from_('media').upload(filename, file.read(), {'content-type': 'video/mp4'})
-            url = supabase.storage.from_('media').get_public_url(filename)
-            new_post = Post(
-                content=content,
-                user_id=current_user.id,
-                zodiac_sign=current_user.zodiac_sign,
-                image_url=url
-            )
-            db.session.add(new_post)
-            db.session.commit()
-            cache.delete_memoized(PostResource.get)
-            return {'message': 'Video posted', 'post_id': new_post.id, 'url': url}, 201
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Upload error: {str(e)}")
-            return {'error': 'Failed to upload video'}, 500
+# TODO: Replace with Azure Blob Storage upload functionality
+# class UploadResource(Resource):
+#     @limiter.limit("5/hour")
+#     @token_required
+#     def post(self, current_user):
+#         """Upload a video to Supabase Storage and create a post with its URL"""
+#         try:
+#             if supabase is None:
+#                 return {'error': 'Uploads are not configured'}, 503
+#             if 'file' not in request.files:
+#                 return {'error': 'No file provided'}, 400
+#             file = request.files['file']
+#             if not file or file.mimetype != 'video/mp4':
+#                 return {'error': 'Only MP4 videos allowed'}, 400
+#             content = request.form.get('content', '')
+#             filename = f"{current_user.id}_{int(time.time())}.mp4"
+#             supabase.storage.from_('media').upload(filename, file.read(), {'content-type': 'video/mp4'})
+#             url = supabase.storage.from_('media').get_public_url(filename)
+#             new_post = Post(
+#                 content=content,
+#                 user_id=current_user.id,
+#                 zodiac_sign=current_user.zodiac_sign,
+#                 image_url=url
+#             )
+#             db.session.add(new_post)
+#             db.session.commit()
+#             cache.delete_memoized(PostResource.get)
+#             return {'message': 'Video posted', 'post_id': new_post.id, 'url': url}, 201
+#         except Exception as e:
+#             db.session.rollback()
+#             logger.error(f"Upload error: {str(e)}")
+#             return {'error': 'Failed to upload video'}, 500
 
 class TrendDiscoveryResource(Resource):
     @limiter.limit("60/hour")
@@ -1474,14 +1475,15 @@ class Health(Resource):
 def health_check():
     logger.info("Azure App Service health check endpoint called")
     try:
+        # TODO: Test Azure Cosmos DB connection instead of Supabase
         # Test Supabase connection
-        if supabase:
-            # Simple test - try to get current user (should fail gracefully for anonymous)
-            try:
-                supabase.auth.get_user()
-                logger.info("Supabase connection test passed")
-            except Exception as e:
-                logger.warning(f"Supabase auth test failed (expected for anonymous): {e}")
+        # if supabase:
+        #     # Simple test - try to get current user (should fail gracefully for anonymous)
+        #     try:
+        #         supabase.auth.get_user()
+        #         logger.info("Supabase connection test passed")
+        #     except Exception as e:
+        #         logger.warning(f"Supabase auth test failed (expected for anonymous): {e}")
 
         # Test Redis connection (only if Redis is configured)
         redis_url = os.environ.get('REDIS_URL')
@@ -1570,7 +1572,8 @@ api.add_resource(Health, '/api/v1/health')
 api.add_resource(Register, '/api/v1/register')
 api.add_resource(Login, '/api/v1/login')
 api.add_resource(PostResource, '/api/v1/posts')
-api.add_resource(UploadResource, '/api/v1/upload')
+# TODO: Re-enable upload endpoint with Azure Blob Storage
+# api.add_resource(UploadResource, '/api/v1/upload')
 api.add_resource(FollowResource, '/api/v1/follow/<int:user_id>')
 api.add_resource(SparkResource, '/api/v1/spark/<int:post_id>')
 api.add_resource(CommentResource, '/api/v1/comment/<int:post_id>')
