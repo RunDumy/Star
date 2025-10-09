@@ -48,6 +48,9 @@ from tarot_interactions import tarot_bp
 
 from azure.cosmos import CosmosClient
 
+# Import Cosmos DB functions from main.py
+from main import check_username_exists, create_user, get_user_by_username, update_user_online_status
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
@@ -157,13 +160,13 @@ try:
 except Exception as e:
     logger.error(f"Redis connection test failed: {e}")
 
-# Azure Cosmos DB client (for data storage) - Replaces Supabase
-from azure_config import get_cosmos_client
-cosmos_client = get_cosmos_client()
-if cosmos_client:
-    logger.info("Azure Cosmos DB client initialized")
+# Azure Cosmos DB helper (for data storage) - Replaces Supabase
+from cosmos_db import get_cosmos_helper
+cosmos_helper = get_cosmos_helper()
+if cosmos_helper:
+    logger.info("Azure Cosmos DB helper initialized")
 else:
-    logger.warning("COSMOS_ENDPOINT or COSMOS_KEY not set; Cosmos DB operations will be disabled.")
+    logger.warning("AZURE_COSMOS_URL or AZURE_COSMOS_KEY not set; Cosmos DB operations will be disabled.")
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///test.db').replace('postgres://', 'postgresql+psycopg2://').replace('postgresql://', 'postgresql+psycopg2://')
@@ -579,7 +582,8 @@ class Register(Resource):
         full_name = data['full_name']  # New field
         birth_year = birth_date.year
 
-        if User.query.filter_by(username=username).first():
+        # Check if username exists using Cosmos DB
+        if check_username_exists(username):
             return {'error': 'Username already exists'}, 400
 
         chinese_zodiac = get_chinese_zodiac(birth_year)
@@ -601,25 +605,30 @@ class Register(Resource):
         birth_day = numerology_readings['birth_day']['number'] if 'number' in numerology_readings['birth_day'] else None
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        new_user = User(
-            username=username,
-            password_hash=hashed_password,
-            zodiac_sign=zodiac_sign,
-            birth_date=birth_date,
-            full_name=full_name,  # Store full name
-            chinese_zodiac=chinese_zodiac,
-            chinese_element=chinese_element,
-            vedic_zodiac=vedic_zodiac,
-            life_path_number=life_path,
-            destiny_number=destiny,
-            soul_urge_number=soul_urge,
-            personality_number=personality,
-            birth_day_number=birth_day
-        )
+
+        # Create user data dictionary for Cosmos DB
+        new_user_data = {
+            'id': str(random.randint(1000000, 9999999)),  # Generate simple ID for Cosmos DB
+            'username': username,
+            'password_hash': hashed_password,
+            'zodiac_sign': zodiac_sign,
+            'birth_date': birth_date.isoformat(),
+            'full_name': full_name,
+            'chinese_zodiac': chinese_zodiac,
+            'chinese_element': chinese_element,
+            'vedic_zodiac': vedic_zodiac,
+            'life_path_number': life_path,
+            'destiny_number': destiny,
+            'soul_urge_number': soul_urge,
+            'personality_number': personality,
+            'birth_day_number': birth_day,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'last_seen': datetime.now(timezone.utc).isoformat(),
+            'is_online': True
+        }
 
         try:
-            db.session.add(new_user)
-            db.session.commit()
+            create_user(new_user_data)
             return {
                 'message': 'Registered successfully',
                 'numerology_preview': {
@@ -628,7 +637,6 @@ class Register(Resource):
                 }
             }, 201
         except Exception as e:
-            db.session.rollback()
             logger.error(f"Registration error: {str(e)}")
             return {'error': 'Registration failed'}, 500
 
@@ -642,34 +650,34 @@ class Login(Resource):
         if not username or not password:
             return {'error': 'Missing username or password'}, 400
 
-        user = User.query.filter_by(username=username).first()
-        if not user or not bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
+        # Get user from Cosmos DB
+        user = get_user_by_username(username)
+        if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
             return {'error': 'Invalid credentials'}, 401
 
         try:
             token = jwt.encode({
-                'user_id': user.id,
+                'user_id': user['id'],
                 'exp': datetime.now(timezone.utc) + timedelta(hours=24)
             }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM'])
 
-            user.is_online = True
-            user.last_seen = datetime.now(timezone.utc)
-            db.session.commit()
+            # Update user online status using Cosmos DB
+            update_user_online_status(user['id'], True)
 
             return {
                 'token': token,
-                'username': user.username,
-                'userId': user.id,
-                'zodiacSign': user.zodiac_sign,
-                'chineseZodiac': user.chinese_zodiac,
-                'vedicZodiac': user.vedic_zodiac,
-                'actions': ZODIAC_ACTIONS.get(user.zodiac_sign, {}),
+                'username': user['username'],
+                'userId': user['id'],
+                'zodiacSign': user['zodiac_sign'],
+                'chineseZodiac': user.get('chinese_zodiac'),
+                'vedicZodiac': user.get('vedic_zodiac'),
+                'actions': ZODIAC_ACTIONS.get(user['zodiac_sign'], {}),
                 'numerology': {  # Add numerology data
-                    'lifePath': user.life_path_number,
-                    'destiny': user.destiny_number,
-                    'hasNumerology': bool(user.full_name and user.birth_date)
+                    'lifePath': user.get('life_path_number'),
+                    'destiny': user.get('destiny_number'),
+                    'hasNumerology': bool(user.get('full_name') and user.get('birth_date'))
                 },
-                'message': f'Welcome back, {user.zodiac_sign} star!'
+                'message': f'Welcome back, {user["zodiac_sign"]} star!'
             }, 200
         except Exception as e:
             logger.error(f"Login error: {str(e)}")

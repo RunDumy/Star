@@ -29,8 +29,8 @@ def token_required(f):
                 return {'error': 'User not found'}, 401
             current_user = type('User', (), {'id': user_data[0]['id'], 'username': user_data[0].get('username'), 'zodiac_sign': user_data[0].get('zodiac_sign')})
             # Update last seen
-            from .main import update_user_last_seen
-            update_user_last_seen(current_user.id)
+            from .main import update_user_online_status
+            update_user_online_status(current_user.username, True)
         except jwt.ExpiredSignatureError:
             return {'error': 'Token has expired'}, 401
         except jwt.InvalidTokenError:

@@ -17,8 +17,10 @@ from agora_token_builder import Role_Attendee, Role_Publisher, RtcTokenBuilder
 from flask import Blueprint, g, jsonify, request, current_app
 from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields
-from .main import users_container, cosmos_client, check_username_exists, create_user, get_user_by_username, update_user_last_seen
+from .main import check_username_exists, create_user, get_user_by_username, update_user_online_status
 from .star_auth import token_required
+from .oracle_engine import OccultOracleEngine
+from .cosmos_db import get_cosmos_helper
 
 
 def compress_and_generate_hls(video_file, post_id):
@@ -48,18 +50,29 @@ def compress_and_generate_hls(video_file, post_id):
             hls_playlist
         ], check=True)
         
-        # Upload compressed video and HLS segments to Supabase Storage
+        # Upload compressed video and HLS segments to Azure Blob Storage
         video_path = f"posts/{post_id}/video_{uuid.uuid4()}.mp4"
-        supabase.storage.from_('posts').upload(video_path, open(compressed_path, 'rb').read())
+        with open(compressed_path, 'rb') as f:
+            video_url = cosmos_helper.upload_blob(video_path, f.read(), 'video/mp4')
         
         # Upload HLS files
+        hls_urls = []
         for file in os.listdir(hls_path):
             file_path = os.path.join(hls_path, file)
-            supabase.storage.from_('posts').upload(f"posts/{post_id}/hls/{file}", open(file_path, 'rb').read())
+            blob_name = f"posts/{post_id}/hls/{file}"
+            with open(file_path, 'rb') as f:
+                content_type = 'application/vnd.apple.mpegurl' if file.endswith('.m3u8') else 'video/mp2t'
+                url = cosmos_helper.upload_blob(blob_name, f.read(), content_type)
+                if url:
+                    hls_urls.append(url)
         
-        return supabase.storage.from_('posts').get_public_url(video_path), supabase.storage.from_('posts').get_public_url(f"posts/{post_id}/hls/playlist.m3u8")
+        playlist_url = cosmos_helper.get_blob_url(f"posts/{post_id}/hls/playlist.m3u8")
+        return video_url, playlist_url
 
 api_bp = Blueprint('api_bp', __name__)
+
+# Initialize Cosmos DB helper
+cosmos_helper = get_cosmos_helper()
 
 # Initialize Socket.IO and Redis for real-time features
 try:
@@ -146,7 +159,7 @@ def login():
             return jsonify({'error': 'Invalid username or password'}), 401
 
         # Update last seen
-        update_user_last_seen(user['id'])
+        update_user_online_status(user['username'], False)
 
         # Generate JWT token
         token = jwt.encode({
@@ -241,11 +254,11 @@ def spotify_token():
         ).json()
 
         if 'access_token' in token_response:
-            supabase.table('profiles').update({
+            cosmos_helper.update_profile(user_id, {
                 'spotify_access_token': token_response['access_token'],
                 'spotify_refresh_token': token_response.get('refresh_token'),
                 'spotify_token_expires': token_response.get('expires_in'),
-            }).eq('id', user_id).execute()
+            })
             return jsonify({'success': True, 'access_token': token_response['access_token']})
         else:
             return jsonify({'error': 'Token exchange failed', 'details': token_response.get('error')}), 400
@@ -256,19 +269,26 @@ def spotify_token():
 @token_required
 def get_posts():
     try:
-        # Fetch posts with user details
-        response = supabase.table('posts').select('id, user_id, content, media_url, zodiac_sign, created_at, profiles(display_name)').order('created_at', desc=True).execute()
-        posts = response.data
+        # Fetch posts
+        posts = cosmos_helper.get_posts(limit=50)
 
-        # Fetch likes count for each post
+        # Enrich posts with additional data
         for post in posts:
-            likes = supabase.table('likes').select('id').eq('post_id', post['id']).execute()
-            post['like_count'] = len(likes.data)
-            post['liked_by_user'] = bool(supabase.table('likes').select('id').eq('post_id', post['id']).eq('user_id', g.user['sub']).execute().data)
+            # Get likes count
+            post['like_count'] = cosmos_helper.get_likes_count(post['id'])
+            # Check if user liked this post
+            post['liked_by_user'] = cosmos_helper.check_like_exists(post['id'], g.user['sub'])
+            # Get comments for this post
+            comments = cosmos_helper.get_comments_for_post(post['id'])
+            # Enrich comments with user display names
+            for comment in comments:
+                profile = cosmos_helper.get_profile_by_user_id(comment['user_id'])
+                comment['display_name'] = profile.get('display_name', 'Cosmic Traveler') if profile else 'Cosmic Traveler'
+            post['comments'] = comments
 
-            # Fetch comments
-            comments = supabase.table('comments').select('id, user_id, content, created_at, profiles(display_name)').eq('post_id', post['id']).order('created_at').execute()
-            post['comments'] = comments.data
+            # Get user profile for post author
+            profile = cosmos_helper.get_profile_by_user_id(post['user_id'])
+            post['display_name'] = profile.get('display_name', 'Cosmic Traveler') if profile else 'Cosmic Traveler'
 
         return jsonify({'posts': posts})
     except Exception as e:
@@ -289,8 +309,8 @@ def create_post():
 
     try:
         # Fetch user's zodiac sign
-        profile = supabase.table('profiles').select('zodiac_sign').eq('id', user_id).single().execute()
-        zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Aries'
+        profile = cosmos_helper.get_profile_by_user_id(user_id)
+        zodiac_sign = profile.get('zodiac_sign', 'Aries') if profile else 'Aries'
 
         post_data = {
             'user_id': user_id,
@@ -298,46 +318,56 @@ def create_post():
             'zodiac_sign': zodiac_sign
         }
 
+        # TODO: Implement Azure Blob Storage for media uploads
+        # For now, skip media uploads until Azure Blob Storage is configured
         if image_file:
-            image_path = f"posts/{uuid.uuid4()}/image_{uuid.uuid4()}.{image_file.filename.split('.')[-1]}"
-            supabase.storage.from_('posts').upload(image_path, image_file.read())
-            post_data['image_url'] = supabase.storage.from_('posts').get_public_url(image_path)
+            # Generate unique filename
+            image_filename = f"posts/{uuid.uuid4()}/image_{uuid.uuid4()}.{image_file.filename.split('.')[-1]}"
+            # Upload to Azure Blob Storage
+            image_url = cosmos_helper.upload_blob(image_filename, image_file.read(), content_type=image_file.content_type)
+            if image_url:
+                post_data['image_url'] = image_url
 
         if video_file:
-            if video_file.content_type not in ['video/mp4', 'video/webm']:
-                return jsonify({'success': False, 'error': 'Unsupported video format. Use MP4 or WebM'}), 400
-            video_url, hls_url = compress_and_generate_hls(video_file, str(uuid.uuid4()))
-            post_data['video_url'] = video_url
-            post_data['hls_url'] = hls_url
+            # Generate unique filename
+            video_filename = f"posts/{uuid.uuid4()}/video_{uuid.uuid4()}.{video_file.filename.split('.')[-1]}"
+            # Upload to Azure Blob Storage
+            video_url = cosmos_helper.upload_blob(video_filename, video_file.read(), content_type=video_file.content_type)
+            if video_url:
+                post_data['video_url'] = video_url
 
         # Create post
-        response = supabase.table('posts').insert(post_data).execute()
-        post_id = response.data[0]['id']
+        post_data['id'] = str(uuid.uuid4())
+        post_data['created_at'] = datetime.now(timezone.utc).isoformat()
+        created_post = cosmos_helper.create_post(post_data)
+        post_id = created_post['id']
 
         # Store tags
         for tag in tags:
             if tag.strip():
-                supabase.table('post_tags').insert({
+                cosmos_helper.create_post_tag({
+                    'id': str(uuid.uuid4()),
                     'post_id': post_id,
                     'tag': tag.strip()
-                }).execute()
+                })
 
-        # Notify followers
-        followers = supabase.table('follow').select('follower_id').eq('following_id', user_id).execute().data
-        for follower in followers:
-            notification = {
-                'id': str(uuid.uuid4()),
-                'user_id': follower['follower_id'],
-                'message': f"{zodiac_sign} created a new post!",
-                'type': 'post',
-                'related_id': post_id,
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'is_read': False
-            }
-            supabase.table('notification').insert(notification).execute()
-            socketio.emit('notification', notification, room=f"user_{follower['follower_id']}")
+        # TODO: Implement follower notifications with Azure services
+        # For now, skip notifications until follower query is implemented
+        # followers = cosmos_helper.get_followers(user_id)
+        # for follower in followers:
+        #     notification = {
+        #         'id': str(uuid.uuid4()),
+        #         'user_id': follower['follower_id'],
+        #         'message': f"{zodiac_sign} created a new post!",
+        #         'type': 'post',
+        #         'related_id': post_id,
+        #         'created_at': datetime.now(timezone.utc).isoformat(),
+        #         'is_read': False
+        #     }
+        #     cosmos_helper.create_notification(notification)
+        #     socketio.emit('notification', notification, room=f"user_{follower['follower_id']}")
 
-        return jsonify({'success': True, 'post': response.data[0]})
+        return jsonify({'success': True, 'post': created_post})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -347,14 +377,17 @@ def like_post(post_id):
     user_id = g.user['sub']
     try:
         # Check if already liked
-        existing_like = supabase.table('likes').select('id').eq('post_id', post_id).eq('user_id', user_id).execute()
-        if existing_like.data:
+        if cosmos_helper.check_like_exists(str(post_id), user_id):
             # Unlike
-            supabase.table('likes').delete().eq('post_id', post_id).eq('user_id', user_id).execute()
+            cosmos_helper.delete_like(str(post_id), user_id)
             return jsonify({'success': True, 'liked': False})
         else:
             # Like
-            supabase.table('likes').insert({'post_id': post_id, 'user_id': user_id}).execute()
+            cosmos_helper.create_like({
+                'id': str(uuid.uuid4()),
+                'post_id': str(post_id),
+                'user_id': user_id
+            })
             return jsonify({'success': True, 'liked': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -370,12 +403,15 @@ def comment_post(post_id):
         return jsonify({'error': 'Comment content is required'}), 400
 
     try:
-        response = supabase.table('comments').insert({
-            'post_id': post_id,
+        comment_data = {
+            'id': str(uuid.uuid4()),
+            'post_id': str(post_id),
             'user_id': user_id,
-            'content': content
-        }).execute()
-        return jsonify({'success': True, 'comment': response.data[0]})
+            'content': content,
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
+        created_comment = cosmos_helper.create_comment(comment_data)
+        return jsonify({'success': True, 'comment': created_comment})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -384,7 +420,7 @@ def comment_post(post_id):
 def get_comments(current_user, post_id):
     page = int(request.args.get('page', 1))
     per_page = 20
-    comments = supabase.table('comment').select('*').eq('post_id', post_id).order('created_at', desc=True).range((page - 1) * per_page, page * per_page - 1).execute().data
+    comments = cosmos_helper.get_comments(post_id, page=page, per_page=per_page)
     return jsonify({'comments': comments}), 200
 
 @api_bp.route("/api/v1/zodiac-dna", methods=["POST"])
@@ -396,18 +432,19 @@ def update_dna(current_user):
     strength = data.get("strength")
     if not all([trait_name, zodiac_sign, strength]):
         return jsonify({"success": False, "error": "Trait name, zodiac sign, and strength required"}), 400
-    supabase.table("zodiac_dna").upsert({
+    cosmos_helper.upsert_zodiac_dna({
         "user_id": current_user.id,
         "trait_name": trait_name,
         "zodiac_sign": zodiac_sign,
         "strength": strength
-    }).execute()
+    })
     return jsonify({"success": True, "message": "DNA updated"})
 
 @api_bp.route("/api/v1/zodiac-dna", methods=["GET"])
 @token_required
 def get_dna(current_user):
-    dna = supabase.table("zodiac_dna").select("*").eq("user_id", current_user.id).execute().data
+    dna_result = cosmos_helper.get_zodiac_dna_by_user(current_user.id)
+    dna = dna_result['data'] if dna_result['data'] else []
     return jsonify({"success": True, "dna": dna})
 
 @api_bp.route("/api/v1/transit", methods=["GET"])
@@ -417,25 +454,25 @@ def get_transit(current_user):
     trait = TRANSIT_TRAIT_MAP[transit]
     
     # Fetch current DNA
-    dna = supabase.table("zodiac_dna").select("*").eq("user_id", current_user.id).eq("trait_name", trait["trait_name"]).execute().data
-    current_strength = dna[0]["strength"] if dna else 0.5
+    dna_result = cosmos_helper.get_zodiac_dna_by_trait(current_user.id, trait["trait_name"])
+    current_strength = dna_result['data']['strength'] if dna_result['data'] else 0.5
     new_strength = min(current_strength + trait["strength_boost"], 1.0)
-    
+
     # Update DNA
-    supabase.table("zodiac_dna").upsert({
+    cosmos_helper.upsert_zodiac_dna({
         "user_id": current_user.id,
         "trait_name": trait["trait_name"],
         "zodiac_sign": trait["zodiac_sign"],
         "strength": new_strength
-    }).execute()
-    
+    })
+
     # Log interaction
-    supabase.table("user_interactions").insert({
+    cosmos_helper.create_user_interaction({
         "user_id": current_user.id,
         "interaction_type": "transit_view",
         "zodiac_sign": trait["zodiac_sign"],
         "details": {"transit": transit, "timestamp": datetime.now(timezone.utc).isoformat()}
-    }).execute()
+    })
     
     return jsonify({
         "success": True, 
@@ -451,23 +488,23 @@ def tarot_pull(current_user):
     card = random.choice(list(TAROT_TRAIT_MAP.keys()))
     trait = TAROT_TRAIT_MAP[card]
     
-    dna = supabase.table("zodiac_dna").select("*").eq("user_id", current_user.id).eq("trait_name", trait["trait_name"]).execute().data
-    current_strength = dna[0]["strength"] if dna else 0.5
+    dna = cosmos_helper.get_zodiac_dna_by_user_and_trait(current_user.id, trait["trait_name"])
+    current_strength = dna.get("strength", 0.5) if dna else 0.5
     new_strength = min(current_strength + trait["strength_boost"], 1.0)
     
-    supabase.table("zodiac_dna").upsert({
+    cosmos_helper.upsert_zodiac_dna({
         "user_id": current_user.id,
         "trait_name": trait["trait_name"],
         "zodiac_sign": trait["zodiac_sign"],
         "strength": new_strength
-    }).execute()
+    })
     
-    supabase.table("user_interactions").insert({
+    cosmos_helper.create_user_interaction({
         "user_id": current_user.id,
         "interaction_type": "tarot_pull",
         "zodiac_sign": trait["zodiac_sign"],
         "details": {"card": card}
-    }).execute()
+    })
     
     return jsonify({"success": True, "card": card, "trait": trait["trait_name"], "strength": new_strength})
 
@@ -480,7 +517,8 @@ def get_transit_mappings(current_user):
 @api_bp.route("/api/v1/timeline", methods=["GET"])
 @token_required
 def get_timeline(current_user):
-    interactions = supabase.table("user_interactions").select("*").eq("user_id", current_user.id).order("created_at", desc=True).limit(10).execute().data
+    interactions_result = cosmos_helper.get_user_interactions(current_user.id, limit=10)
+    interactions = interactions_result['data'] if interactions_result['data'] else []
     timeline = [
         {
             "id": interaction["id"],
@@ -501,18 +539,19 @@ def log_interaction(current_user):
     details = data.get("details", {})
     if not interaction_type:
         return jsonify({"success": False, "error": "Interaction type required"}), 400
-    supabase.table("user_interactions").insert({
+    cosmos_helper.create_user_interaction({
         "user_id": current_user.id,
         "interaction_type": interaction_type,
         "zodiac_sign": zodiac_sign,
         "details": details
-    }).execute()
+    })
     return jsonify({"success": True})
 
 @api_bp.route("/api/v1/mood", methods=["GET"])
 @token_required
 def get_mood(current_user):
-    interactions = supabase.table("user_interactions").select("*").eq("user_id", current_user.id).order("created_at", desc=True).limit(10).execute().data
+    interactions_result = cosmos_helper.get_user_interactions(current_user.id, limit=10)
+    interactions = interactions_result['data'] if interactions_result['data'] else []
     if not interactions:
         return jsonify({"success": True, "mood": "Neutral", "intensity": 0.5})
 
@@ -541,12 +580,12 @@ def get_mood(current_user):
     intensity = min(trait_counts[dominant_trait] / 10.0 + 0.5, 1.0)
 
     # Log mood interaction
-    supabase.table("user_interactions").insert({
+    cosmos_helper.create_user_interaction({
         "user_id": current_user.id,
         "interaction_type": "mood_view",
         "zodiac_sign": None,
         "details": {"mood": mood, "intensity": intensity, "timestamp": datetime.now(timezone.utc).isoformat()}
-    }).execute()
+    })
 
     return jsonify({"success": True, "mood": mood, "intensity": intensity})
 
@@ -564,9 +603,9 @@ def create_live_stream():
 
     try:
         # Fetch user's zodiac sign
-        profile = supabase.table('profiles').select('zodiac_sign').eq('id', user_id).single().execute()
-        zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Aries'
-        username = profile.data.get('display_name', 'Cosmic Traveler') if profile.data else 'Cosmic Traveler'
+        profile = cosmos_helper.get_profile_by_user_id(user_id)
+        zodiac_sign = profile.get('zodiac_sign', 'Aries') if profile else 'Aries'
+        username = profile.get('display_name', 'Cosmic Traveler') if profile else 'Cosmic Traveler'
 
         stream_id = str(uuid.uuid4())
         channel_name = f"stream_{stream_id}"
@@ -601,14 +640,15 @@ def create_live_stream():
             'is_active': True
         }
 
-        supabase.table('live_stream').insert(stream).execute()
+        cosmos_helper.create_live_stream(stream)
         if redis_client:
             redis_client.setex(f"stream_{stream_id}", 7200, json.dumps(stream))  # 2 hour expiry with full stream data
 
         socketio.emit('live_stream_started', stream)
 
         # Notify followers
-        followers = supabase.table('follow').select('follower_id').eq('following_id', user_id).execute().data
+        followers_result = cosmos_helper.get_followers(user_id)
+        followers = followers_result['data'] if followers_result['data'] else []
         for follower in followers:
             notification = {
                 'id': str(uuid.uuid4()),
@@ -619,7 +659,7 @@ def create_live_stream():
                 'created_at': datetime.now(timezone.utc).isoformat(),
                 'is_read': False
             }
-            supabase.table('notification').insert(notification).execute()
+            cosmos_helper.create_notification(notification)
             socketio.emit('notification', notification, room=f"user_{follower['follower_id']}")
 
         return jsonify({'success': True, 'message': 'Live stream created', 'stream': stream}), 201
@@ -637,9 +677,14 @@ def get_live_stream(stream_id):
             if cached_stream:
                 return jsonify({'success': True, 'stream': json.loads(cached_stream)}), 200
 
-        # Fetch from Supabase if not in cache
-        stream_data = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
-        if stream_data:
+        # Fetch from Cosmos DB if not in cache
+        stream_result = cosmos_helper.get_active_live_stream(stream_id)
+        if stream_result['data']:
+            stream_data = stream_result['data']
+            # Cache the stream data for 5 minutes
+            if redis_client:
+                redis_client.setex(cache_key, 300, json.dumps(stream_data))
+            return jsonify({'success': True, 'stream': stream_data}), 200
             # Cache the stream data for 5 minutes
             if redis_client:
                 redis_client.setex(cache_key, 300, json.dumps(stream_data))
@@ -654,11 +699,15 @@ def get_live_stream(stream_id):
 def end_live_stream(stream_id):
     user_id = g.user['sub']
     try:
-        stream = supabase.table('live_stream').select('*').eq('id', stream_id).eq('user_id', user_id).single().execute().data
-        if not stream:
-            return jsonify({'success': False, 'error': 'Stream not found or unauthorized'}), 404
+        # Verify stream ownership
+        container = cosmos_helper._get_container('streams')
+        if container:
+            query = f"SELECT * FROM c WHERE c.id = '{stream_id}' AND c.user_id = '{user_id}'"
+            items = list(container.query_items(query=query, enable_cross_partition_query=True))
+            if not items:
+                return jsonify({'success': False, 'error': 'Stream not found or unauthorized'}), 404
 
-        supabase.table('live_stream').update({'is_active': False}).eq('id', stream_id).execute()
+        cosmos_helper.end_live_stream(stream_id, user_id)
         if redis_client:
             redis_client.delete(f"stream_{stream_id}")
         socketio.emit('live_stream_ended', {'stream_id': stream_id})
@@ -677,8 +726,8 @@ def get_live_streams():
             if cached_streams:
                 return jsonify({'success': True, 'streams': json.loads(cached_streams)}), 200
 
-        # Fetch active live streams from Supabase
-        streams = supabase.table('live_stream').select('*').eq('is_active', True).order('created_at', desc=True).execute().data
+        # Fetch active live streams from Cosmos DB
+        streams = cosmos_helper.get_active_live_streams()
 
         # Cache the result for 30 seconds
         if redis_client and streams:
@@ -693,7 +742,7 @@ def get_live_streams():
 def get_notifications():
     user_id = g.user['sub']
     try:
-        notifications = supabase.table('notification').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(50).execute().data
+        notifications = cosmos_helper.get_notifications(user_id, limit=50)
         return jsonify({'success': True, 'notifications': notifications}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -703,11 +752,11 @@ def get_notifications():
 def mark_notification_read(notification_id):
     user_id = g.user['sub']
     try:
-        notification = supabase.table('notification').select('*').eq('id', notification_id).eq('user_id', user_id).single().execute().data
+        notification = cosmos_helper.get_notification_by_id(notification_id, user_id)
         if not notification:
             return jsonify({'success': False, 'error': 'Notification not found or unauthorized'}), 404
 
-        supabase.table('notification').update({'is_read': True}).eq('id', notification_id).execute()
+        cosmos_helper.update_notification(notification_id, {'is_read': True})
         return jsonify({'success': True, 'message': 'Notification marked as read'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -724,14 +773,14 @@ def send_stream_chat(stream_id):
 
     try:
         # Verify stream exists and is active
-        stream = supabase.table('live_stream').select('*').eq('id', stream_id).eq('is_active', True).single().execute().data
+        stream = cosmos_helper.get_active_live_stream_by_id(stream_id)
         if not stream:
             return jsonify({'success': False, 'error': 'Stream not found or inactive'}), 404
 
         # Fetch user profile
-        profile = supabase.table('profiles').select('zodiac_sign, display_name').eq('id', user_id).single().execute()
-        zodiac_sign = profile.data['zodiac_sign'] if profile.data else 'Unknown'
-        username = profile.data.get('display_name', 'Cosmic Traveler') if profile.data else 'Cosmic Traveler'
+        profile = cosmos_helper.get_profile_by_user_id(user_id)
+        zodiac_sign = profile.get('zodiac_sign', 'Unknown') if profile else 'Unknown'
+        username = profile.get('display_name', 'Cosmic Traveler') if profile else 'Cosmic Traveler'
 
         chat = {
             'id': str(uuid.uuid4()),
@@ -743,9 +792,140 @@ def send_stream_chat(stream_id):
             'created_at': datetime.now(timezone.utc).isoformat()
         }
 
-        supabase.table('stream_chat').insert(chat).execute()
+        cosmos_helper.create_stream_chat_message(chat)
         socketio.emit('stream_chat_message', chat, room=f'stream_{stream_id}')
         return jsonify({'success': True, 'message': 'Chat message sent', 'chat': chat}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Occult Oracle AI Endpoints
+oracle_engine = OccultOracleEngine()
+
+@api_bp.route('/api/oracle/natal-chart', methods=['POST'])
+@token_required
+def get_natal_chart():
+    """Generate a natal chart for the authenticated user"""
+    try:
+        data = request.get_json()
+        birth_date = data.get('birth_date')  # ISO format: YYYY-MM-DD
+        birth_time = data.get('birth_time')  # HH:MM format
+        birth_place = data.get('birth_place')  # City, Country
+
+        if not all([birth_date, birth_time, birth_place]):
+            return jsonify({'error': 'Missing required fields: birth_date, birth_time, birth_place'}), 400
+
+        # Parse birth datetime
+        from datetime import datetime
+        birth_datetime = datetime.fromisoformat(f"{birth_date}T{birth_time}")
+
+        # Generate natal chart
+        natal_chart = oracle_engine.calculate_natal_chart(birth_datetime, birth_place)
+
+        return jsonify({
+            'success': True,
+            'natal_chart': natal_chart.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/oracle/tarot-reading', methods=['POST'])
+@token_required
+def get_tarot_reading():
+    """Get a tarot reading for the authenticated user"""
+    try:
+        data = request.get_json()
+        question = data.get('question', '')
+        spread_type = data.get('spread_type', 'single')  # single, three, celtic_cross
+
+        # Draw cards based on spread type
+        if spread_type == 'single':
+            cards = oracle_engine.draw_tarot_cards(1)
+        elif spread_type == 'three':
+            cards = oracle_engine.draw_tarot_cards(3)
+        elif spread_type == 'celtic_cross':
+            cards = oracle_engine.draw_tarot_cards(10)
+        else:
+            return jsonify({'error': 'Invalid spread_type. Use: single, three, celtic_cross'}), 400
+
+        # Get insights
+        insights = oracle_engine.get_tarot_insights(cards, question)
+
+        return jsonify({
+            'success': True,
+            'cards': [card.to_dict() for card in cards],
+            'insights': insights,
+            'question': question
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/oracle/numerology', methods=['POST'])
+@token_required
+def get_numerology():
+    """Calculate numerology for the authenticated user"""
+    try:
+        data = request.get_json()
+        full_name = data.get('full_name')
+        birth_date = data.get('birth_date')  # ISO format: YYYY-MM-DD
+
+        if not all([full_name, birth_date]):
+            return jsonify({'error': 'Missing required fields: full_name, birth_date'}), 400
+
+        # Calculate numerology
+        numerology = oracle_engine.calculate_numerology(full_name, birth_date)
+
+        return jsonify({
+            'success': True,
+            'numerology': numerology
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/oracle/synastry', methods=['POST'])
+@token_required
+def get_synastry():
+    """Calculate synastry (relationship compatibility) between two people"""
+    try:
+        data = request.get_json()
+        person1 = data.get('person1')  # {birth_date, birth_time, birth_place}
+        person2 = data.get('person2')  # {birth_date, birth_time, birth_place}
+
+        if not all([person1, person2]):
+            return jsonify({'error': 'Missing person1 or person2 data'}), 400
+
+        # Parse birth datetimes
+        from datetime import datetime
+        p1_datetime = datetime.fromisoformat(f"{person1['birth_date']}T{person1['birth_time']}")
+        p2_datetime = datetime.fromisoformat(f"{person2['birth_date']}T{person2['birth_time']}")
+
+        # Calculate synastry
+        synastry = oracle_engine.calculate_synastry(
+            p1_datetime, person1['birth_place'],
+            p2_datetime, person2['birth_place']
+        )
+
+        return jsonify({
+            'success': True,
+            'synastry': synastry
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/api/oracle/astrological-insights', methods=['GET'])
+@token_required
+def get_astrological_insights():
+    """Get current astrological insights and transits"""
+    try:
+        insights = oracle_engine.get_astrological_insights()
+        return jsonify({
+            'success': True,
+            'insights': insights
+        }), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

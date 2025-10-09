@@ -23,7 +23,7 @@ from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields, validate
 
 # TODO: Replace with Azure Cosmos DB imports
-from azure_config import get_cosmos_client
+from cosmos_db import get_cosmos_helper
 from . import api
 
 # Configure logging
@@ -61,19 +61,11 @@ limiter.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='threading' if os.environ.get('TESTING') == 'true' else 'eventlet')
 
 # -------------------- Azure Cosmos DB --------------------
-cosmos_client = get_cosmos_client()
-if cosmos_client:
-    logger.info("Azure Cosmos DB client initialized")
-    database = cosmos_client.get_database_client('star-db')
-    users_container = database.get_container_client('users')
-    posts_container = database.get_container_client('posts')
-    follows_container = database.get_container_client('follows')
+cosmos_helper = get_cosmos_helper()
+if cosmos_helper:
+    logger.info("Azure Cosmos DB helper initialized")
 else:
-    logger.warning("COSMOS_ENDPOINT or COSMOS_KEY not set; Cosmos DB operations will be disabled.")
-    database = None
-    users_container = None
-    posts_container = None
-    follows_container = None
+    logger.warning("COSMOS_DB_CONNECTION_STRING not set; Cosmos DB operations will be disabled.")
 
 # -------------------- Cosmos DB Helper Functions --------------------
 def get_user_by_id(user_id):
@@ -89,154 +81,90 @@ def get_user_by_id(user_id):
         logger.error(f"Error getting user by ID: {e}")
         return None
 
-def update_user_last_seen(user_id):
-    """Update user's last seen timestamp"""
-    if not users_container:
-        return
-    try:
-        user = get_user_by_id(user_id)
-        if user:
-            user['last_seen'] = datetime.now(timezone.utc).isoformat()
-            users_container.upsert_item(user)
-    except Exception as e:
-        logger.error(f"Error updating user last seen: {e}")
-
 def check_username_exists(username):
     """Check if username already exists"""
-    if not users_container:
+    if not cosmos_helper:
         return False
-    try:
-        query = "SELECT c.id FROM c WHERE c.username = @username"
-        parameters = [{"name": "@username", "value": username}]
-        items = list(users_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-        return len(items) > 0
-    except Exception as e:
-        logger.error(f"Error checking username exists: {e}")
-        return False
+    return cosmos_helper.check_username_exists(username)
 
 def create_user(user_data):
     """Create a new user in Cosmos DB"""
-    if not users_container:
-        raise Exception("Cosmos DB not available")
-    try:
-        users_container.create_item(user_data)
-        return user_data
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
-        raise
+    if not cosmos_helper:
+        raise ValueError("Cosmos DB not available")
+    result = cosmos_helper.create_user(user_data)
+    if result['error']:
+        raise Exception(f"Failed to create user: {result['error']}")
+    return result['data']
 
 def get_user_by_username(username):
     """Get user by username"""
-    if not users_container:
+    if not cosmos_helper:
         return None
-    try:
-        query = "SELECT * FROM c WHERE c.username = @username"
-        parameters = [{"name": "@username", "value": username}]
-        items = list(users_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-        return items[0] if items else None
-    except Exception as e:
-        logger.error(f"Error getting user by username: {e}")
-        return None
+    result = cosmos_helper.get_user_by_username(username)
+    return result['data']
 
-def update_user_online_status(user_id, is_online=True):
+def update_user_online_status(username, is_online=True):
     """Update user's online status and last seen"""
-    if not users_container:
+    if not cosmos_helper:
         return
-    try:
-        user = get_user_by_id(user_id)
-        if user:
-            user['is_online'] = is_online
-            user['last_seen'] = datetime.now(timezone.utc).isoformat()
-            users_container.upsert_item(user)
-    except Exception as e:
-        logger.error(f"Error updating user online status: {e}")
+    result = cosmos_helper.update_user_online_status(username, is_online)
+    if result['error']:
+        logger.error(f"Error updating user online status: {result['error']}")
 
 def get_posts(limit=20):
     """Get recent posts"""
-    if not posts_container:
+    if not cosmos_helper:
         return []
-    try:
-        query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
-        parameters = [{"name": "@limit", "value": limit}]
-        items = list(posts_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-        return items
-    except Exception as e:
-        logger.error(f"Error getting posts: {e}")
-        return []
+    result = cosmos_helper.get_all_posts(limit)
+    return result['data'] if result['data'] else []
 
 def create_post(post_data):
     """Create a new post"""
-    if not posts_container:
-        raise Exception("Cosmos DB not available")
-    try:
-        posts_container.create_item(post_data)
-        return post_data
-    except Exception as e:
-        logger.error(f"Error creating post: {e}")
-        raise
+    if not cosmos_helper:
+        raise ValueError("Cosmos DB not available")
+    result = cosmos_helper.create_post(post_data)
+    if result['error']:
+        raise Exception(f"Failed to create post: {result['error']}")
+    return result['data']
 
-def get_user_profile(user_id):
+def get_user_profile(username):
     """Get user profile data"""
-    if not users_container:
+    if not cosmos_helper:
         return None
-    try:
-        user = get_user_by_id(user_id)
-        if user:
-            return {
-                'username': user['username'],
-                'zodiac_sign': user['zodiac_sign'],
-                'chinese_zodiac': user.get('chinese_zodiac'),
-                'vedic_zodiac': user.get('vedic_zodiac'),
-                'bio': user.get('bio', ''),
-                'created_at': user['created_at']
-            }
-        return None
-    except Exception as e:
-        logger.error(f"Error getting user profile: {e}")
-        return None
+    result = cosmos_helper.get_user_by_username(username)
+    user = result['data']
+    if user:
+        return {
+            'username': user['username'],
+            'zodiac_sign': user.get('zodiac_sign'),
+            'chinese_zodiac': user.get('chinese_zodiac'),
+            'vedic_zodiac': user.get('vedic_zodiac'),
+            'bio': user.get('bio', ''),
+            'created_at': user.get('created_at')
+        }
+    return None
 
-def get_user_posts(user_id, limit=10):
+def get_user_posts(username, limit=10):
     """Get posts by user"""
-    if not posts_container:
+    if not cosmos_helper:
         return []
-    try:
-        query = "SELECT c.id, c.content, c.created_at, c.spark_count, c.echo_count FROM c WHERE c.user_id = @user_id ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
-        parameters = [
-            {"name": "@user_id", "value": str(user_id)},
-            {"name": "@limit", "value": limit}
-        ]
-        items = list(posts_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-        return items
-    except Exception as e:
-        logger.error(f"Error getting user posts: {e}")
-        return []
+    result = cosmos_helper.get_posts_by_user(username, limit)
+    return result['data'] if result['data'] else []
 
-def check_follow_exists(follower_id, followed_id):
+def check_follow_exists(follower_username, followed_username):
     """Check if follow relationship exists"""
-    if not follows_container:
+    if not cosmos_helper:
         return False
-    try:
-        query = "SELECT c.id FROM c WHERE c.follower_id = @follower_id AND c.followed_id = @followed_id"
-        parameters = [
-            {"name": "@follower_id", "value": str(follower_id)},
-            {"name": "@followed_id", "value": str(followed_id)}
-        ]
-        items = list(follows_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-        return len(items) > 0
-    except Exception as e:
-        logger.error(f"Error checking follow exists: {e}")
-        return False
+    return cosmos_helper.check_follow_exists(follower_username, followed_username)
 
 def create_follow(follow_data):
     """Create a follow relationship"""
-    if not follows_container:
-        raise Exception("Cosmos DB not available")
-    try:
-        follows_container.create_item(follow_data)
-        return follow_data
-    except Exception as e:
-        logger.error(f"Error creating follow: {e}")
-        raise
+    if not cosmos_helper:
+        raise ValueError("Cosmos DB not available")
+    result = cosmos_helper.create_follow(follow_data)
+    if result['error']:
+        raise Exception(f"Failed to create follow: {result['error']}")
+    return result['data']
 
 # -------------------- Zodiac Data --------------------
 ZODIAC_INFO = {
@@ -442,7 +370,7 @@ def token_required(f):
             if not user_data:
                 return {'error': 'User not found'}, 401
             current_user = type('User', (), {'id': user_data['id'], 'username': user_data['username'], 'zodiac_sign': user_data['zodiac_sign']})
-            update_user_last_seen(current_user.id)
+            update_user_online_status(current_user.username, True)
         except jwt.ExpiredSignatureError:
             return {'error': 'Token has expired'}, 401
         except jwt.InvalidTokenError:
