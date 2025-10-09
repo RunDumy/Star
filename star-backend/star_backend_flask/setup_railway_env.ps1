@@ -17,9 +17,9 @@ npx railway variables set REDIS_PORT="11341"
 npx railway variables set REDIS_USERNAME="default"
 npx railway variables set REDIS_PASSWORD="dpQqYc6wimd8CoOazLDvrE6TlNt4un6b"
 
-# Supabase configuration
-npx railway variables set SUPABASE_URL="https://hiwmpmvqcxzshdmhhlsb.supabase.co"
-npx railway variables set SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE"
+# Cosmos DB configuration
+npx railway variables set COSMOS_ENDPOINT="https://star-cosmos.documents.azure.com:443/"
+npx railway variables set COSMOS_KEY="your-cosmos-key-here"
 
 # Security configuration
 npx railway variables set SECRET_KEY="8d6448401426f23350520f5b4d4dadb088a9e6be0fb2ecc86a206b7cb358b722"

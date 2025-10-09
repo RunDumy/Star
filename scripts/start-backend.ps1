@@ -32,16 +32,20 @@ if (-not (Test-Path $venvPython)) {
 
 # Install requirements
 Write-Host "Installing Python dependencies (this may take a minute)..."
-& $venvPip install -r (Join-Path $PSScriptRoot "..\requirements.txt")
+& $venvPip install -r (Join-Path $PSScriptRoot "..\star-backend\requirements.txt")
 
 # Set minimal env vars for local dev if not set
 if (-not $env:SECRET_KEY) { $env:SECRET_KEY = "dev_secret" }
-if (-not $env:JWT_SECRET) { $env:JWT_SECRET = "dev_jwt_secret" }
+if (-not $env:JWT_SECRET_KEY) { $env:JWT_SECRET_KEY = "dev_jwt_secret" }
+if (-not $env:COSMOS_ENDPOINT) { $env:COSMOS_ENDPOINT = "https://star-cosmos.documents.azure.com:443/" }
+if (-not $env:COSMOS_KEY) { $env:COSMOS_KEY = "your_cosmos_key_here" }
 if (-not $env:ALLOWED_ORIGINS) { $env:ALLOWED_ORIGINS = "http://localhost:3000" }
 
 Write-Host "Starting Flask backend (star-backend/star_backend_flask/app.py) with environment:" -ForegroundColor Cyan
 Write-Host "  SECRET_KEY = $env:SECRET_KEY"
-Write-Host "  JWT_SECRET = $env:JWT_SECRET"
+Write-Host "  JWT_SECRET_KEY = $env:JWT_SECRET_KEY"
+Write-Host "  COSMOS_ENDPOINT = $env:COSMOS_ENDPOINT"
+Write-Host "  COSMOS_KEY = [HIDDEN]"
 Write-Host "  ALLOWED_ORIGINS = $env:ALLOWED_ORIGINS"
 
 # Start the backend (foreground)

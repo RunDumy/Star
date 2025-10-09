@@ -10,9 +10,7 @@ Write-Host "Set these in: https://vercel.com/dashboard -> Your Project -> Settin
 Write-Host ""
 
 $vercelVars = @(
-    "NEXT_PUBLIC_API_URL=https://star-backend-service.onrender.com",
-    "NEXT_PUBLIC_SUPABASE_URL=https://hiwmpmvqcxzshdmhhlsb.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE"
+    "NEXT_PUBLIC_API_URL=https://star-backend-service.onrender.com"
 )
 
 foreach ($var in $vercelVars) {
@@ -28,7 +26,8 @@ $renderVars = @(
     "SECRET_KEY=your-secure-secret-key-here",
     "JWT_SECRET_KEY=your-jwt-secret-key-here",
     "JWT_ALGORITHM=HS256",
-    "DATABASE_URL=postgresql://postgres:8phRIvhoniavo2Wv@db.hiwmpmvqcxzshdmhhlsb.supabase.co:5432/postgres",
+    "COSMOS_ENDPOINT=https://star-cosmos.documents.azure.com:443/",
+    "COSMOS_KEY=your-cosmos-key-here",
     "SPOTIFY_CLIENT_ID=dcc37439570a47b1a79db76e3bd35a22",
     "SPOTIFY_CLIENT_SECRET=c2e06d864bca407bab4a6dfbf80993d5",
     "IPGEOLOCATION_API_KEY=ac0f06798ef248d4b2290e1e20e0a2cc",
@@ -54,4 +53,4 @@ Write-Host "  4. Update local .env files if needed for development"
 Write-Host "`n🔗 QUICK LINKS:" -ForegroundColor Magenta
 Write-Host "  Vercel Dashboard: https://vercel.com/dashboard"
 Write-Host "  Render Dashboard: https://dashboard.render.com"
-Write-Host "  Supabase Dashboard: https://app.supabase.com"
+Write-Host "  Azure Portal: https://portal.azure.com"
