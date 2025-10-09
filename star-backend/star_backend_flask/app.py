@@ -159,19 +159,13 @@ try:
 except Exception as e:
     logger.error(f"Redis connection test failed: {e}")
 
-# Supabase client (for Storage uploads) - TODO: Replace with Azure Blob Storage
-# SUPABASE_URL = os.environ.get('SUPABASE_URL')
-# SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
-# supabase = None
-# try:
-#     if SUPABASE_URL and SUPABASE_ANON_KEY:
-#         supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-#         logger.info("Supabase client initialized")
-#     else:
-#         logger.warning("SUPABASE_URL or SUPABASE_ANON_KEY not set; upload endpoint will be disabled.")
-# except Exception as e:
-#     logger.error(f"Failed to initialize Supabase client: {e}")
-#     supabase = None
+# Azure Cosmos DB client (for data storage) - Replaces Supabase
+from azure_config import get_cosmos_client
+cosmos_client = get_cosmos_client()
+if cosmos_client:
+    logger.info("Azure Cosmos DB client initialized")
+else:
+    logger.warning("COSMOS_ENDPOINT or COSMOS_KEY not set; Cosmos DB operations will be disabled.")
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///test.db').replace('postgres://', 'postgresql+psycopg2://').replace('postgresql://', 'postgresql+psycopg2://')

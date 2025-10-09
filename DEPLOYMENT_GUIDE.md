@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-Your revolutionary **Interactive Tarot Drag-and-Drop Reader** with Spotify playlists and IPGeolocation insights is now ready for production deployment! This guide covers deploying to **Vercel** (frontend) and **Render** (backend) for scalable, production-ready hosting.
+Your revolutionary **Interactive Tarot Drag-and-Drop Reader** with Spotify playlists and IPGeolocation insights is now ready for production deployment! This guide covers deploying to **Vercel** (frontend) and **Azure App Service** (backend) for scalable, production-ready hosting.
 
 ## 🏗️ Project Architecture
 
@@ -14,10 +14,10 @@ Your revolutionary **Interactive Tarot Drag-and-Drop Reader** with Spotify playl
 │   │   ├── 📁 pages/          # Tarot pages and pages
 │   │   └── 📁 lib/            # API client, utilities
 │   └── 📁 __tests__/          # Jest test suites
-├── 📁 star-backend/           # Flask/FastAPI + Python
+├── 📁 star-backend/           # Flask + Python
 │   ├── 📁 star_backend_flask/ # Flask app with API endpoints
 │   └── 📁 tests/              # Pytest test suites
-└── 📄 Configuration Files     # vercel.json, render.yaml
+└── 📄 Configuration Files     # vercel.json, Procfile.azure
 ```
 
 ## ⚡ Vercel Frontend Deployment
@@ -78,55 +78,48 @@ Ensure these environment variables are set in Vercel:
 }
 ```
 
-## 🔧 Render Backend Deployment
+## 🔧 Azure App Service Backend Deployment
 
-### 1. Deploy Via GitHub Integration
+### 1. Deploy Via GitHub Actions
 
-1. **Connect Repository**: In Render dashboard → "New Web Service" → Connect GitHub → Select `RunDumy/Star`
+1. **Connect Repository**: In Azure Portal → App Services → Create → Web App → Connect to GitHub → Select `RunDumy/Star`
 
 2. **Configure Service**:
 
    - **Branch**: `main` (for production)
-   - **Runtime**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT`
+   - **Runtime**: Python 3.11
+   - **Build Command**: `pip install -r star-backend/star_backend_flask/requirements.txt`
+   - **Start Command**: `gunicorn --bind=0.0.0.0:$PORT app:application` (from Procfile.azure)
 
 3. **Set Environment Variables**:
 
    ```
+   COSMOS_ENDPOINT=https://your-cosmos-account.documents.azure.com:443/
+   COSMOS_KEY=your-cosmos-primary-key
+   REDIS_URL=your-redis-connection-string
+   JWT_SECRET_KEY=your-production-jwt-secret
    SPOTIFY_CLIENT_ID=dcc37439570a47b1a79db76e3bd35a22
    SPOTIFY_CLIENT_SECRET=c2e06d864bca407bab4a6dfbf80993d5
    IPGEOLOCATION_API_KEY=ac0f06798ef248d4b2290e1e20e0a2cc
    SECRET_KEY=your-production-jwt-secret
-   JWT_SECRET_KEY=your-production-jwt-secret
    ```
 
-4. **Add PostgreSQL Database**:
-   - New → PostgreSQL
-   - Plan: Starter (free tier)
-   - Update backend DATABASE_URL with Render's provided connection string
+4. **Add Azure Cosmos DB**:
+   - New → Azure Cosmos DB for NoSQL
+   - Plan: Free tier
+   - Update backend COSMOS_ENDPOINT and COSMOS_KEY with Azure's provided values
 
-### 2. Render Infrastructure-as-Code
+### 2. Azure Infrastructure-as-Code
 
-The **render.yaml** blueprint provides:
+The **Procfile.azure** provides:
 
-- **Auto-scaling**: Free tier with automatic container management
-- **Database Integration**: PostgreSQL with automatic connection strings
-- **Environment Management**: Secure environment variable handling
-- **Blue-Green Deploys**: Zero-downtime deployments
+- **Auto-scaling**: Configurable scaling with Azure plans
+- **Database Integration**: Cosmos DB with automatic connection
+- **Environment Management**: Secure Key Vault integration
+- **Blue-Green Deploys**: Slot-based deployments for zero-downtime
 
-```yaml
-services:
-  - type: web
-    name: star-backend
-    runtime: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT"
-    envVars:
-      - key: SPOTIFY_CLIENT_ID
-        value: dcc37439570a47b1a79db76e3bd35a22
-      - fromDatabase: ...
+```text
+web: gunicorn --bind=0.0.0.0:$PORT app:application
 ```
 
 ## 🔄 CI/CD Pipeline
@@ -137,11 +130,11 @@ services:
 - **Pull Request**: Instant preview URLs
 - **Production**: Manual promotion from dashboard
 
-### Render (GitHub-Connected)
+### Azure (GitHub-Connected)
 
-- **Push to main**: Automatic backend redeployment
-- **Build Notifications**: Real-time Slack/Discord alerts
-- **Rollback**: One-click rollback to previous commits
+- **Push to main**: Automatic backend redeployment via GitHub Actions
+- **Build Notifications**: Real-time alerts in GitHub
+- **Rollback**: Slot swap or redeploy previous commit
 
 ## 🧪 Production Testing
 
