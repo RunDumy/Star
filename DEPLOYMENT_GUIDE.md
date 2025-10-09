@@ -23,11 +23,13 @@ Your revolutionary **Interactive Tarot Drag-and-Drop Reader** with Spotify playl
 ## ⚡ Vercel Frontend Deployment
 
 ### 1. Install Vercel CLI
+
 ```bash
 npm install -g vercel
 ```
 
 ### 2. Deploy Frontend
+
 ```bash
 # From project root
 cd star-frontend
@@ -58,6 +60,7 @@ Ensure these environment variables are set in Vercel:
 ### 4. Vercel Configuration Details
 
 **vercel.json** handles:
+
 - **Frontend Builds**: Automatic Next.js detection with custom build settings
 - **API Routing**: Proxies `/api/*` requests to your Render backend
 - **Environment Variables**: Sets `NEXT_PUBLIC_API_URL` pointing to backend
@@ -66,12 +69,12 @@ Ensure these environment variables are set in Vercel:
 ```json
 {
   "version": 2,
-  "builds": [{"src": "star-frontend/package.json", "use": "@vercel/next"}],
+  "builds": [{ "src": "star-frontend/package.json", "use": "@vercel/next" }],
   "routes": [
-    {"src": "/api/(.*)", "dest": "https://star-backend.onrender.com/api/$1"},
-    {"src": "/(.*)", "dest": "/star-frontend/$1"}
+    { "src": "/api/(.*)", "dest": "https://star-backend.onrender.com/api/$1" },
+    { "src": "/(.*)", "dest": "/star-frontend/$1" }
   ],
-  "env": {"NEXT_PUBLIC_API_URL": "https://star-backend.onrender.com"}
+  "env": { "NEXT_PUBLIC_API_URL": "https://star-backend.onrender.com" }
 }
 ```
 
@@ -82,18 +85,20 @@ Ensure these environment variables are set in Vercel:
 1. **Connect Repository**: In Render dashboard → "New Web Service" → Connect GitHub → Select `RunDumy/Star`
 
 2. **Configure Service**:
+
    - **Branch**: `main` (for production)
    - **Runtime**: Python
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `uvicorn star_backend_flask.api:app --host 0.0.0.0 --port $PORT`
 
 3. **Set Environment Variables**:
+
    ```
    SPOTIFY_CLIENT_ID=dcc37439570a47b1a79db76e3bd35a22
    SPOTIFY_CLIENT_SECRET=c2e06d864bca407bab4a6dfbf80993d5
    IPGEOLOCATION_API_KEY=ac0f06798ef248d4b2290e1e20e0a2cc
    SECRET_KEY=your-production-jwt-secret
-   JWT_SECRET=your-production-jwt-secret
+   JWT_SECRET_KEY=your-production-jwt-secret
    ```
 
 4. **Add PostgreSQL Database**:
@@ -104,6 +109,7 @@ Ensure these environment variables are set in Vercel:
 ### 2. Render Infrastructure-as-Code
 
 The **render.yaml** blueprint provides:
+
 - **Auto-scaling**: Free tier with automatic container management
 - **Database Integration**: PostgreSQL with automatic connection strings
 - **Environment Management**: Secure environment variable handling
@@ -126,11 +132,13 @@ services:
 ## 🔄 CI/CD Pipeline
 
 ### Vercel (Automatic)
+
 - **Push to main**: Automatic preview deployment
 - **Pull Request**: Instant preview URLs
 - **Production**: Manual promotion from dashboard
 
 ### Render (GitHub-Connected)
+
 - **Push to main**: Automatic backend redeployment
 - **Build Notifications**: Real-time Slack/Discord alerts
 - **Rollback**: One-click rollback to previous commits
@@ -138,6 +146,7 @@ services:
 ## 🧪 Production Testing
 
 ### 1. Health Check Endpoints
+
 ```
 Frontend: https://your-vercel-domain.vercel.app/
 Backend API: https://star-backend.onrender.com/api/v1/tarot/calculate-energy-flow
@@ -145,6 +154,7 @@ Health Check: https://star-backend.onrender.com/api/v1/health
 ```
 
 ### 2. Full Application Test
+
 ```bash
 # Test complete user flow:
 curl "https://your-vercel-domain.vercel.app/tarot-reading"
@@ -156,13 +166,15 @@ curl -X POST "https://star-backend.onrender.com/api/v1/tarot/share-spread" \
 ## ⚙️ Environment Variables
 
 ### Production Secrets
+
 ```bash
 # Generate new secrets for production
-JWT_SECRET=$(openssl rand -hex 32)
+JWT_SECRET_KEY=$(openssl rand -hex 32)
 SECRET_KEY=$(openssl rand -hex 32)
 ```
 
 ### API Key Rotation
+
 1. Update in Render dashboard
 2. Redeploy automatically
 3. Update .env.example for documentation
@@ -170,11 +182,13 @@ SECRET_KEY=$(openssl rand -hex 32)
 ## 📊 Monitoring & Analytics
 
 ### Vercel Analytics
+
 - Real-time performance metrics
 - User journey tracking
 - Error rate monitoring
 
 ### Render Monitoring
+
 - Response time graphs
 - CPU/memory usage
 - Logs and error tracking
@@ -182,11 +196,13 @@ SECRET_KEY=$(openssl rand -hex 32)
 ## 🎯 Production Optimization
 
 ### Frontend Optimizations
+
 - **Automatic**: Vercel handles code splitting, image optimization
 - **Configure**: Update `next.config.js` for CDN settings
 - **Bundle Analysis**: `npm run build --analyze`
 
 ### Backend Optimizations
+
 - **Caching**: Already implemented with TTLCache (1-hour)
 - **Database**: PostgreSQL on Render with connection pooling
 - **API Limits**: Spotify & IPGeolocation rate limiting handled
@@ -196,12 +212,14 @@ SECRET_KEY=$(openssl rand -hex 32)
 ### Common Issues
 
 **Vercel Build Fails**
+
 ```bash
 # Check build logs in Vercel dashboard
 # Common fix: Update Node.js version in package.json
 ```
 
 **Render Deploy Fails**
+
 ```bash
 # Check render.yaml syntax
 # Ensure requirements.txt paths are correct
@@ -209,6 +227,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 ```
 
 **API Connection Issues**
+
 ```bash
 # Update vercel.json NEXT_PUBLIC_API_URL
 # Check Render service status
@@ -216,6 +235,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 ```
 
 **Database Connection**
+
 ```bash
 # Use Render's internal database URL
 # Check connection string format: postgresql://
@@ -225,24 +245,28 @@ SECRET_KEY=$(openssl rand -hex 32)
 ## 🚀 Post-Deployment
 
 ### 1. Configure Custom Domain
+
 - Vercel: Custom domains + SSL certificates
 - Render: Domain aliases (free tier)
 
 ### 2. Analytics & Monitoring
+
 - Set up Vercel Analytics
 - Configure error tracking
 - Monitor API usage rates
 
 ### 3. Security Headers
+
 Add to vercel.json:
+
 ```json
 {
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        {"key": "X-Frame-Options", "value": "DENY"},
-        {"key": "X-Content-Type-Options", "value": "nosniff"}
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
   ]
@@ -261,6 +285,7 @@ Your cosmic tarot platform is now deployed with:
 ✅ **Backup**: Automatic database backups on Render
 
 ### Next Steps:
+
 1. **Domain Setup**: Add your custom domain
 2. **Marketing Launch**: Share your cosmic creation! 🌌✨🃏
 3. **Feature Expansion**: Add sound effects, haptic feedback, community features
@@ -270,6 +295,7 @@ Your cosmic tarot platform is now deployed with:
 ---
 
 **Deployment URLs:**
+
 - Frontend: `https://your-vercel-domain.vercel.app`
 - Backend: `https://star-backend.onrender.com`
 - Tarot App: `https://your-vercel-domain.vercel.app/tarot-reading`

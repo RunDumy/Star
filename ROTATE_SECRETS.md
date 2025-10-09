@@ -61,7 +61,7 @@ notepad .\star-backend\star_backend_flask\.env
 ### UI (Render)
 
 1. Open the Render dashboard: [https://dashboard.render.com](https://dashboard.render.com) and select your service (e.g. `star-backend-web` or `star-backend-service`).
-2. Go to Environment → Add/Update keys: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `SPOTIFY_CLIENT_SECRET`, `IPGEOLOCATION_API_KEY`, `JWT_SECRET`.
+2. Go to Environment → Add/Update keys: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `SPOTIFY_CLIENT_SECRET`, `IPGEOLOCATION_API_KEY`, `JWT_SECRET_KEY`.
 3. Save and click **Deploy Latest** (or push a commit to trigger deployment).
 
 ### CLI (Render example)

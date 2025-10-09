@@ -46,7 +46,7 @@ from star_points import star_points
 # Import tarot interactions
 from tarot_interactions import tarot_bp
 
-from supabase import create_client
+from azure.cosmos import CosmosClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -1469,10 +1469,10 @@ class Health(Resource):
         logger.info("Health check endpoint called")
         return {'status': 'ok'}, 200
 
-# Add a simple health check route for Railway (expects /api/health, not /api/v1/health)
+# Add a simple health check route for Azure App Service (expects /api/health, not /api/v1/health)
 @app.route('/api/health')
 def health_check():
-    logger.info("Railway health check endpoint called")
+    logger.info("Azure App Service health check endpoint called")
     try:
         # Test Supabase connection
         if supabase:
@@ -1825,6 +1825,15 @@ if __name__ == '__main__':
 
     # Register analytics blueprint
     app.register_blueprint(analytics_bp, url_prefix='/api/v1')
+
+# ==================== AZURE APP SERVICE CONFIGURATION ====================
+
+def create_app():
+    """Application factory for Azure App Service"""
+    return app
+
+# For Azure App Service (WSGI)
+application = create_app()
 
 if __name__ == '__main__':
     logger.info("Starting Star App server...")

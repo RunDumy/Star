@@ -9,7 +9,7 @@ services:
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
-      - JWT_SECRET=test-jwt-secret-key-for-development
+      - JWT_SECRET_KEY=test-jwt-secret-key-for-development
       - SECRET_KEY=test-secret-key-for-development
       - ALLOWED_ORIGINS=http://localhost:3000
     depends_on:

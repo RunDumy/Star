@@ -64,3 +64,5 @@ old-history/
 old-history.bfg-report/
 .pytest_cache/
 .coverage
+
+.python_packages

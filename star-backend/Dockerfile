@@ -36,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Use gunicorn for production
-CMD ["gunicorn", "--chdir", "star_backend_flask", "app:app", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "--chdir", "star_backend_flask", "app:application", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-"]

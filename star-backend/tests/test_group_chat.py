@@ -17,6 +17,7 @@ def client():
 
 
 @pytest.fixture
+@pytest.fixture
 def auth_headers():
     from star_backend_flask.main import create_app
 

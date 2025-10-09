@@ -47,8 +47,6 @@ app.config['JWT_ALGORITHM'] = 'HS256'
 # Initialize extensions
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
 rest_api = Api(app)
-limiter = Limiter(key_func=get_remote_address)
-limiter.init_app(app)
 import logging
 import os
 import random
@@ -106,15 +104,8 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set")
-if os.environ.get('TESTING') == 'true':
-    from unittest.mock import MagicMock
-    supabase = MagicMock()
-    supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [{'id': 1, 'username': 'testuser', 'zodiac_sign': 'Aries'}]
-    supabase.table.return_value.update.return_value.eq.return_value.execute.return_value = None
-    supabase.table.return_value.insert.return_value.execute.return_value = None
-else:
-    supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-    logger.info("Initialized Supabase client")
+supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+logger.info("Initialized Supabase client")
 
 from . import api
 
