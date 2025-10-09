@@ -27,7 +27,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          cd star-backend
+          cd star-backend/star_backend_flask
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Set PYTHONPATH
