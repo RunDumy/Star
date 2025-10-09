@@ -61,16 +61,10 @@ def test_get_posts_returns_transformed_posts(client):
         }
     ]
 
-    mock_res = MagicMock()
-    mock_res.data = rows
+    mock_container = MagicMock()
+    mock_container.query_items.return_value = rows
 
-    mock_table = MagicMock()
-    mock_table.select.return_value.order.return_value.limit.return_value.execute.return_value = mock_res
-
-    mock_supabase = MagicMock()
-    mock_supabase.table.return_value = mock_table
-
-    with patch('main.supabase', mock_supabase):
+    with patch('star_backend_flask.main.posts_container', mock_container):
         resp = client.get('/api/v1/posts')
         assert resp.status_code == 200
         data = resp.get_json()
@@ -83,38 +77,23 @@ def test_create_post_inserts_and_returns_id(client):
     insert_resp = MagicMock()
     insert_resp.data = [{'id': 999}]
 
-    # Create separate mocks for user and post tables
-    user_table_mock = MagicMock()
-    post_table_mock = MagicMock()
-
-    # Configure user table mock for token validation - need to handle both select and update calls
-    user_select_mock = MagicMock()
-    user_select_mock.eq.return_value.execute.return_value.data = [
-        {'id': 1, 'username': 'testuser', 'zodiac_sign': 'Taurus'}
+    # Mock Cosmos DB containers
+    mock_users_container = MagicMock()
+    mock_posts_container = MagicMock()
+    
+    # Configure users container for user lookup
+    mock_users_container.query_items.return_value = [
+        {'id': '1', 'username': 'testuser', 'zodiac_sign': 'Taurus'}
     ]
-    user_table_mock.select.return_value = user_select_mock
+    
+    # Configure posts container for post creation
+    mock_posts_container.create_item.return_value = None
 
-    user_update_mock = MagicMock()
-    user_update_mock.eq.return_value.execute.return_value = None
-    user_table_mock.update.return_value = user_update_mock
-
-    # Configure post table mock for insertion
-    post_table_mock.insert.return_value.execute.return_value = insert_resp
-
-    def table_side_effect(table_name):
-        if table_name == 'user':
-            return user_table_mock
-        elif table_name == 'post':
-            return post_table_mock
-        else:
-            return MagicMock()
-
-    mock_supabase = MagicMock()
-    mock_supabase.table.side_effect = table_side_effect
-
-    with patch('main.supabase', mock_supabase), patch('main.jwt.decode', return_value={'user_id': 1}):
+    with patch('star_backend_flask.main.users_container', mock_users_container), \
+         patch('star_backend_flask.main.posts_container', mock_posts_container), \
+         patch('star_backend_flask.main.jwt.decode', return_value={'user_id': '1'}):
         resp = client.post('/api/v1/posts', json={'content': 'a new post', 'zodiac_sign': 'Taurus'}, headers={'Authorization': 'Bearer mock_token'})
         assert resp.status_code == 201
         body = resp.get_json()
         assert body.get('message') == 'Post created'
-        assert body.get('post_id') == 999
+        assert 'post_id' in body

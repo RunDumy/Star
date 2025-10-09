@@ -16,19 +16,16 @@ def test_token_required_function_decorator():
     # Prepare a dummy user response
     dummy_user = {'id': 7, 'username': 'u7', 'zodiac_sign': 'libra'}
 
-    mock_table = MagicMock()
-    mock_table.select.return_value.eq.return_value.execute.return_value.data = [dummy_user]
-    mock_table.update.return_value.eq.return_value.execute.return_value = None
-
-    mock_supabase = MagicMock()
-    mock_supabase.table.return_value = mock_table
+    mock_users_container = MagicMock()
+    mock_users_container.query_items.return_value = [dummy_user]
+    mock_users_container.upsert_item.return_value = None
 
     with app.app_context():
         app.config['JWT_SECRET_KEY'] = 'test_secret'
         app.config['TESTING'] = True
 
-        with patch('star_backend_flask.star_auth.jwt.decode', return_value={'user_id': 7}), \
-                patch('star_backend_flask.main.supabase', mock_supabase):
+        with patch('star_backend_flask.star_auth.jwt.decode', return_value={'user_id': '7'}), \
+                patch('star_backend_flask.main.users_container', mock_users_container):
             # function decorated with token_required
             @token_required
             def protected_fn(current_user):
@@ -46,19 +43,16 @@ def test_token_required_method_decorator():
     # Prepare a dummy user response
     dummy_user = {'id': 9, 'username': 'u9', 'zodiac_sign': 'gemini'}
 
-    mock_table = MagicMock()
-    mock_table.select.return_value.eq.return_value.execute.return_value.data = [dummy_user]
-    mock_table.update.return_value.eq.return_value.execute.return_value = None
-
-    mock_supabase = MagicMock()
-    mock_supabase.table.return_value = mock_table
+    mock_users_container = MagicMock()
+    mock_users_container.query_items.return_value = [dummy_user]
+    mock_users_container.upsert_item.return_value = None
 
     with app.app_context():
         app.config['JWT_SECRET_KEY'] = 'test_secret'
         app.config['TESTING'] = True
 
-        with patch('star_backend_flask.star_auth.jwt.decode', return_value={'user_id': 9}), \
-             patch('star_backend_flask.star_auth.supabase', mock_supabase):
+        with patch('star_backend_flask.star_auth.jwt.decode', return_value={'user_id': '9'}), \
+             patch('star_backend_flask.main.users_container', mock_users_container):
 
             class C:
                 @token_required
@@ -70,7 +64,7 @@ def test_token_required_method_decorator():
             with app.test_request_context('/m', headers=make_token_header()):
                 result = cobj.endpoint()
                 assert isinstance(result, dict)
-                assert result['user_id'] == 9
+                assert result['user_id'] == '9'
 
 
 def test_token_required_missing_header():

@@ -102,54 +102,57 @@ app = create_app()
 app.config['TESTING'] = True
 
 
-class DummyRes:
-    def __init__(self, data):
-        self.data = data
-
-
-class DummyTable:
+class DummyCosmosContainer:
     def __init__(self):
         self.storage = {}
 
-    def select(self, *args, **kwargs):
-        return self
+    def query_items(self, query=None, parameters=None, enable_cross_partition_query=None):
+        # Return all items for simple queries
+        return list(self.storage.values())
 
-    def eq(self, *args, **kwargs):
-        return self
+    def create_item(self, item):
+        # Simulate creating an item with an ID
+        if 'id' not in item:
+            item['id'] = str(len(self.storage) + 1)
+        self.storage[item.get('username', item['id'])] = item
+        return item
 
-    def insert(self, data):
-        # emulate insert by adding id
-        data['id'] = 999
-        self.storage[data['username']] = data
-        return self
-
-    def update(self, data):
-        return self
-
-    def execute(self):
-        # return users list if present
-        if self.storage:
-            return DummyRes(list(self.storage.values()))
-        return DummyRes([])
+    def upsert_item(self, item):
+        # Update or insert item
+        key = item.get('username', item.get('id', 'default'))
+        self.storage[key] = item
+        return item
 
 
-class DummySupabase:
+class DummyCosmosDB:
     def __init__(self):
-        self._table = DummyTable()
+        self.containers = {}
 
-    def table(self, name):
-        return self._table
+    def get_database_client(self, db_name):
+        return self
+
+    def get_container_client(self, container_name):
+        if container_name not in self.containers:
+            self.containers[container_name] = DummyCosmosContainer()
+        return self.containers[container_name]
 
 
 @pytest.fixture(autouse=True)
-def patch_supabase(monkeypatch):
+def patch_cosmos_db(monkeypatch):
     # Create a fresh instance for each test
-    dummy = DummySupabase()
-    import star_backend_flask.app as app_module
-    monkeypatch.setattr(app_module, 'supabase', dummy)
+    dummy_cosmos = DummyCosmosDB()
+    import star_backend_flask.main as app_module
+    
+    # Mock the containers
+    monkeypatch.setattr(app_module, 'users_container', dummy_cosmos.get_container_client('users'))
+    monkeypatch.setattr(app_module, 'posts_container', dummy_cosmos.get_container_client('posts'))
+    monkeypatch.setattr(app_module, 'follows_container', dummy_cosmos.get_container_client('follows'))
+    
     # Clear any previous test data
-    dummy._table.storage.clear()
-    return dummy
+    for container in dummy_cosmos.containers.values():
+        container.storage.clear()
+    
+    return dummy_cosmos
 
 
 @pytest.fixture
@@ -179,7 +182,7 @@ def test_register_and_login():
         # Emulate stored user for login: set password_hash to bcrypt hash
         import bcrypt
         import star_backend_flask.main as app_module
-        users = list(app_module.supabase.table('user').storage.values())
+        users = list(app_module.users_container.storage.values())
         assert users
         users[0]['password_hash'] = bcrypt.hashpw(payload['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 

@@ -101,32 +101,28 @@ def test_recommendations_api(app_client, mock_token, content_type, limit):
         assert call_args['limit'] == limit
 
 # Test user insights API endpoint
-def test_user_insights_api(app_client, mock_token, mock_supabase):
-    # Mock the supabase responses
-    mock_dna_response = MagicMock()
-    mock_dna_response.data = [
+def test_user_insights_api(app_client, mock_token):
+    # Mock the Cosmos DB responses
+    mock_dna_container = MagicMock()
+    mock_dna_container.query_items.return_value = [
         {'trait_name': 'Courage', 'strength': 0.8},
         {'trait_name': 'Creativity', 'strength': 0.6},
         {'trait_name': 'Precision', 'strength': 0.4},
         {'trait_name': 'Harmony', 'strength': 0.3}
     ]
     
-    mock_interactions_response = MagicMock()
-    mock_interactions_response.data = [
+    mock_interactions_container = MagicMock()
+    mock_interactions_container.query_items.return_value = [
         {'interaction_type': 'mood_view', 'details': {'mood': 'Passionate', 'intensity': 0.7}, 'zodiac_sign': 'Aries'},
         {'interaction_type': 'tarot_pull', 'zodiac_sign': 'Aries'},
         {'interaction_type': 'transit_view', 'zodiac_sign': 'Leo'},
         {'interaction_type': 'post_view', 'zodiac_sign': 'Aries'}
     ]
     
-    # Setup mock return values
-    mock_supabase.table().select().eq().execute.side_effect = [
-        mock_dna_response, 
-        mock_interactions_response
-    ]
-    
-    # Make request to insights API
-    response = app_client.get(
+    with patch('star_backend_flask.main.user_dna_container', mock_dna_container), \
+         patch('star_backend_flask.main.user_interactions_container', mock_interactions_container):
+        # Make request to insights API
+        response = app_client.get(
         '/api/v1/user-insights',
         headers={'Authorization': f'Bearer {mock_token}'}
     )

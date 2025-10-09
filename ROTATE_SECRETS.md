@@ -1,30 +1,28 @@
 # ROTATE SECRETS & UPDATE DEPLOYMENTS
 
-This document contains step-by-step, copyable commands and UI guidance to rotate exposed secrets (Supabase, Spotify, Database) and update deployment dashboards (Render, Vercel). It deliberately does NOT contain any secret values — paste your new secrets into the places marked `<new-...>`.
+This document contains step-by-step, copyable commands and UI guidance to rotate exposed secrets (Azure Cosmos DB, Spotify) and update deployment dashboards (Azure App Service, Vercel). It deliberately does NOT contain any secret values — paste your new secrets into the places marked `<new-...>`.
 
-## 1) Supabase (Anon + Service Role)
+## 1) Azure Cosmos DB (Connection String + Keys)
 
-### UI (Supabase - recommended)
+### UI (Azure Portal - recommended)
 
-1. Visit the Supabase console: [https://app.supabase.com](https://app.supabase.com) and open your project.
-2. Go to Settings → API. Click **Regenerate** for the anon key and the service_role key.
+1. Visit the Azure portal: [https://portal.azure.com](https://portal.azure.com) and open your Cosmos DB account.
+2. Go to Settings → Keys. Click **Regenerate** for the primary key and secondary key if needed.
 3. Save the new keys in your password manager.
 
-### CLI (Supabase - optional)
+### CLI (Azure CLI - optional)
 
 ```bash
-npm install -g @supabase/cli
-supabase projects api-keys regenerate --project-ref <PROJECT_REF> --key-type anon
-supabase projects api-keys regenerate --project-ref <PROJECT_REF> --key-type service_role
+az cosmosdb keys regenerate --name <COSMOS_DB_ACCOUNT> --resource-group <RESOURCE_GROUP> --key-kind primary
 ```
 
-### Update local .env (Supabase - never commit)
+### Update local .env (Azure Cosmos DB - never commit)
 
 ```powershell
 notepad .\star-backend\star_backend_flask\.env
-# SUPABASE_URL=https://<project>.supabase.co
-# SUPABASE_ANON_KEY=<new-anon-key>
-# SUPABASE_SERVICE_ROLE_KEY=<new-service-role-key>
+# COSMOS_DB_ENDPOINT=https://<account>.documents.azure.com:443/
+# COSMOS_DB_KEY=<new-primary-key>
+# COSMOS_DB_DATABASE=<database-name>
 ```
 
 ## 2) Spotify (Client Secret)
@@ -42,35 +40,34 @@ notepad .\star-backend\star_backend_flask\.env
 # SPOTIFY_CLIENT_SECRET=<new-secret>
 ```
 
-## 3) Postgres password (Supabase-managed DB)
+## 3) Azure Cosmos DB Connection (Primary Key)
 
-### UI (Supabase - DB)
+### UI (Azure Portal - DB)
 
-1. Project → Settings → Database → Reset database password.
-2. Copy the new password and update `DATABASE_URL` accordingly.
+1. Cosmos DB Account → Settings → Keys → Regenerate Primary Key.
+2. Copy the new primary key and update connection strings accordingly.
 
-### Update local .env (Postgres)
+### Update local .env (Azure Cosmos DB)
 
 ```powershell
 notepad .\star-backend\star_backend_flask\.env
-# DATABASE_URL=postgresql://postgres:<new-password>@db.<project-ref>.supabase.co:5432/postgres
+# COSMOS_DB_KEY=<new-primary-key>
 ```
 
-## 4) Update Render (backend) env vars
+## 4) Update Azure App Service (backend) env vars
 
-### UI (Render)
+### UI (Azure Portal)
 
-1. Open the Render dashboard: [https://dashboard.render.com](https://dashboard.render.com) and select your service (e.g. `star-backend-web` or `star-backend-service`).
-2. Go to Environment → Add/Update keys: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `SPOTIFY_CLIENT_SECRET`, `IPGEOLOCATION_API_KEY`, `JWT_SECRET_KEY`.
-3. Save and click **Deploy Latest** (or push a commit to trigger deployment).
+1. Open the Azure portal: [https://portal.azure.com](https://portal.azure.com) and select your App Service.
+2. Go to Settings → Configuration → Application settings. Add/Update keys: `COSMOS_DB_ENDPOINT`, `COSMOS_DB_KEY`, `COSMOS_DB_DATABASE`, `SPOTIFY_CLIENT_SECRET`, `IPGEOLOCATION_API_KEY`, `JWT_SECRET_KEY`.
+3. Save and the app will restart automatically.
 
-### CLI (Render example)
+### CLI (Azure CLI example)
 
 ```bash
 # Example (adapt to your CLI tooling)
-render env set --service <SERVICE_ID> --key SUPABASE_ANON_KEY --value <new-anon-key>
-render env set --service <SERVICE_ID> --key SUPABASE_SERVICE_ROLE_KEY --value <new-service-key>
-render deploy --service <SERVICE_ID>
+az webapp config appsettings set --name <APP_SERVICE_NAME> --resource-group <RESOURCE_GROUP> --setting COSMOS_DB_KEY=<new-key>
+az webapp restart --name <APP_SERVICE_NAME> --resource-group <RESOURCE_GROUP>
 ```
 
 ## 5) Update Vercel (frontend) env vars
@@ -78,13 +75,13 @@ render deploy --service <SERVICE_ID>
 ### UI (Vercel)
 
 1. Open Vercel: [https://vercel.com](https://vercel.com) → Projects → your project → Settings → Environment Variables.
-2. Update `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_BACKEND_URL`.
+2. Update `NEXT_PUBLIC_API_URL`.
 3. Trigger a redeploy.
 
 ### CLI (Vercel)
 
 ```bash
-vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY <new-anon-key> production
+vercel env add NEXT_PUBLIC_API_URL <new-backend-url> production
 vercel --prod
 ```
 
@@ -103,8 +100,8 @@ curl http://localhost:5000/api/example
 
 ### Deployed verification (prod)
 
-- Check Render logs for backend startup and Supabase connection messages.
-- Check Vercel deployment logs and test frontend flows that use Supabase.
+- Check Azure App Service logs for backend startup and Cosmos DB connection messages.
+- Check Vercel deployment logs and test frontend flows that use the API.
 
 ## 7) Revoke old keys
 

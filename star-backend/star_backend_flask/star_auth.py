@@ -18,17 +18,19 @@ def token_required(f):
         try:
             token = request.headers['Authorization'].split(' ')[1]
             data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=[app.config.get('JWT_ALGORITHM', 'HS256')])
-            # Application should provide a 'supabase' or DB access on the app module
-            supabase = app.extensions.get('supabase') if hasattr(app, 'extensions') else None
-            # Fallback to reading from global if present
-            from .main import supabase as global_supabase
-            supabase = supabase or global_supabase
-            user_res = supabase.table('user').select('*').eq('id', data['user_id']).execute()
-            user_data = user_res.data or []
+            # Application should provide a 'users_container' or DB access on the app module
+            from .main import users_container
+            user_data = list(users_container.query_items(
+                query="SELECT * FROM c WHERE c.id = @user_id",
+                parameters=[{"name": "@user_id", "value": str(data['user_id'])}],
+                enable_cross_partition_query=True
+            ))
             if not user_data:
                 return {'error': 'User not found'}, 401
             current_user = type('User', (), {'id': user_data[0]['id'], 'username': user_data[0].get('username'), 'zodiac_sign': user_data[0].get('zodiac_sign')})
-            supabase.table('user').update({'last_seen': datetime.now(timezone.utc).isoformat()}).eq('id', current_user.id).execute()
+            # Update last seen
+            from .main import update_user_last_seen
+            update_user_last_seen(current_user.id)
         except jwt.ExpiredSignatureError:
             return {'error': 'Token has expired'}, 401
         except jwt.InvalidTokenError:

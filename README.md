@@ -3,7 +3,7 @@
 _Outshining Instagram & TikTok with Archetypal Intelligence, Real-time Social Features, and Cosmic Connection_
 
 [![Deploy on Vercel](https://vercel.com/button)](https://vercel.com)
-[![Deploy on Render](https://render.com/images/badge.svg)](https://render.com)
+[![Deploy on Azure](https://aka.ms/deploytoazurebutton)](https://azure.microsoft.com)
 
 ## 🎯 **What is STAR?**
 
@@ -20,7 +20,7 @@ STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **s
 ## 🚀 **Live Demo**
 
 - **Frontend**: [Deployed on Vercel](https://your-vercel-app.vercel.app)
-- **Backend API**: [Deployed on Render](https://star-backend.onrender.com)
+- **Backend API**: [Deployed on Azure App Service](https://star-backend.azurewebsites.net)
 - **Tarot Experience**: Visit `/tarot-reading` on your deployed frontend
 
 ## 🏗️ **Architecture**
@@ -50,7 +50,7 @@ STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **s
 │   ├── Socket.IO real-time constellation networking
 │   ├── Live streaming management with AgoraRTC
 │   ├── Real-time notifications system
-│   └── Supabase integration for social features
+│   └── Azure Cosmos DB integration for social features
 │
 ├── 🧪 Testing (Jest + PyTest + 85% Coverage)
 │   ├── Component testing with React Testing Library
@@ -59,7 +59,7 @@ STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **s
 │   ├── Real-time feature testing
 │   └── Accessibility and performance testing
 │
-└── ☁️ Production Deployment (Vercel + Render + Supabase)
+└── ☁️ Production Deployment (Vercel + Azure App Service + Azure Cosmos DB)
     ├── Global CDN with auto-scaling
     ├── Zero-downtime CI/CD & automated deployments
     ├── Real-time WebSocket connections
@@ -85,7 +85,7 @@ STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **s
 
 - **Runtime**: Python 3.10+
 - **Framework**: Flask with async support
-- **Database**: Supabase (PostgreSQL) with real-time subscriptions
+- **Database**: Azure Cosmos DB (NoSQL) with global distribution
 - **Caching**: TTLCache for performance optimization, Redis for sessions
 - **APIs**: Spotify Web API, IPGeolocation, AgoraRTC
 - **Real-time**: Socket.IO for WebSocket connections
@@ -94,8 +94,8 @@ STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **s
 ### **Infrastructure**
 
 - **Frontend Hosting**: Vercel (Global CDN, Serverless Functions)
-- **Backend Hosting**: Render (Auto-scaling, IaC with YAML)
-- **Database**: Supabase (Real-time PostgreSQL, Auth, Storage)
+- **Backend Hosting**: Azure App Service (Auto-scaling, IaC with ARM templates)
+- **Database**: Azure Cosmos DB (NoSQL, Global distribution, Auth)
 - **Live Streaming**: AgoraRTC infrastructure
 - **CI/CD**: GitHub-connected auto-deployments
 

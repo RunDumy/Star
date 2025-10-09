@@ -6,20 +6,20 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
 
 - **Frontend**: Next.js + TypeScript (`star-frontend/`) with React Three Fiber for 3D UI
 - **Backend**: Flask (`star-backend/star_backend_flask/`, production, entry: `app.py`) with Flask-SocketIO for real-time chat, and experimental FastAPI (`star-backend/main.py`)
-- **Database**: Supabase (Postgres, with Row Level Security, Realtime enabled)
-- **Local Dev**: Docker Compose for backend, frontend, and Supabase
-- **Deployment**: Render (backend, WebSocket-enabled), Vercel (frontend)
+- **Database**: Azure Cosmos DB (NoSQL, with global distribution)
+- **Local Dev**: Docker Compose for backend, frontend, and Azure Cosmos DB emulator
+- **Deployment**: Azure App Service (backend, WebSocket-enabled), Vercel (frontend)
 - **Testing**: Jest (frontend), pytest (backend, stabilized with mocks), GitHub Actions for CI/CD
 - **Spotify Integration**: PKCE OAuth for user authentication, displaying top tracks, currently playing, and zodiac-themed recommendations; track sharing in chat and feed
-- **Dynamic Feed**: User-generated posts with text, Spotify track embeds, likes, and comments; real-time updates via Supabase Realtime
+- **Dynamic Feed**: User-generated posts with text, Spotify track embeds, likes, and comments; real-time updates via Azure Cosmos DB change feed
 
 ## Architecture & Data Flow
 
-- **Frontend** (`star-frontend/`): Next.js app. Key dirs: `pages/` (routes, e.g., `/home`, `/chat`, `/music`, `/feed`), `components/` (e.g., `CosmicInterface.tsx` for 3D homepage, `ZodiacChatRooms.tsx` for chat, `SpotifyStats.tsx` for music stats), `lib/` (Supabase client), `hooks/`, `utils/`. Configs: `next.config.js`, `package.json`, `tsconfig.json`, `jest.config.js`.
+- **Frontend** (`star-frontend/`): Next.js app. Key dirs: `pages/` (routes, e.g., `/home`, `/chat`, `/music`, `/feed`), `components/` (e.g., `CosmicInterface.tsx` for 3D homepage, `ZodiacChatRooms.tsx` for chat, `SpotifyStats.tsx` for music stats), `lib/` (Azure client), `hooks/`, `utils/`. Configs: `next.config.js`, `package.json`, `tsconfig.json`, `jest.config.js`.
 - **Backend** (`star-backend/star_backend_flask/`): Flask app (`star-backend/star_backend_flask/`). Main files: `app.py` (entry with SocketIO), `api.py` (REST endpoints, including `/api/v1/spotify/token`, `/api/v1/posts`), `group_chat.py` (SocketIO chat), `star_auth.py` (auth), `requirements.txt`. Experimental FastAPI in `star-backend/main.py`.
-- **Database**: Supabase for auth, profiles (with `zodiac_sign`, Spotify tokens), chat data (`chat_messages`, `private_rooms`, `private_room_reads`), and feed (`posts`, `likes`, `comments`). Schema: `star-backend/database/supabase_schema.sql`.
-- **Data flow**: Frontend calls `/api/v1/*` (e.g., `/posts`, `/chat/*`), connects via SocketIO to `NEXT_PUBLIC_API_URL` base. Clients emit `identify` for chat. Spotify PKCE OAuth handled via `/api/auth/spotify`. Feed updates via Supabase Realtime.
-- **Auth**: Supabase auth with `useAuth` hook (`lib/supabase.ts`). Backend uses `@token_required` with RLS. Spotify auth via PKCE, tokens stored in `profiles`. JWT secret in `app.config['JWT_SECRET_KEY']`.
+- **Database**: Azure Cosmos DB for auth, profiles (with `zodiac_sign`, Spotify tokens), chat data (`chat_messages`, `private_rooms`, `private_room_reads`), and feed (`posts`, `likes`, `comments`). Schema managed via Azure portal.
+- **Data flow**: Frontend calls `/api/v1/*` (e.g., `/posts`, `/chat/*`), connects via SocketIO to `NEXT_PUBLIC_API_URL` base. Clients emit `identify` for chat. Spotify PKCE OAuth handled via `/api/auth/spotify`. Feed updates via Azure Cosmos DB change feed.
+- **Auth**: Azure AD B2C with JWT tokens. Backend uses `@token_required` with Cosmos DB queries. Spotify auth via PKCE, tokens stored in profiles.
 
 ## Chat System Architecture
 
@@ -33,12 +33,12 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
 ## Environment Setup
 
 - **Prerequisites**: Python 3.11+, Node 18+, Docker Desktop, Tailwind CSS, Three.js, Spotify Developer account. Copy `.env` templates from `ENV_VARS_TEMPLATE.md` to `star-frontend/.env.local`, `star-backend/.env`, `config/docker/.env.dev`. Add `cosmic-chime.mp3` to `star-frontend/public/sounds/`.
-- **Secrets**: Never commit secrets. Use `ENV_VARS_TEMPLATE.md` and project docs to find which vars belong in Vercel/Render.
+- **Secrets**: Never commit secrets. Use `ENV_VARS_TEMPLATE.md` and project docs to find which vars belong in Vercel/Azure App Service.
 - **Spotify Setup**: Create app at Spotify Developer Dashboard, set redirect URI to `http://localhost:3000/api/auth/callback/spotify` (local) or production URL.
 
 ## Developer Workflows
 
-- **Local Dev (Docker, required for Supabase):**
+- **Local Dev (Docker, required for Azure Cosmos DB):**
   - `docker-compose -f config/docker/docker-compose.yml up --build`
 - **Frontend (manual):**
   - `cd star-frontend && npm install && npm run dev`
@@ -49,37 +49,37 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
   - Backend: `cd star-backend && python -m venv venv && source venv/bin/activate && pip install pytest pytest-mock && pytest tests/test_feed.py`
   - Frontend: `cd star-frontend && npm test`
 - **Debugging:**
-  - Backend: Check `star-backend/app.log`. Tail: `docker-compose logs -f backend`. Common issues: Supabase "ConnectionError", SocketIO failures (port 5000), Spotify token errors.
+  - Backend: Check `star-backend/app.log`. Tail: `docker-compose logs -f backend`. Common issues: Cosmos DB "ConnectionError", SocketIO failures (port 5000), Spotify token errors.
   - Frontend: Use Next.js dev tools, check console for SocketIO, WebGL, or Spotify API errors.
 - **Deployment:**
-  - Backend: `star-backend/render.yaml` (Render, `gunicorn --chdir star-backend/star_backend_flask app:app`)
+  - Backend: Azure App Service configuration (runs `gunicorn --chdir star-backend/star_backend_flask app:app`)
   - Frontend: `star-frontend/vercel.json` (`vercel deploy --prod`)
 
 ## Conventions & Patterns
 
 - **API endpoints:** REST in `api.py` (`/api/v1/*`, e.g., `/posts`, `/posts/<id>/like`, `/posts/<id>/comment`), SocketIO in `group_chat.py`.
-- **Supabase:** Config in `star-backend/.env`. Schema: Apply with `supabase db push`. Realtime enabled for `chat_messages`, `private_rooms`, `posts`, `likes`, `comments`.
+- **Azure Cosmos DB:** Config in `star-backend/.env`. Schema managed via Azure portal. Global distribution enabled for chat and feed collections.
 - **Frontend API calls:** Use `fetch` to `NEXT_PUBLIC_API_URL`, `socket.io-client` for chat, `spotify-web-api-node` for music.
 - **UI**: 3D homepage (`CosmicInterface.tsx`), chat UI (`ZodiacChatRooms.tsx`), feed (`feed/page.tsx`) with Spotify embeds, music stats (`SpotifyStats.tsx`), recommendations (`/music`).
-- **Testing:** Backend: `tests/test_*.py` (pytest, mocks Supabase). Frontend: `__tests__/*.test.tsx` (Jest).
+- **Testing:** Backend: `tests/test_*.py` (pytest, mocks Cosmos DB). Frontend: `__tests__/*.test.tsx` (Jest).
 - **Naming:** Python: snake_case; TypeScript: camelCase
 - **Styling:** Tailwind CSS for 2D UI, React Three Fiber for 3D.
 
 ## Integration Points
 
-- **Supabase**: Manages auth, profiles, chat, and feed data. Access via `supabase-py` (backend), `@supabase/supabase-js` (frontend).
+- **Azure Cosmos DB**: Manages auth, profiles, chat, and feed data. Access via `azure-cosmos` Python SDK (backend), REST API (frontend).
 - **SocketIO**: Clients emit `identify` for chat. Server emits `new_private_room`, `new_message`.
 - **Spotify**: PKCE OAuth via `/api/auth/spotify`, token exchange via `/api/v1/spotify/token`. Stats and embeds in `SpotifyStats.tsx`, `feed/page.tsx`, `ZodiacChatRooms.tsx`.
 - **Feed**: Posts/total posts, likes, comments via `/api/v1/posts`, `/posts/<id>/like`, `/posts/<id>/comment`.
 - **Docker**: `config/docker/docker-compose.yml` for local dev.
-- **Render**: `star-backend/render.yaml` (WebSocket-enabled).
+- **Azure App Service**: Backend deploy config managed via Azure portal.
 - **Vercel**: `star-frontend/vercel.json`.
 
 ## Gotchas & Project-Specific Notes
 
 - Canonical backend: `star-backend/star_backend_flask/` (entry: `app.py`).
 - Exclude large files in `.gitignore` (e.g., `jre.zip`).
-- Supabase requires Docker for tests: `docker-compose up -d`.
+- Azure Cosmos DB requires Docker for tests: `docker-compose up -d`.
 - Logs: Use `star-backend/app.log`.
 - SocketIO: `group_chat.py` handles chat, notifications.
 - Spotify: Ensure `SPOTIFY_CLIENT_ID`, `SPOTIFY_REDIRECT_URI` are set.
@@ -89,16 +89,16 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
 ## Key Files & Directories
 
 - `README.md`, `config/docker/docker-compose.yml`
-- `star-frontend/`: `pages/` (`home`, `chat`, `music`, `feed`), `components/` (`CosmicInterface.tsx`, `ZodiacChatRooms.tsx`, `SpotifyStats.tsx`), `lib/supabase.ts`
+- `star-frontend/`: `pages/` (`home`, `chat`, `music`, `feed`), `components/` (`CosmicInterface.tsx`, `ZodiacChatRooms.tsx`, `SpotifyStats.tsx`), `lib/azure.ts`
 - `star-backend/star_backend_flask/`: `app.py`, `group_chat.py`, `api.py`
-- `star-backend/database/supabase_schema.sql`
-- `star-backend/tests/`, `star-backend/render.yaml`, `star-frontend/vercel.json`
+- `star-backend/database/`: Azure Cosmos DB configuration
+- `star-backend/tests/`, `star-frontend/vercel.json`
 - `docs/copilot-instructions.md`
 - **Debugging:**
-  - Backend: Check `star-backend/app.log`. Tail logs in Docker: `docker-compose logs -f backend`. Common issues: Supabase "ConnectionError" (check `SUPABASE_URL`, `SUPABASE_KEY` in `star-backend/.env`).
+  - Backend: Check `star-backend/app.log`. Tail logs in Docker: `docker-compose logs -f backend`. Common issues: Cosmos DB "ConnectionError" (check `COSMOS_DB_ENDPOINT`, `COSMOS_DB_KEY` in `star-backend/.env`).
   - Frontend: Use Next.js dev tools, VS Code debugger.
 - **Deployment:**
-  - Backend: `star-backend/render.yaml` (Render, runs `gunicorn --chdir star-backend/star_backend_flask app:app`). Configure Render dashboard with `SUPABASE_URL`, `SUPABASE_KEY`.
+  - Backend: Azure App Service configuration (runs `gunicorn --chdir star-backend/star_backend_flask app:app`). Configure Azure portal with Cosmos DB connection strings.
   - Frontend: `star-frontend/vercel.json` (Vercel, `vercel deploy --prod`). Set `NEXT_PUBLIC_API_URL` in Vercel environment settings.
 - **CI/CD:**
   - GitHub Actions in `.github/workflows/`
@@ -106,24 +106,24 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
 ## Conventions & Patterns
 
 - **API endpoints:** All in `star-backend/star_backend_flask/api.py` as `/api/*`
-- **Supabase:** Config: `SUPABASE_URL`, `SUPABASE_KEY` in `star-backend/.env`. Schema: Apply with `supabase db push` via Docker.
+- **Azure Cosmos DB:** Config: `COSMOS_DB_ENDPOINT`, `COSMOS_DB_KEY` in `star-backend/.env`. Schema managed via Azure portal.
 - **Frontend API calls:** Use `fetch` to `NEXT_PUBLIC_API_URL` (set in `star-frontend/.env.local`)
-- **Testing:** Backend: `star-backend/tests/test_*.py` (pytest, mocks Supabase where needed). Frontend: `star-frontend/__tests__/*.test.tsx` (Jest).
+- **Testing:** Backend: `star-backend/tests/test_*.py` (pytest, mocks Cosmos DB where needed). Frontend: `star-frontend/__tests__/*.test.tsx` (Jest).
 - **Naming:** Python: snake_case; TypeScript: camelCase
 - **Logging:** Backend logs to `star-backend/app.log` via `logging` module
 
 ## Integration Points
 
-- **Supabase:** Persistent data storage via `supabase-py`. Schema in `star-backend/database/`. No separate `supabase/` directory. Configure via Supabase dashboard and `star-backend/.env`.
-- **Docker:** Required for local Supabase and full-stack dev. Compose file: `config/docker/docker-compose.yml`.
-- **Render:** Backend deploy config: `star-backend/render.yaml`
+- **Azure Cosmos DB:** Persistent data storage via `azure-cosmos` Python SDK. Configuration in `star-backend/database/`. Configure via Azure portal and `star-backend/.env`.
+- **Docker:** Required for local Azure Cosmos DB and full-stack dev. Compose file: `config/docker/docker-compose.yml`.
+- **Azure App Service:** Backend deploy config managed via Azure portal
 - **Vercel:** Frontend deploy config: `star-frontend/vercel.json`
 
 ## Gotchas & Project-Specific Notes
 
 - **Canonical backend is `star-backend/`**. No `star-backend/star_backend/` or `backend/` directories exist; all Flask files are in `star-backend/star_backend_flask/` (entry: `app.py`).
-- **Large files:** Exclude binaries, logs, archives in `.gitignore` (e.g., `jre.zip`, `render-cli.tar.gz`).
-- **Supabase must run via Docker for tests to pass.** Use `docker-compose up` before running `pytest`.
+- **Large files:** Exclude binaries, logs, archives in `.gitignore` (e.g., `jre.zip`).
+- **Azure Cosmos DB requires Docker for tests to pass.** Use `docker-compose up` before running `pytest`.
 - **Logs**: Only use `star-backend/app.log` for backend logging; avoid root-level logs.
 - **Main entry points**: Use `star-backend/star_backend_flask/app.py` for Flask (production) and `star-backend/main.py` for FastAPI (experimental).
 
@@ -133,8 +133,8 @@ STAR is a zodiac-themed social media platform with a 3D cosmic interface, real-t
 - `star-frontend/`: Next.js app, configs, tests
 - `star-backend/star_backend_flask/`: Flask app, API, auth (entry: `app.py`)
 - `star-backend/main.py`: Experimental FastAPI backend
-- `star-backend/database/`: Supabase schema
+- `star-backend/database/`: Azure Cosmos DB configuration
 - `star-backend/tests/`: Backend test suites
 - `config/docker/docker-compose.yml`: Local dev stack
-- `star-backend/render.yaml`, `star-frontend/vercel.json`: Deployment configs
+- `star-frontend/vercel.json`: Deployment configs
 - `docs/copilot-instructions.md`: This file

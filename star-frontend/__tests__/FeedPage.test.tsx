@@ -1,21 +1,20 @@
-import { useAuth } from "@/lib/supabase";
 import FeedPage from "@/pages/feed";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-jest.mock("@/lib/supabase", () => ({
+jest.mock("@/lib/AuthContext", () => ({
   useAuth: jest.fn(),
-  createClient: jest.fn(),
 }));
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(() => ({
-    channel: jest.fn(() => ({
-      on: jest.fn().mockReturnThis(),
-      subscribe: jest.fn(),
-      removeChannel: jest.fn(),
-    })),
-  })),
+jest.mock("@/lib/supabase", () => ({
+  supabase: {
+    getPosts: jest.fn(),
+    createPost: jest.fn(),
+  },
 }));
+
+import { useAuth } from "@/lib/AuthContext";
+
+global.fetch = jest.fn();
 
 global.fetch = jest.fn();
 

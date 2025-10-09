@@ -62,7 +62,7 @@ Ensure these environment variables are set in Vercel:
 **vercel.json** handles:
 
 - **Frontend Builds**: Automatic Next.js detection with custom build settings
-- **API Routing**: Proxies `/api/*` requests to your Render backend
+- **API Routing**: Proxies `/api/*` requests to your Azure App Service backend
 - **Environment Variables**: Sets `NEXT_PUBLIC_API_URL` pointing to backend
 - **Global CDN**: Automatic content distribution for fast loading
 
@@ -71,10 +71,13 @@ Ensure these environment variables are set in Vercel:
   "version": 2,
   "builds": [{ "src": "star-frontend/package.json", "use": "@vercel/next" }],
   "routes": [
-    { "src": "/api/(.*)", "dest": "https://star-backend.onrender.com/api/$1" },
+    {
+      "src": "/api/(.*)",
+      "dest": "https://star-backend.azurewebsites.net/api/$1"
+    },
     { "src": "/(.*)", "dest": "/star-frontend/$1" }
   ],
-  "env": { "NEXT_PUBLIC_API_URL": "https://star-backend.onrender.com" }
+  "env": { "NEXT_PUBLIC_API_URL": "https://star-backend.azurewebsites.net" }
 }
 ```
 
@@ -142,8 +145,8 @@ web: gunicorn --bind=0.0.0.0:$PORT app:application
 
 ```
 Frontend: https://your-vercel-domain.vercel.app/
-Backend API: https://star-backend.onrender.com/api/v1/tarot/calculate-energy-flow
-Health Check: https://star-backend.onrender.com/api/v1/health
+Backend API: https://star-backend.azurewebsites.net/api/v1/tarot/calculate-energy-flow
+Health Check: https://star-backend.azurewebsites.net/api/v1/health
 ```
 
 ### 2. Full Application Test
@@ -151,7 +154,7 @@ Health Check: https://star-backend.onrender.com/api/v1/health
 ```bash
 # Test complete user flow:
 curl "https://your-vercel-domain.vercel.app/tarot-reading"
-curl -X POST "https://star-backend.onrender.com/api/v1/tarot/share-spread" \
+curl -X POST "https://star-backend.azurewebsites.net/api/v1/tarot/share-spread" \
   -H "Content-Type: application/json" \
   -d '{"spread": {}, "spread_type": "three-card", "user_id": "test"}'
 ```
@@ -168,7 +171,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 
 ### API Key Rotation
 
-1. Update in Render dashboard
+1. Update in Azure App Service configuration
 2. Redeploy automatically
 3. Update .env.example for documentation
 
@@ -180,7 +183,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 - User journey tracking
 - Error rate monitoring
 
-### Render Monitoring
+### Azure App Service Monitoring
 
 - Response time graphs
 - CPU/memory usage
@@ -197,7 +200,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 ### Backend Optimizations
 
 - **Caching**: Already implemented with TTLCache (1-hour)
-- **Database**: PostgreSQL on Render with connection pooling
+- **Database**: Azure Cosmos DB with global distribution
 - **API Limits**: Spotify & IPGeolocation rate limiting handled
 
 ## 🔧 Troubleshooting
@@ -211,28 +214,28 @@ SECRET_KEY=$(openssl rand -hex 32)
 # Common fix: Update Node.js version in package.json
 ```
 
-**Render Deploy Fails**
+### Azure App Service Deploy Fails
 
 ```bash
-# Check render.yaml syntax
+# Check deployment logs in Azure portal
 # Ensure requirements.txt paths are correct
-# Verify environment variables are set
+# Verify environment variables are set in App Service configuration
 ```
 
 **API Connection Issues**
 
 ```bash
 # Update vercel.json NEXT_PUBLIC_API_URL
-# Check Render service status
+# Check Azure App Service status
 # Verify API endpoints match
 ```
 
 **Database Connection**
 
 ```bash
-# Use Render's internal database URL
-# Check connection string format: postgresql://
-# Verify database credentials
+# Use Azure Cosmos DB connection string
+# Check connection string format: AccountEndpoint=...
+# Verify Azure credentials and database permissions
 ```
 
 ## 🚀 Post-Deployment
@@ -240,7 +243,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 ### 1. Configure Custom Domain
 
 - Vercel: Custom domains + SSL certificates
-- Render: Domain aliases (free tier)
+- Azure App Service: Custom domains with App Service domains
 
 ### 2. Analytics & Monitoring
 
@@ -270,12 +273,12 @@ Add to vercel.json:
 
 Your cosmic tarot platform is now deployed with:
 
-✅ **Scalable Infrastructure**: Vercel + Render auto-scaling
+✅ **Scalable Infrastructure**: Vercel + Azure App Service auto-scaling
 ✅ **Zero-Downtime Deploys**: Blue-green deployment strategy
 ✅ **Global CDN**: Fast loading worldwide
 ✅ **Production Monitoring**: Real-time metrics and alerts
 ✅ **Security**: HTTPS + environment variable protection
-✅ **Backup**: Automatic database backups on Render
+✅ **Backup**: Automatic database backups on Azure Cosmos DB
 
 ### Next Steps:
 
@@ -290,5 +293,5 @@ Your cosmic tarot platform is now deployed with:
 **Deployment URLs:**
 
 - Frontend: `https://your-vercel-domain.vercel.app`
-- Backend: `https://star-backend.onrender.com`
+- Backend: `https://star-backend.azurewebsites.net`
 - Tarot App: `https://your-vercel-domain.vercel.app/tarot-reading`

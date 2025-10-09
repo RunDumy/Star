@@ -10,6 +10,8 @@ from functools import wraps
 
 import bcrypt
 import jwt
+import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, request
 from flask_caching import Cache
@@ -21,7 +23,8 @@ from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields, validate
 
 # TODO: Replace with Azure Cosmos DB imports
-# from supabase import Client, create_client
+from azure_config import get_cosmos_client
+from . import api
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -48,50 +51,6 @@ app.config['JWT_ALGORITHM'] = 'HS256'
 # Initialize extensions
 CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
 rest_api = Api(app)
-import logging
-import os
-import random
-import sys
-import time
-from datetime import datetime, timedelta, timezone
-from functools import wraps
-
-import bcrypt
-import jwt
-from dotenv import load_dotenv
-# -*- coding: utf-8 -*-
-# Consolidated Star App - single coherent Flask API
-from flask import Flask, request
-from flask_caching import Cache
-from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_restful import Api, Resource
-from flask_socketio import SocketIO, emit, join_room
-from marshmallow import Schema, ValidationError, fields, validate
-import requests
-
-# TODO: Replace with Azure Cosmos DB imports
-# from supabase import create_client
-
-# -------------------- Logging --------------------
-logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
-logger = logging.getLogger(__name__)
-logger.info("Starting application")
-
-# -------------------- App & Config --------------------
-load_dotenv()
-app = Flask(__name__)
-secret = os.environ.get('SECRET_KEY')
-jwt_secret = os.environ.get('JWT_SECRET_KEY') or 'dev-jwt-secret-key-change-in-production'
-if not secret:
-    raise ValueError("SECRET_KEY environment variable is required")
-app.config['SECRET_KEY'] = secret
-app.config['JWT_SECRET_KEY'] = jwt_secret
-app.config['JWT_ALGORITHM'] = 'HS256'
-
-CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','))
-rest_api = Api(app)
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_THRESHOLD': 1000})
 cache.init_app(app)
@@ -101,15 +60,183 @@ limiter.init_app(app)
 
 socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='threading' if os.environ.get('TESTING') == 'true' else 'eventlet')
 
-# -------------------- Supabase --------------------
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
-if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set")
-supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-logger.info("Initialized Supabase client")
+# -------------------- Azure Cosmos DB --------------------
+cosmos_client = get_cosmos_client()
+if cosmos_client:
+    logger.info("Azure Cosmos DB client initialized")
+    database = cosmos_client.get_database_client('star-db')
+    users_container = database.get_container_client('users')
+    posts_container = database.get_container_client('posts')
+    follows_container = database.get_container_client('follows')
+else:
+    logger.warning("COSMOS_ENDPOINT or COSMOS_KEY not set; Cosmos DB operations will be disabled.")
+    database = None
+    users_container = None
+    posts_container = None
+    follows_container = None
 
-from . import api
+# -------------------- Cosmos DB Helper Functions --------------------
+def get_user_by_id(user_id):
+    """Get user by ID from Cosmos DB"""
+    if not users_container:
+        return None
+    try:
+        query = "SELECT * FROM c WHERE c.id = @user_id"
+        parameters = [{"name": "@user_id", "value": str(user_id)}]
+        items = list(users_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return items[0] if items else None
+    except Exception as e:
+        logger.error(f"Error getting user by ID: {e}")
+        return None
+
+def update_user_last_seen(user_id):
+    """Update user's last seen timestamp"""
+    if not users_container:
+        return
+    try:
+        user = get_user_by_id(user_id)
+        if user:
+            user['last_seen'] = datetime.now(timezone.utc).isoformat()
+            users_container.upsert_item(user)
+    except Exception as e:
+        logger.error(f"Error updating user last seen: {e}")
+
+def check_username_exists(username):
+    """Check if username already exists"""
+    if not users_container:
+        return False
+    try:
+        query = "SELECT c.id FROM c WHERE c.username = @username"
+        parameters = [{"name": "@username", "value": username}]
+        items = list(users_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return len(items) > 0
+    except Exception as e:
+        logger.error(f"Error checking username exists: {e}")
+        return False
+
+def create_user(user_data):
+    """Create a new user in Cosmos DB"""
+    if not users_container:
+        raise Exception("Cosmos DB not available")
+    try:
+        users_container.create_item(user_data)
+        return user_data
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise
+
+def get_user_by_username(username):
+    """Get user by username"""
+    if not users_container:
+        return None
+    try:
+        query = "SELECT * FROM c WHERE c.username = @username"
+        parameters = [{"name": "@username", "value": username}]
+        items = list(users_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return items[0] if items else None
+    except Exception as e:
+        logger.error(f"Error getting user by username: {e}")
+        return None
+
+def update_user_online_status(user_id, is_online=True):
+    """Update user's online status and last seen"""
+    if not users_container:
+        return
+    try:
+        user = get_user_by_id(user_id)
+        if user:
+            user['is_online'] = is_online
+            user['last_seen'] = datetime.now(timezone.utc).isoformat()
+            users_container.upsert_item(user)
+    except Exception as e:
+        logger.error(f"Error updating user online status: {e}")
+
+def get_posts(limit=20):
+    """Get recent posts"""
+    if not posts_container:
+        return []
+    try:
+        query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
+        parameters = [{"name": "@limit", "value": limit}]
+        items = list(posts_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return items
+    except Exception as e:
+        logger.error(f"Error getting posts: {e}")
+        return []
+
+def create_post(post_data):
+    """Create a new post"""
+    if not posts_container:
+        raise Exception("Cosmos DB not available")
+    try:
+        posts_container.create_item(post_data)
+        return post_data
+    except Exception as e:
+        logger.error(f"Error creating post: {e}")
+        raise
+
+def get_user_profile(user_id):
+    """Get user profile data"""
+    if not users_container:
+        return None
+    try:
+        user = get_user_by_id(user_id)
+        if user:
+            return {
+                'username': user['username'],
+                'zodiac_sign': user['zodiac_sign'],
+                'chinese_zodiac': user.get('chinese_zodiac'),
+                'vedic_zodiac': user.get('vedic_zodiac'),
+                'bio': user.get('bio', ''),
+                'created_at': user['created_at']
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Error getting user profile: {e}")
+        return None
+
+def get_user_posts(user_id, limit=10):
+    """Get posts by user"""
+    if not posts_container:
+        return []
+    try:
+        query = "SELECT c.id, c.content, c.created_at, c.spark_count, c.echo_count FROM c WHERE c.user_id = @user_id ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
+        parameters = [
+            {"name": "@user_id", "value": str(user_id)},
+            {"name": "@limit", "value": limit}
+        ]
+        items = list(posts_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return items
+    except Exception as e:
+        logger.error(f"Error getting user posts: {e}")
+        return []
+
+def check_follow_exists(follower_id, followed_id):
+    """Check if follow relationship exists"""
+    if not follows_container:
+        return False
+    try:
+        query = "SELECT c.id FROM c WHERE c.follower_id = @follower_id AND c.followed_id = @followed_id"
+        parameters = [
+            {"name": "@follower_id", "value": str(follower_id)},
+            {"name": "@followed_id", "value": str(followed_id)}
+        ]
+        items = list(follows_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return len(items) > 0
+    except Exception as e:
+        logger.error(f"Error checking follow exists: {e}")
+        return False
+
+def create_follow(follow_data):
+    """Create a follow relationship"""
+    if not follows_container:
+        raise Exception("Cosmos DB not available")
+    try:
+        follows_container.create_item(follow_data)
+        return follow_data
+    except Exception as e:
+        logger.error(f"Error creating follow: {e}")
+        raise
 
 # -------------------- Zodiac Data --------------------
 ZODIAC_INFO = {
@@ -311,12 +438,11 @@ def token_required(f):
         try:
             token = request.headers['Authorization'].split(' ')[1]
             data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=[app.config['JWT_ALGORITHM']])
-            user_res = supabase.table('user').select('*').eq('id', data['user_id']).execute()
-            user_data = user_res.data or []
+            user_data = get_user_by_id(data['user_id'])
             if not user_data:
                 return {'error': 'User not found'}, 401
-            current_user = type('User', (), {'id': user_data[0]['id'], 'username': user_data[0]['username'], 'zodiac_sign': user_data[0]['zodiac_sign']})
-            supabase.table('user').update({'last_seen': datetime.now(timezone.utc).isoformat()}).eq('id', current_user.id).execute()
+            current_user = type('User', (), {'id': user_data['id'], 'username': user_data['username'], 'zodiac_sign': user_data['zodiac_sign']})
+            update_user_last_seen(current_user.id)
         except jwt.ExpiredSignatureError:
             return {'error': 'Token has expired'}, 401
         except jwt.InvalidTokenError:
@@ -338,6 +464,7 @@ class RegisterSchema(Schema):
     password = fields.Str(required=True, validate=validate.Length(min=6))
     zodiac_sign = fields.Str(required=True, validate=validate.OneOf(list(ZODIAC_ACTIONS.keys())))
     birth_date = fields.Date(required=True)
+    full_name = fields.Str(allow_none=True)
 
 class PostSchema(Schema):
     content = fields.Str(required=True, validate=validate.Length(min=1, max=500))
@@ -352,7 +479,7 @@ class Register(Resource):
         try:
             data = schema.load(request.get_json())
             username = data['username']
-            exists = supabase.table('user').select('id').eq('username', username).execute().data
+            exists = check_username_exists(username)
             if exists:
                 return {'error': 'Username already exists'}, 400
 
@@ -361,10 +488,12 @@ class Register(Resource):
             hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
             new_user = {
+                'id': str(random.randint(1000000, 9999999)),  # Generate simple ID for Cosmos DB
                 'username': username,
                 'password_hash': hashed_password,
                 'zodiac_sign': data['zodiac_sign'].capitalize(),
                 'birth_date': birth_date.isoformat(),
+                'full_name': data.get('full_name'),
                 'chinese_zodiac': get_chinese_zodiac(birth_year),
                 'chinese_element': get_chinese_zodiac_element(birth_year),
                 'vedic_zodiac': get_vedic_zodiac(birth_date),
@@ -372,7 +501,7 @@ class Register(Resource):
                 'last_seen': datetime.now(timezone.utc).isoformat(),
                 'is_online': True
             }
-            supabase.table('user').insert(new_user).execute()
+            create_user(new_user)
             return {'message': 'Registered successfully'}, 201
         except ValidationError as err:
             return {'error': f'Invalid input: {err.messages}'}, 400
@@ -389,28 +518,27 @@ class Login(Resource):
         if not username or not password:
             return {'error': 'Missing username or password'}, 400
 
-        user_res = supabase.table('user').select('*').eq('username', username).execute()
-        users = user_res.data or []
-        if not users or not bcrypt.checkpw(password.encode('utf-8'), users[0]['password_hash'].encode('utf-8')):
+        user = get_user_by_username(username)
+        if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
             return {'error': 'Invalid credentials'}, 401
 
         try:
             token = jwt.encode({
-                'user_id': users[0]['id'],
+                'user_id': user['id'],
                 'exp': datetime.now(timezone.utc) + timedelta(hours=24)
             }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM'])
 
-            supabase.table('user').update({'is_online': True, 'last_seen': datetime.now(timezone.utc).isoformat()}).eq('id', users[0]['id']).execute()
+            update_user_online_status(user['id'], True)
 
             return {
                 'token': token,
-                'username': users[0]['username'],
-                'userId': users[0]['id'],
-                'zodiacSign': users[0]['zodiac_sign'],
-                'chineseZodiac': users[0]['chinese_zodiac'],
-                'vedicZodiac': users[0]['vedic_zodiac'],
-                'actions': ZODIAC_ACTIONS.get(users[0]['zodiac_sign'], {}),
-                'message': f'Welcome back, {users[0]["zodiac_sign"]} star!'
+                'username': user['username'],
+                'userId': user['id'],
+                'zodiacSign': user['zodiac_sign'],
+                'chineseZodiac': user['chinese_zodiac'],
+                'vedicZodiac': user['vedic_zodiac'],
+                'actions': ZODIAC_ACTIONS.get(user['zodiac_sign'], {}),
+                'message': f'Welcome back, {user["zodiac_sign"]} star!'
             }, 200
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
@@ -422,26 +550,23 @@ class PostResource(Resource):
     def get(self):
         """Get posts; transforms nested user.username to top-level username for convenience"""
         try:
-            # If FK exists, PostgREST can expand the user reference:
-            res = supabase.table('post').select('id,content,user_id,zodiac_sign,image_url,spark_count,echo_count,created_at,user:user_id(username)').order('created_at', desc=True).limit(20).execute()
-            rows = res.data or []
-            posts = []
-            for r in rows:
-                username = None
-                if isinstance(r.get('user'), dict):
-                    username = r['user'].get('username')
-                posts.append({
-                    'id': r.get('id'),
-                    'content': r.get('content'),
-                    'user_id': r.get('user_id'),
+            posts = get_posts(limit=20)
+            enriched_posts = []
+            for post in posts:
+                user = get_user_by_id(post.get('user_id'))
+                username = user.get('username') if user else None
+                enriched_posts.append({
+                    'id': post.get('id'),
+                    'content': post.get('content'),
+                    'user_id': post.get('user_id'),
                     'username': username,
-                    'zodiac_sign': r.get('zodiac_sign'),
-                    'image_url': r.get('image_url'),
-                    'spark_count': r.get('spark_count', 0),
-                    'echo_count': r.get('echo_count', 0),
-                    'created_at': r.get('created_at')
+                    'zodiac_sign': post.get('zodiac_sign'),
+                    'image_url': post.get('image_url'),
+                    'spark_count': post.get('spark_count', 0),
+                    'echo_count': post.get('echo_count', 0),
+                    'created_at': post.get('created_at')
                 })
-            return {'posts': posts}, 200
+            return {'posts': enriched_posts}, 200
         except Exception as e:
             logger.error(f"Failed to fetch posts: {str(e)}")
             return {'error': 'Failed to fetch posts'}, 500
@@ -454,15 +579,18 @@ class PostResource(Resource):
         try:
             data = schema.load(request.get_json())
             new_post = {
+                'id': str(random.randint(1000000, 9999999)),  # Generate ID for Cosmos DB
                 'content': data['content'],
                 'user_id': current_user.id,
                 'zodiac_sign': current_user.zodiac_sign,
                 'image_url': data.get('image_url'),
+                'spark_count': 0,
+                'echo_count': 0,
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
-            ins = supabase.table('post').insert(new_post).execute()
+            created_post = create_post(new_post)
             cache.delete_memoized(PostResource.get)
-            return {'message': 'Post created', 'post_id': (ins.data or [{}])[0].get('id')}, 201
+            return {'message': 'Post created', 'post_id': created_post.get('id')}, 201
         except ValidationError as err:
             return {'error': f'Invalid input: {err.messages}'}, 400
         except Exception as e:
@@ -473,30 +601,8 @@ class UploadResource(Resource):
     @limiter.limit("5/hour")
     @token_required
     def post(self, current_user):
-        """Upload a video to Supabase Storage and create a post with its URL"""
-        try:
-            if 'file' not in request.files:
-                return {'error': 'No file provided'}, 400
-            file = request.files['file']
-            content = request.form.get('content', '')
-            filename = f"{current_user.id}_{int(time.time())}.mp4"
-            # Upload to 'media' bucket; ensure bucket exists and is public or signed URLs are used
-            supabase.storage.from_('media').upload(filename, file.read())
-            url = supabase.storage.from_('media').get_public_url(filename)
-
-            new_post = {
-                'content': content,
-                'user_id': current_user.id,
-                'zodiac_sign': current_user.zodiac_sign,
-                'image_url': url,
-                'created_at': datetime.now(timezone.utc).isoformat()
-            }
-            ins = supabase.table('post').insert(new_post).execute()
-            cache.delete_memoized(PostResource.get)
-            return {'message': 'Video posted', 'post_id': (ins.data or [{}])[0].get('id'), 'url': url}, 201
-        except Exception as e:
-            logger.error(f"Upload error: {str(e)}")
-            return {'error': 'Failed to upload video'}, 500
+        """Upload a video - temporarily disabled during migration to Cosmos DB"""
+        return {'error': 'File uploads are temporarily disabled during database migration'}, 503
 
 class FollowResource(Resource):
     @limiter.limit("50/hour")
@@ -506,14 +612,15 @@ class FollowResource(Resource):
         try:
             if current_user.id == user_id:
                 return {'error': 'Cannot follow yourself'}, 400
-            existing = supabase.table('follow').select('id').eq('follower_id', current_user.id).eq('followed_id', user_id).execute().data
+            existing = check_follow_exists(current_user.id, user_id)
             if existing:
                 return {'error': 'Already following'}, 400
-            supabase.table('follow').insert({
+            create_follow({
+                'id': str(random.randint(1000000, 9999999)),  # Generate ID for Cosmos DB
                 'follower_id': current_user.id,
                 'followed_id': user_id,
                 'created_at': datetime.now(timezone.utc).isoformat()
-            }).execute()
+            })
             return {'message': 'Followed'}, 201
         except Exception as e:
             logger.error(f"Follow error: {str(e)}")
@@ -525,20 +632,20 @@ class ProfileResource(Resource):
     def get(self, user_id):
         """Get user profile with recent posts"""
         try:
-            user = supabase.table('user').select('username,zodiac_sign,chinese_zodiac,vedic_zodiac,bio,created_at').eq('id', user_id).execute().data
+            user = get_user_profile(user_id)
             if not user:
                 return {'error': 'User not found'}, 404
-            posts = supabase.table('post').select('id,content,created_at,spark_count,echo_count').eq('user_id', user_id).order('created_at', desc=True).limit(10).execute().data
+            posts = get_user_posts(user_id, limit=10)
             return {
                 'profile': {
-                    'username': user[0]['username'],
-                    'zodiac_sign': user[0]['zodiac_sign'],
-                    'chinese_zodiac': user[0]['chinese_zodiac'],
-                    'vedic_zodiac': user[0]['vedic_zodiac'],
-                    'bio': user[0]['bio'],
-                    'join_date': user[0]['created_at']
+                    'username': user['username'],
+                    'zodiac_sign': user['zodiac_sign'],
+                    'chinese_zodiac': user['chinese_zodiac'],
+                    'vedic_zodiac': user['vedic_zodiac'],
+                    'bio': user['bio'],
+                    'join_date': user['created_at']
                 },
-                'posts': [{'id': p['id'], 'content': p['content'], 'created_at': p['created_at'], 'engagement': {'sparks': p.get('spark_count', 0), 'echoes': p.get('echo_count', 0)}} for p in (posts or [])]
+                'posts': [{'id': p['id'], 'content': p['content'], 'created_at': p['created_at'], 'engagement': {'sparks': p.get('spark_count', 0), 'echoes': p.get('echo_count', 0)}} for p in posts]
             }, 200
         except Exception as e:
             logger.error(f"Failed to fetch profile: {str(e)}")
@@ -653,7 +760,7 @@ rest_api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
 rest_api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')
 rest_api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
 try:
-    rest_api.add_resource(TrendDiscoveryApifyResource, '/api/v1/trends/apify')
+    rest_api.add_resource(TrendDiscoveryResource, '/api/v1/trends/apify')
 except Exception:
     pass
 
@@ -680,7 +787,7 @@ def register_resources(api_obj=None):
     target_api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
     # Apify-based trend discovery endpoint
     try:
-        target_api.add_resource(TrendDiscoveryApifyResource, '/api/v1/trends/apify')
+        target_api.add_resource(TrendDiscoveryResource, '/api/v1/trends/apify')
     except Exception:
         # Best-effort: ignore if the resource isn't available in minimal test environments
         pass
@@ -699,7 +806,9 @@ def create_app(config: dict | None = None):
         # In constrained test environments the global api may be a dummy; ignore
         pass
 
-    app.register_blueprint(api.api_bp)
+    # Register API blueprint if not already registered
+    if 'api' not in app.blueprints:
+        app.register_blueprint(api.api_bp)
 
     return app
 

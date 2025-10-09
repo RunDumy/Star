@@ -9,13 +9,15 @@ import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
+import jwt
 import redis
 import requests
 from agora_token_builder import Role_Attendee, Role_Publisher, RtcTokenBuilder
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, g, jsonify, request, current_app
 from flask_socketio import SocketIO, emit, join_room
-from .main import supabase
-
+from marshmallow import Schema, ValidationError, fields
+from .main import users_container, cosmos_client, check_username_exists, create_user, get_user_by_username, update_user_last_seen
 from .star_auth import token_required
 
 
@@ -69,6 +71,103 @@ except Exception as e:
     logging.warning(f"Redis not available, using default Socket.IO: {e}")
     socketio = SocketIO(cors_allowed_origins="*")
     redis_client = None
+
+@api_bp.route('/api/v1/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+
+        username = data['username'].strip()
+        password = data['password']
+
+        # Check if username already exists
+        if check_username_exists(username):
+            return jsonify({'error': 'Username already exists'}), 409
+
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Create user data
+        user_data = {
+            'id': str(uuid.uuid4()),
+            'username': username,
+            'password_hash': hashed_password,
+            'zodiac_sign': data.get('zodiac_sign', ''),
+            'chinese_zodiac': data.get('chinese_zodiac', ''),
+            'vedic_zodiac': data.get('vedic_zodiac', ''),
+            'bio': data.get('bio', ''),
+            'full_name': data.get('full_name', ''),
+            'birth_date': data.get('birth_date', ''),
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'last_seen': datetime.now(timezone.utc).isoformat(),
+            'is_online': False
+        }
+
+        # Create user in Cosmos DB
+        create_user(user_data)
+
+        # Generate JWT token
+        token = jwt.encode({
+            'user_id': user_data['id'],
+            'username': username,
+            'exp': datetime.now(timezone.utc) + timedelta(days=7)
+        }, current_app.config['JWT_SECRET_KEY'], algorithm=current_app.config['JWT_ALGORITHM'])
+
+        return jsonify({
+            'message': 'User registered successfully',
+            'token': token
+        }), 201
+
+    except Exception as e:
+        logging.error(f"Registration error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@api_bp.route('/api/v1/login', methods=['POST'])
+def login():
+    """Login user"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+
+        username = data['username'].strip()
+        password = data['password']
+
+        # Get user by username
+        user = get_user_by_username(username)
+        if not user:
+            return jsonify({'error': 'Invalid username or password'}), 401
+
+        # Check password
+        if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            return jsonify({'error': 'Invalid username or password'}), 401
+
+        # Update last seen
+        update_user_last_seen(user['id'])
+
+        # Generate JWT token
+        token = jwt.encode({
+            'user_id': user['id'],
+            'username': username,
+            'exp': datetime.now(timezone.utc) + timedelta(days=7)
+        }, current_app.config['JWT_SECRET_KEY'], algorithm=current_app.config['JWT_ALGORITHM'])
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'user': {
+                'id': user['id'],
+                'username': username,
+                'zodiac_sign': user['zodiac_sign']
+            }
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Login error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @api_bp.route('/api/health', methods=['GET'])
 def health_check():

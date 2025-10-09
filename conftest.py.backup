@@ -54,16 +54,27 @@ def mock_token():
 
 
 @pytest.fixture(autouse=True)
-def mock_supabase():
-    mock_supabase = mock.MagicMock()
-    # Mock select for user
-    mock_execute_select = mock.MagicMock()
-    mock_execute_select.data = [{'id': 1, 'username': 'testuser', 'zodiac_sign': 'Aries'}]
-    mock_supabase.table.return_value.select.return_value.eq.return_value.execute = mock_execute_select
-    # Mock update
-    mock_supabase.table.return_value.update.return_value.eq.return_value.execute = mock.MagicMock()
-    # Mock insert
-    mock_supabase.table.return_value.insert.return_value.execute = mock.MagicMock()
-    with mock.patch('star_backend_flask.main.supabase', mock_supabase), \
-         mock.patch('star_backend_flask.star_auth.supabase', mock_supabase):
+def mock_cosmos_db():
+    """Mock Cosmos DB containers for testing"""
+    mock_container = mock.MagicMock()
+    
+    # Mock query_items for SELECT operations - return test data
+    mock_container.query_items.return_value = [
+        {'id': '1', 'username': 'testuser', 'zodiac_sign': 'Aries', 'password_hash': 'hashed_password'}
+    ]
+    
+    # Mock create_item for INSERT operations
+    mock_container.create_item.return_value = None
+    
+    # Mock upsert_item for UPDATE operations
+    mock_container.upsert_item.return_value = None
+    
+    # Mock the containers used in the application
+    with mock.patch('star_backend_flask.main.users_container', mock_container), \
+         mock.patch('star_backend_flask.main.posts_container', mock_container), \
+         mock.patch('star_backend_flask.main.likes_container', mock_container), \
+         mock.patch('star_backend_flask.main.comments_container', mock_container), \
+         mock.patch('star_backend_flask.main.user_actions_container', mock_container), \
+         mock.patch('star_backend_flask.main.engagements_container', mock_container), \
+         mock.patch('star_backend_flask.star_auth.users_container', mock_container):
         yield

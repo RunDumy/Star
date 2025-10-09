@@ -5,6 +5,9 @@ import pytest
 from types import ModuleType
 import unittest.mock as mock
 
+# Add the parent directory to sys.path so star_backend_flask can be imported
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Set TESTING environment variable for all tests
 os.environ['TESTING'] = 'true'
 os.environ['SUPABASE_URL'] = 'dummy'
@@ -70,19 +73,44 @@ m_auth.__file__ = None
 m_auth.token_required = lambda f: f
 sys.modules['star_auth'] = m_auth
 
+# Mock Azure Cosmos DB
+m_azure_cosmos = ModuleType('azure.cosmos')
+m_azure_cosmos.__file__ = None
+
+# Create a mock database client
+MockDatabaseClient = type('MockDatabaseClient', (), {
+    'get_container_client': lambda self, name: MockContainerClient()
+})
+
+# Create a mock container client
+MockContainerClient = type('MockContainerClient', (), {
+    'query_items': lambda self, *args, **kwargs: [],
+    'upsert_item': lambda self, *args, **kwargs: None
+})
+
+m_azure_cosmos.CosmosClient = type('CosmosClient', (), {
+    '__init__': lambda self, *args, **kwargs: None,
+    'get_database_client': lambda self, name: MockDatabaseClient()
+})
+sys.modules['azure.cosmos'] = m_azure_cosmos
+
+# Mock azure_config
+m_azure_config = ModuleType('azure_config')
+m_azure_config.__file__ = None
+m_azure_config.get_cosmos_client = lambda: None
+sys.modules['azure_config'] = m_azure_config
+
 m_bs4 = ModuleType('bs4')
 m_bs4.__file__ = None
+m_bs4.BeautifulSoup = type('BeautifulSoup', (), {})
 sys.modules['bs4'] = m_bs4
 
 
 @pytest.fixture
 def client():
     from star_backend_flask.main import create_app
-    from star_backend_flask.database import db
     app = create_app()
     app.config['TESTING'] = True
-    with app.app_context():
-        db.create_all()
     return app.test_client()
 
 
@@ -100,15 +128,23 @@ def mock_token():
 
 
 @pytest.fixture(autouse=True)
-def mock_supabase():
-    mock_supabase = mock.MagicMock()
-    # Mock select for user
-    mock_execute_select = mock.MagicMock()
-    mock_execute_select.data = [{'id': 1, 'username': 'testuser', 'zodiac_sign': 'Aries'}]
-    mock_supabase.table.return_value.select.return_value.eq.return_value.execute = mock_execute_select
-    # Mock update
-    mock_supabase.table.return_value.update.return_value.eq.return_value.execute = mock.MagicMock()
-    # Mock insert
-    mock_supabase.table.return_value.insert.return_value.execute = mock.MagicMock()
-    with mock.patch('star_backend_flask.main.supabase', mock_supabase):
+def mock_cosmos_db():
+    """Mock Cosmos DB containers for testing"""
+    mock_container = mock.MagicMock()
+    
+    # Mock query_items for SELECT operations - return test data
+    mock_container.query_items.return_value = [
+        {'id': '1', 'username': 'testuser', 'zodiac_sign': 'Aries', 'password_hash': 'hashed_password'}
+    ]
+    
+    # Mock create_item for INSERT operations
+    mock_container.create_item.return_value = None
+    
+    # Mock upsert_item for UPDATE operations
+    mock_container.upsert_item.return_value = None
+    
+    # Mock the containers used in the application
+    with mock.patch('star_backend_flask.main.users_container', mock_container), \
+         mock.patch('star_backend_flask.main.posts_container', mock_container), \
+         mock.patch('star_backend_flask.main.follows_container', mock_container):
         yield

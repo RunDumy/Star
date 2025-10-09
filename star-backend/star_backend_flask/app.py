@@ -65,8 +65,6 @@ except Exception as e:
     logger.warning(f"Failed to load .env file: {e}. Using environment variables directly.")
 
 # Log critical environment variables (without exposing secrets)
-logger.info(f"SUPABASE_URL set: {bool(os.environ.get('SUPABASE_URL'))}")
-logger.info(f"SUPABASE_ANON_KEY set: {bool(os.environ.get('SUPABASE_ANON_KEY'))}")
 logger.info(f"REDIS_URL set: {bool(os.environ.get('REDIS_URL'))}")
 logger.info(f"SECRET_KEY set: {bool(os.environ.get('SECRET_KEY'))}")
 logger.info(f"JWT_SECRET_KEY set: {bool(os.environ.get('JWT_SECRET_KEY'))}")
@@ -1469,16 +1467,6 @@ class Health(Resource):
 def health_check():
     logger.info("Azure App Service health check endpoint called")
     try:
-        # TODO: Test Azure Cosmos DB connection instead of Supabase
-        # Test Supabase connection
-        # if supabase:
-        #     # Simple test - try to get current user (should fail gracefully for anonymous)
-        #     try:
-        #         supabase.auth.get_user()
-        #         logger.info("Supabase connection test passed")
-        #     except Exception as e:
-        #         logger.warning(f"Supabase auth test failed (expected for anonymous): {e}")
-
         # Test Redis connection (only if Redis is configured)
         redis_url = os.environ.get('REDIS_URL')
         if redis_url:

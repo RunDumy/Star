@@ -1,4 +1,3 @@
-# Simple Flask app for Railway deployment
 from flask import Flask, jsonify
 from flask_cors import CORS
 

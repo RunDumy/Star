@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from azure.cosmos import CosmosClient, exceptions
@@ -27,6 +28,155 @@ else:
         cosmos_client = None
         database = None
 
+# Cosmos DB helper functions
+def get_user_by_id(user_id):
+    """Get user by ID from Cosmos DB"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Users")
+        query = "SELECT * FROM c WHERE c.id = @user_id"
+        params = [{"name": "@user_id", "value": user_id}]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        return items[0] if items else None
+    except exceptions.CosmosHttpResponseError:
+        return None
+
+def create_post(post_data):
+    """Create a new post in Cosmos DB"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Posts")
+        # Generate ID if not provided
+        if 'id' not in post_data:
+            post_data['id'] = str(uuid.uuid4())
+        container.create_item(post_data)
+        return post_data
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to create post: {str(e)}")
+
+def get_posts_by_user(user_id, limit=10):
+    """Get posts by user ID"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Posts")
+        query = "SELECT * FROM c WHERE c.user_id = @user_id ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params = [
+            {"name": "@user_id", "value": user_id},
+            {"name": "@limit", "value": limit}
+        ]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        return items
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to get posts: {str(e)}")
+
+def toggle_like(user_id, post_id):
+    """Toggle like on a post"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        interactions_container = database.get_container_client("Interactions")
+        posts_container = database.get_container_client("Posts")
+        
+        # Check if like exists
+        query = "SELECT * FROM c WHERE c.user_id = @user_id AND c.post_id = @post_id AND c.interaction_type = 'like'"
+        params = [
+            {"name": "@user_id", "value": user_id},
+            {"name": "@post_id", "value": post_id}
+        ]
+        existing_likes = list(interactions_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        
+        if existing_likes:
+            # Unlike: remove interaction and decrement likes
+            for like in existing_likes:
+                interactions_container.delete_item(like['id'], partition_key=like['user_id'])
+            
+            # Update post likes count
+            query = "SELECT * FROM c WHERE c.id = @post_id"
+            params = [{"name": "@post_id", "value": post_id}]
+            posts = list(posts_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+            if posts:
+                post = posts[0]
+                post['likes'] = max(0, post.get('likes', 0) - 1)
+                posts_container.replace_item(post['id'], post)
+            
+            return False  # Unliked
+        else:
+            # Like: add interaction and increment likes
+            like_data = {
+                'id': str(uuid.uuid4()),
+                'user_id': user_id,
+                'post_id': post_id,
+                'interaction_type': 'like',
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            interactions_container.create_item(like_data)
+            
+            # Update post likes count
+            query = "SELECT * FROM c WHERE c.id = @post_id"
+            params = [{"name": "@post_id", "value": post_id}]
+            posts = list(posts_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+            if posts:
+                post = posts[0]
+                post['likes'] = post.get('likes', 0) + 1
+                posts_container.replace_item(post['id'], post)
+            
+            return True  # Liked
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to toggle like: {str(e)}")
+
+def create_comment(comment_data):
+    """Create a new comment"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Comments")
+        if 'id' not in comment_data:
+            comment_data['id'] = str(uuid.uuid4())
+        container.create_item(comment_data)
+        
+        # Update post comment count
+        posts_container = database.get_container_client("Posts")
+        query = "SELECT * FROM c WHERE c.id = @post_id"
+        params = [{"name": "@post_id", "value": comment_data['post_id']}]
+        posts = list(posts_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        if posts:
+            post = posts[0]
+            post['comments'] = post.get('comments', 0) + 1
+            posts_container.replace_item(post['id'], post)
+        
+        return comment_data
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to create comment: {str(e)}")
+
+def get_comments_by_post(post_id):
+    """Get comments for a post"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Comments")
+        query = "SELECT * FROM c WHERE c.post_id = @post_id ORDER BY c.created_at ASC"
+        params = [{"name": "@post_id", "value": post_id}]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        return items
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to get comments: {str(e)}")
+
+def get_popular_posts(limit=10):
+    """Get popular posts ordered by likes then timestamp"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Posts")
+        query = "SELECT * FROM c ORDER BY c.likes DESC, c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params = [{"name": "@limit", "value": limit}]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=True))
+        return items
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to get popular posts: {str(e)}")
+
 @feed.route('/api/v1/feed', methods=['GET'])
 def get_feed():
     if not database:
@@ -42,28 +192,25 @@ def get_feed():
         return jsonify({"error": f"Feed query failed: {str(e)}"}), 500
 
 @feed.route('/api/v1/posts', methods=['POST'])
+@token_required
 def create_post():
     """Create a new user post"""
     try:
-        from flask import g  # Assuming JWT token provides user_id
         data = request.get_json()
-
-        user_id = data.get('user_id') or getattr(g, 'user_id', None)
-        if not user_id:
-            return jsonify({'error': 'Authentication required'}), 401
+        user_id = request.user_id  # From token_required decorator
 
         content = data.get('content', '').strip()
         if not content:
             return jsonify({'error': 'Content required'}), 400
 
         # Get user's zodiac sign
-        user_result = supabase.table('user').select('zodiac_sign').eq('id', user_id).execute()
-        if not user_result.data:
+        user = get_user_by_id(user_id)
+        if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        zodiac_sign = user_result.data[0]['zodiac_sign']
+        zodiac_sign = user.get('zodiac_sign')
 
-        # Get current planetary hour
+        # Get current planetary hour (assuming this function exists)
         planetary_hour = get_current_planetary_hour()
 
         post_data = {
@@ -76,74 +223,68 @@ def create_post():
             'likes': 0,
             'comments': 0,
             'shares': 0,
-            'saves': 0
+            'saves': 0,
+            'timestamp': datetime.utcnow().isoformat(),
+            'created_at': datetime.utcnow().isoformat()
         }
 
-        result = supabase.table('user_posts').insert(post_data).execute()
+        result = create_post(post_data)
 
-        # Log user action for gamification
+        # Log user action for gamification (assuming this function exists)
         log_user_action(user_id, 'post_create', 'text_post', planetary_hour)
 
         return jsonify({
             'message': 'Post created successfully',
-            'post': result.data[0] if result.data else None
+            'post': result
         }), 201
 
     except Exception as e:
         current_app.logger.error(f"Post creation error: {str(e)}")
         return jsonify({'error': 'Failed to create post'}), 500
 
-@feed.route('/api/v1/posts/<int:post_id>/like', methods=['POST'])
+@feed.route('/api/v1/posts/<post_id>/like', methods=['POST'])
+@token_required
 def like_post(post_id):
     """Like or unlike a post"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'user_id required'}), 400
+        user_id = request.user_id  # From token_required decorator
 
-        # Check if already liked
-        existing_like = supabase.table('user_interactions').select('*').eq('user_id', user_id).eq('post_id', post_id).eq('interaction_type', 'like').execute()
+        # Use Cosmos DB helper function
+        liked = toggle_like(user_id, post_id)
+        action = 'liked' if liked else 'unliked'
 
-        if existing_like.data:
-            # Unlike: remove interaction and decrement counter
-            supabase.table('user_interactions').delete().eq('user_id', user_id).eq('post_id', post_id).eq('interaction_type', 'like').execute()
-            supabase.table('user_posts').update({
-                'likes': supabase.raw('likes - 1'),
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).eq('id', post_id).execute()
-            action = 'unliked'
-        else:
-            # Like: add interaction and increment counter
-            supabase.table('user_interactions').insert({
-                'user_id': user_id,
-                'post_id': post_id,
-                'interaction_type': 'like'
-            }).execute()
-            supabase.table('user_posts').update({
-                'likes': supabase.raw('likes + 1'),
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).eq('id', post_id).execute()
+        # Create notification for post author if liked
+        if liked:
+            try:
+                # Get post author
+                posts_container = database.get_container_client("Posts")
+                query = "SELECT c.user_id FROM c WHERE c.id = @post_id"
+                params = [{"name": "@post_id", "value": post_id}]
+                posts = list(posts_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+                
+                if posts and posts[0]['user_id'] != user_id:
+                    post_author_id = posts[0]['user_id']
+                    
+                    # Get liker username
+                    liker = get_user_by_id(user_id)
+                    liker_username = liker.get('username', 'Someone') if liker else 'Someone'
+                    
+                    create_notification(
+                        user_id=post_author_id,
+                        notification_type='like',
+                        title='New Like',
+                        message=f'{liker_username} liked your post',
+                        related_id=post_id,
+                        related_type='post',
+                        metadata={'liker_id': user_id, 'liker_username': liker_username}
+                    )
 
-            # Create notification for post author
-            post_result = supabase.table('user_posts').select('user_id').eq('id', post_id).execute()
-            if post_result.data and post_result.data[0]['user_id'] != user_id:
-                post_author_id = post_result.data[0]['user_id']
-                user_result = supabase.table('user').select('username').eq('id', user_id).execute()
-                liker_username = user_result.data[0]['username'] if user_result.data else 'Someone'
-                create_notification(
-                    user_id=post_author_id,
-                    notification_type='like',
-                    title='New Like',
-                    message=f'{liker_username} liked your post',
-                    related_id=str(post_id),
-                    related_type='post',
-                    metadata={'liker_id': user_id, 'liker_username': liker_username}
-                )
-
-            # Log action for gamification
-            log_user_action(user_id, 'like', 'post_like')
-            action = 'liked'
+                # Log action for gamification
+                log_user_action(user_id, 'like', 'post_like')
+                
+            except Exception as e:
+                current_app.logger.error(f"Notification creation error: {str(e)}")
+                # Don't fail the like operation if notification fails
 
         return jsonify({'message': f'Post {action} successfully'}), 200
 
@@ -152,61 +293,65 @@ def like_post(post_id):
         return jsonify({'error': 'Failed to process like'}), 500
 
 @feed.route('/api/v1/posts/<int:post_id>/comment', methods=['POST'])
+@token_required
 def comment_on_post(post_id):
     """Add a comment to a post"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id')
+        user_id = request.user_id  # From token_required decorator
         comment_text = data.get('comment', '').strip()
 
-        if not user_id or not comment_text:
-            return jsonify({'error': 'user_id and comment required'}), 400
+        if not comment_text:
+            return jsonify({'error': 'comment required'}), 400
 
         # Get user's zodiac sign
-        user_result = supabase.table('user').select('zodiac_sign').eq('id', user_id).execute()
-        if not user_result.data:
+        user = get_user_by_id(user_id)
+        if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        zodiac_sign = user_result.data[0]['zodiac_sign']
+        zodiac_sign = user.get('zodiac_sign')
 
         comment_data = {
-            'post_id': post_id,
+            'post_id': str(post_id),
             'user_id': user_id,
             'content': comment_text,
             'zodiac_sign': zodiac_sign,
-            'likes': 0
+            'likes': 0,
+            'created_at': datetime.utcnow().isoformat()
         }
 
-        result = supabase.table('comments').insert(comment_data).execute()
-
-        # Update comment count on post
-        supabase.table('user_posts').update({
-            'comments': supabase.raw('comments + 1'),
-            'updated_at': datetime.now(timezone.utc).isoformat()
-        }).eq('id', post_id).execute()
+        result = create_comment(comment_data)
 
         # Create notification for post author
-        post_result = supabase.table('user_posts').select('user_id').eq('id', post_id).execute()
-        if post_result.data and post_result.data[0]['user_id'] != user_id:
-            post_author_id = post_result.data[0]['user_id']
-            user_result = supabase.table('user').select('username').eq('id', user_id).execute()
-            commenter_username = user_result.data[0]['username'] if user_result.data else 'Someone'
-            create_notification(
-                user_id=post_author_id,
-                notification_type='comment',
-                title='New Comment',
-                message=f'{commenter_username} commented on your post',
-                related_id=str(post_id),
-                related_type='post',
-                metadata={'commenter_id': user_id, 'commenter_username': commenter_username, 'comment_content': comment_text[:50]}
-            )
+        try:
+            posts_container = database.get_container_client("Posts")
+            query = "SELECT c.user_id FROM c WHERE c.id = @post_id"
+            params = [{"name": "@post_id", "value": str(post_id)}]
+            posts = list(posts_container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+            
+            if posts and posts[0]['user_id'] != user_id:
+                post_author_id = posts[0]['user_id']
+                commenter_username = user.get('username', 'Someone')
+                
+                create_notification(
+                    user_id=post_author_id,
+                    notification_type='comment',
+                    title='New Comment',
+                    message=f'{commenter_username} commented on your post',
+                    related_id=str(post_id),
+                    related_type='post',
+                    metadata={'commenter_id': user_id, 'commenter_username': commenter_username, 'comment_content': comment_text[:50]}
+                )
+        except Exception as e:
+            current_app.logger.error(f"Notification creation error: {str(e)}")
+            # Don't fail the comment operation if notification fails
 
         # Log action for gamification
         log_user_action(user_id, 'comment', 'post_comment')
 
         return jsonify({
             'message': 'Comment added successfully',
-            'comment': result.data[0] if result.data else None
+            'comment': result
         }), 201
 
     except Exception as e:
@@ -217,24 +362,24 @@ def comment_on_post(post_id):
 def get_post_comments(post_id):
     """Get comments for a specific post"""
     try:
-        result = supabase.table('comments').select('*').eq('post_id', post_id).order('created_at.asc').execute()
-
-        comments = []
-        for comment in result.data or []:
-            # Get username
-            user_result = supabase.table('user').select('username').eq('id', comment['user_id']).execute()
-            username = user_result.data[0]['username'] if user_result.data else 'Unknown'
-
-            comments.append({
+        comments = get_comments_by_post(str(post_id))
+        
+        # Enrich comments with usernames
+        enriched_comments = []
+        for comment in comments:
+            user = get_user_by_id(comment['user_id'])
+            username = user.get('username', 'Unknown') if user else 'Unknown'
+            
+            enriched_comments.append({
                 'id': comment['id'],
                 'content': comment['content'],
                 'author': username,
                 'zodiac_sign': comment.get('zodiac_sign'),
                 'likes': comment.get('likes', 0),
-                'created_at': comment['created_at']
+                'created_at': comment.get('created_at', comment.get('timestamp'))
             })
 
-        return jsonify({'comments': comments}), 200
+        return jsonify({'comments': enriched_comments}), 200
 
     except Exception as e:
         current_app.logger.error(f"Get comments error: {str(e)}")
@@ -245,13 +390,13 @@ def get_trending():
     """Get trending content for FOMO algorithm"""
     try:
         # Get recent highly engaged posts
-        result = supabase.table('user_posts').select('*').order('likes.desc').order('created_at.desc').limit(10).execute()
+        posts = get_popular_posts(10)
 
         trending_content = []
-        for post in result.data or []:
+        for post in posts:
             if post.get('likes', 0) > 5:  # Simple threshold for trending
-                user_result = supabase.table('user').select('username').eq('id', post['user_id']).execute()
-                username = user_result.data[0]['username'] if user_result.data else 'Unknown'
+                user = get_user_by_id(post['user_id'])
+                username = user.get('username', 'Unknown') if user else 'Unknown'
 
                 trending_content.append({
                     'id': post['id'],
@@ -278,42 +423,77 @@ def get_trending():
         current_app.logger.error(f"Trending error: {str(e)}")
         return jsonify({'error': 'Failed to fetch trending content'}), 500
 
+def get_user_stats(user_id):
+    """Get user post statistics"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Posts")
+        # Note: Cosmos DB doesn't have built-in aggregation like SQL COUNT/SUM
+        # For now, we'll fetch all posts and calculate stats
+        query = "SELECT * FROM c WHERE c.user_id = @user_id"
+        params = [{"name": "@user_id", "value": user_id}]
+        posts = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        
+        post_count = len(posts)
+        total_likes = sum(post.get('likes', 0) for post in posts)
+        total_comments = sum(post.get('comments', 0) for post in posts)
+        
+        return {
+            'post_count': post_count,
+            'total_likes': total_likes,
+            'total_comments': total_comments
+        }
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to get user stats: {str(e)}")
+
+def get_recent_posts(user_id, limit=5):
+    """Get recent posts by user"""
+    if not database:
+        raise Exception("Cosmos DB not available")
+    try:
+        container = database.get_container_client("Posts")
+        query = "SELECT * FROM c WHERE c.user_id = @user_id ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params = [
+            {"name": "@user_id", "value": user_id},
+            {"name": "@limit", "value": limit}
+        ]
+        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=False))
+        return items
+    except exceptions.CosmosHttpResponseError as e:
+        raise Exception(f"Failed to get recent posts: {str(e)}")
+
 @feed.route('/api/v1/profile/<int:user_id>', methods=['GET'])
 def get_cosmic_profile(user_id):
     """Get user's cosmic profile with social stats"""
     try:
+        user_id_str = str(user_id)
+        
         # Get basic profile info
-        user_result = supabase.table('user').select('*').eq('id', user_id).execute()
-        if not user_result.data:
+        user = get_user_by_id(user_id_str)
+        if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        user = user_result.data[0]
-
-        # Get profile data
-        profile_result = supabase.table('profiles').select('*').eq('user_id', user_id).execute()
-        profile = profile_result.data[0] if profile_result.data else {}
+        # Get profile data (assuming profiles are stored in Users container for now)
+        profile = {}  # Placeholder - would need separate Profiles container
 
         # Get post stats
-        stats_result = supabase.table('user_posts').select('count(*) as post_count, sum(likes) as total_likes, sum(comments) as total_comments').eq('user_id', user_id).execute()
-        stats = stats_result.data[0] if stats_result.data else {'post_count': 0, 'total_likes': 0, 'total_comments': 0}
+        stats = get_user_stats(user_id_str)
 
         # Get recent posts
-        posts_result = supabase.table('user_posts').select('*').eq('user_id', user_id).order('created_at.desc').limit(5).execute()
+        recent_posts = get_recent_posts(user_id_str, 5)
 
-        # Get user badges
-        badges_result = supabase.table('user_badges').select('*').eq('user_id', user_id).execute()
-
-        # Get engagement streak
-        streak_result = supabase.table('engagement_streaks').select('*').eq('user_id', user_id).eq('streak_type', 'general').execute()
-        streak = streak_result.data[0] if streak_result.data else None
+        # Placeholder for badges and streaks - would need separate containers
+        badges = []
+        streak = {'current_streak': 0}
 
         return jsonify({
             'profile': {
-                'username': user['username'],
-                'zodiac_sign': user['zodiac_sign'],
+                'username': user.get('username'),
+                'zodiac_sign': user.get('zodiac_sign'),
                 'chinese_zodiac': user.get('chinese_zodiac'),
                 'vedic_zodiac': user.get('vedic_zodiac'),
-                'join_date': user['created_at'],
+                'join_date': user.get('created_at'),
                 'archetype': profile.get('archetype'),
                 'bio': profile.get('bio'),
                 'avatar_url': profile.get('avatar_url'),
@@ -323,10 +503,10 @@ def get_cosmic_profile(user_id):
                 'posts': stats.get('post_count', 0),
                 'total_likes': stats.get('total_likes', 0),
                 'total_comments': stats.get('total_comments', 0),
-                'current_streak': streak['current_streak'] if streak else 0
+                'current_streak': streak.get('current_streak', 0)
             },
-            'recent_posts': posts_result.data or [],
-            'badges': badges_result.data or [],
+            'recent_posts': recent_posts,
+            'badges': badges,
             'planetary_context': get_current_planetary_context()
         }), 200
 
@@ -393,20 +573,9 @@ def calculate_engagement_score(post):
 def log_user_action(user_id, action_type, action_subtype=None, planetary_context=None):
     """Log user actions for gamification"""
     try:
-        data = {
-            'user_id': user_id,
-            'action_type': action_type,
-            'points_earned': get_points_for_action(action_type),
-            'planetary_influence': planetary_context or get_current_planetary_hour()
-        }
-        if action_subtype:
-            data['action_subtype'] = action_subtype
-
-        supabase.table('user_actions').insert(data).execute()
-
-        # Update engagement streak
-        update_engagement_streak(user_id)
-
+        # For now, just log to console - would need UserActions container in Cosmos DB
+        current_app.logger.info(f"User action: {user_id} - {action_type} - {action_subtype} - {planetary_context}")
+        # TODO: Implement Cosmos DB logging for gamification
     except Exception as e:
         current_app.logger.error(f"Action logging error: {str(e)}")
 
@@ -425,39 +594,9 @@ def get_points_for_action(action_type):
 def update_engagement_streak(user_id):
     """Update user's daily engagement streak"""
     try:
-        today = datetime.now(timezone.utc).date()
-
-        # Get current streak
-        result = supabase.table('engagement_streaks').select('*').eq('user_id', user_id).eq('streak_type', 'general').execute()
-
-        if result.data:
-            streak = result.data[0]
-            if streak['last_action_date'] == str(today - timedelta(days=1)):
-                # Continued streak
-                new_streak = streak['current_streak'] + 1
-                supabase.table('engagement_streaks').update({
-                    'current_streak': new_streak,
-                    'longest_streak': max(new_streak, streak['longest_streak']),
-                    'last_action_date': str(today),
-                    'updated_at': datetime.now(timezone.utc).isoformat()
-                }).eq('user_id', user_id).eq('streak_type', 'general').execute()
-            elif streak['last_action_date'] != str(today):
-                # Reset streak if not consecutive
-                supabase.table('engagement_streaks').update({
-                    'current_streak': 1,
-                    'last_action_date': str(today),
-                    'updated_at': datetime.now(timezone.utc).isoformat()
-                }).eq('user_id', user_id).eq('streak_type', 'general').execute()
-        else:
-            # Create new streak
-            supabase.table('engagement_streaks').insert({
-                'user_id': user_id,
-                'current_streak': 1,
-                'longest_streak': 1,
-                'last_action_date': str(today),
-                'streak_type': 'general'
-            }).execute()
-
+        # For now, simplified - would need EngagementStreaks container in Cosmos DB
+        current_app.logger.info(f"Engagement streak update for user: {user_id}")
+        # TODO: Implement Cosmos DB streak tracking
     except Exception as e:
         current_app.logger.error(f"Streak update error: {str(e)}")
 
@@ -466,60 +605,26 @@ def update_engagement_streak(user_id):
 def get_cosmic_network(user_id):
     """Get cosmic network data for visualization - friends and interactions"""
     try:
-        # Get user's friends
-        friends_result = supabase.table('friends').select('friend_id, status, created_at').eq('user_id', user_id).eq('status', 'accepted').execute()
+        user_id_str = str(user_id)
         
-        # Get friend details
-        friends_data = []
-        if friends_result.data:
-            for friend in friends_result.data:
-                friend_id = friend['friend_id']
-                # Get friend profile info
-                profile_result = supabase.table('profiles').select('display_name, zodiac_sign, bio, avatar_url').eq('user_id', friend_id).execute()
-                profile = profile_result.data[0] if profile_result.data else {}
-                
-                friends_data.append({
-                    'id': friend_id,
-                    'display_name': profile.get('display_name', f'User {friend_id}'),
-                    'zodiac_sign': profile.get('zodiac_sign', 'Unknown'),
-                    'bio': profile.get('bio', ''),
-                    'avatar_url': profile.get('avatar_url', ''),
-                    'friendship_date': friend['created_at']
-                })
-
-        # Get recent interactions (likes, comments, shares)
-        interactions_result = supabase.table('interactions').select('target_user_id, interaction_type, created_at').eq('user_id', user_id).order('created_at.desc').limit(50).execute()
-        
-        # Get interaction targets' profile info
-        interactions_data = []
-        if interactions_result.data:
-            for interaction in interactions_result.data:
-                target_id = interaction['target_user_id']
-                profile_result = supabase.table('profiles').select('display_name, zodiac_sign').eq('user_id', target_id).execute()
-                profile = profile_result.data[0] if profile_result.data else {}
-                
-                interactions_data.append({
-                    'target_id': target_id,
-                    'target_name': profile.get('display_name', f'User {target_id}'),
-                    'target_zodiac': profile.get('zodiac_sign', 'Unknown'),
-                    'interaction_type': interaction['interaction_type'],
-                    'timestamp': interaction['created_at']
-                })
-
         # Get user's own profile for center node
-        user_profile_result = supabase.table('profiles').select('display_name, zodiac_sign, bio, avatar_url').eq('user_id', user_id).execute()
-        user_profile = user_profile_result.data[0] if user_profile_result.data else {}
+        user = get_user_by_id(user_id_str)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
+        # For now, return simplified network - would need Friends and Interactions containers
+        # TODO: Implement full cosmic network with Cosmos DB
+        
         return jsonify({
             'user': {
-                'id': user_id,
-                'display_name': user_profile.get('display_name', f'User {user_id}'),
-                'zodiac_sign': user_profile.get('zodiac_sign', 'Unknown'),
-                'bio': user_profile.get('bio', ''),
-                'avatar_url': user_profile.get('avatar_url', '')
+                'id': user_id_str,
+                'display_name': user.get('username', f'User {user_id_str}'),
+                'zodiac_sign': user.get('zodiac_sign', 'Unknown'),
+                'bio': '',
+                'avatar_url': user.get('avatar_url', '')
             },
-            'friends': friends_data,
-            'interactions': interactions_data
+            'friends': [],  # TODO: Implement friends from Cosmos DB
+            'interactions': []  # TODO: Implement interactions from Cosmos DB
         }), 200
 
     except Exception as e:
