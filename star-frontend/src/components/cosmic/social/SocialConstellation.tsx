@@ -111,8 +111,7 @@ const ConstellationNetwork: React.FC<ConstellationNetworkProps> = ({ connections
         radius * Math.sin(phi) * Math.sin(theta),
         radius * Math.cos(phi)
       ];
-    }), [userNodes.length]
-  );
+    }), [userNodes]);
 
   return (
     <group>
@@ -239,13 +238,16 @@ interface ConnectionBeamProps {
 }
 
 const ConnectionBeam: React.FC<ConnectionBeamProps> = ({ from, to, strength, viewMode }) => {
-  const lineRef = useRef<THREE.Line>(null);
+  const lineRef = useRef<any>(null);
   
   useFrame((state) => {
     if (lineRef.current) {
       // Pulsing effect based on connection strength
       const pulse = Math.sin(state.clock.elapsedTime * 2) * 0.2 + 0.8;
-      lineRef.current.material.opacity = strength * pulse * 0.6;
+      const material = lineRef.current.material as THREE.Material;
+      if ('opacity' in material) {
+        material.opacity = strength * pulse * 0.6;
+      }
     }
   });
 

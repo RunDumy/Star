@@ -11,7 +11,7 @@ interface WebRTCPeer {
 export function useWebRTC(roomId: string) {
   const [peers, setPeers] = useState<WebRTCPeer[]>([]);
   const [isMuted, setIsMuted] = useState(false);
-  const localStreamRef = useRef<MediaStream | null>(null);
+  const localStreamRef = useRef<MediaStream | undefined>(undefined);
   const { currentUser } = useCollaboration();
 
   const createPeer = useCallback((initiator: boolean, targetUserId: string, channel: any) => {

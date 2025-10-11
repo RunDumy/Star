@@ -1,278 +1,203 @@
-import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
 import PropTypes from 'prop-types';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-supabase-anon-key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { createContext, useContext, useEffect, useReducer } from 'react';
+import { io } from 'socket.io-client';
 
 const CollaborationContext = createContext();
 
-export const CollaborationProvider = ({ children, roomId = 'cosmic-collaboration' }) => {
-  const [onlineUsers, setOnlineUsers] = useState(new Map());
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [avatars, setAvatars] = useState(new Map());
-  const [constellations, setConstellations] = useState(new Map());
-  const [userPresence, setUserPresence] = useState(null);
-  const heartbeatRef = useRef(null);
-  const userIdRef = useRef(null);
+const collaborationReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_ONLINE_USERS':
+      return { ...state, onlineUsers: new Map(action.payload) };
+    case 'UPDATE_USER_POSITION':
+      const newUsers = new Map(state.onlineUsers);
+      newUsers.set(action.payload.userId, action.payload);
+      return { ...state, onlineUsers: newUsers };
+    case 'ADD_CONSTELLATION':
+      const newConstellations = new Map(state.constellations);
+      newConstellations.set(action.payload.id, action.payload);
+      return { ...state, constellations: newConstellations };
+    case 'SET_CURRENT_USER':
+      return { ...state, currentUser: action.payload };
+    case 'SET_SOCKET':
+      return { ...state, socket: action.payload };
+    case 'SET_CONNECTED':
+      return { ...state, isConnected: action.payload };
+    case 'ADD_RECENT_ACTION':
+      return { 
+        ...state, 
+        recentActions: [action.payload, ...state.recentActions.slice(0, 9)] // Keep last 10 actions
+      };
+    default:
+      return state;
+  }
+};
 
-  // Generate or get user ID
-  const getUserId = useCallback(() => {
-    if (!userIdRef.current) {
-      userIdRef.current = localStorage.getItem('cosmic-user-id') ||
-        `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('cosmic-user-id', userIdRef.current);
-    }
-    return userIdRef.current;
-  }, []);
+export const CollaborationProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(collaborationReducer, {
+    onlineUsers: new Map(),
+    constellations: new Map(),
+    currentUser: null,
+    socket: null,
+    isConnected: false,
+    recentActions: []
+  });
 
-  // Process presence state into users map
-  const processPresenceState = useCallback((presenceState) => {
-    const users = new Map();
-    Object.values(presenceState).forEach((presences) => {
-      presences.forEach((presence) => {
-        users.set(presence.id, presence);
+  useEffect(() => {
+    // Connect to Flask SocketIO
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000');
+
+    socket.on('connect', () => {
+      console.log('Connected to collaboration server');
+      dispatch({ type: 'SET_CONNECTED', payload: true });
+
+      // Join cosmic collaboration room
+      socket.emit('join_cosmic_collaboration', {
+        user_id: localStorage.getItem('userId') || 'anonymous'
       });
     });
-    return users;
-  }, []);
 
-  // Initialize user presence
-  const initializePresence = useCallback(async () => {
-    const userId = getUserId();
-    const userData = {
-      id: userId,
-      name: `Cosmic Explorer ${userId.slice(-4)}`,
-      avatar: {
-        position: [Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10],
-        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-        shape: ['sphere', 'cube', 'pyramid'][Math.floor(Math.random() * 3)],
-        size: 0.5,
-      },
-      lastSeen: new Date().toISOString(),
-      roomId,
-    };
-
-    setCurrentUser(userData);
-    setUserPresence(userData);
-
-    // Join presence channel
-    const channel = supabase.channel(`cosmic-presence-${roomId}`, {
-      config: {
-        presence: {
-          key: userId,
-        },
-      },
+    socket.on('disconnect', () => {
+      console.log('Disconnected from collaboration server');
+      dispatch({ type: 'SET_CONNECTED', payload: false });
     });
 
-    // Handle presence events
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const presenceState = channel.presenceState();
-        const users = processPresenceState(presenceState);
-        setOnlineUsers(users);
-        setIsConnected(true);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track(userData);
+    socket.on('user_position_update', (data) => {
+      dispatch({
+        type: 'UPDATE_USER_POSITION',
+        payload: {
+          userId: data.user_id,
+          name: data.username,
+          position: data.position,
+          rotation: data.rotation
         }
       });
+    });
 
-    // Handle avatar updates
-    const avatarChannel = supabase.channel(`cosmic-avatars-${roomId}`)
-      .on('broadcast', { event: 'avatar-update' }, ({ payload }) => {
-        setAvatars(prev => new Map(prev).set(payload.userId, payload.avatar));
-      })
-      .on('broadcast', { event: 'constellation-update' }, ({ payload }) => {
-        setConstellations(prev => new Map(prev).set(payload.constellationId, payload.constellation));
-      })
-      .subscribe();
-
-    // Start heartbeat to maintain presence
-    heartbeatRef.current = setInterval(async () => {
-      await channel.track({
-        ...userData,
-        lastSeen: new Date().toISOString(),
+    socket.on('constellation_created', (data) => {
+      dispatch({
+        type: 'ADD_CONSTELLATION',
+        payload: data.constellation
       });
-    }, 30000); // Update every 30 seconds
+    });
 
-    return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
+    socket.on('collaboration_state', (data) => {
+      // Initialize with current state
+      if (data.online_users) {
+        const usersMap = new Map();
+        data.online_users.forEach(user => {
+          usersMap.set(user.user_id, {
+            userId: user.user_id,
+            name: `User ${user.user_id.slice(-4)}`,
+            position: [user.x || 0, user.y || 0, user.z || 0],
+            rotation: user.rotation || 0
+          });
+        });
+        dispatch({ type: 'SET_ONLINE_USERS', payload: usersMap });
       }
-      channel.unsubscribe();
-      avatarChannel.unsubscribe();
-    };
-  }, [roomId, getUserId, processPresenceState]);
 
-  // Update user avatar
-  const updateAvatar = useCallback(async (avatarData) => {
-    if (!currentUser) return;
-
-    const updatedAvatar = { ...currentUser.avatar, ...avatarData };
-    const updatedUser = { ...currentUser, avatar: updatedAvatar };
-
-    setCurrentUser(updatedUser);
-    setUserPresence(updatedUser);
-
-    // Broadcast avatar update
-    await supabase.channel(`cosmic-avatars-${roomId}`).send({
-      type: 'broadcast',
-      event: 'avatar-update',
-      payload: {
-        userId: currentUser.id,
-        avatar: updatedAvatar,
-      },
-    });
-  }, [currentUser, roomId]);
-
-  // Create constellation
-  const createConstellation = useCallback(async (constellationData) => {
-    if (!currentUser) return null;
-
-    const constellationId = `constellation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const constellation = {
-      id: constellationId,
-      creatorId: currentUser.id,
-      name: constellationData.name || 'New Constellation',
-      stars: constellationData.stars || [],
-      connections: constellationData.connections || [],
-      theme: constellationData.theme || 'default',
-      createdAt: new Date().toISOString(),
-      collaborators: [currentUser.id],
-    };
-
-    setConstellations(prev => new Map(prev).set(constellationId, constellation));
-
-    // Broadcast constellation creation
-    await supabase.channel(`cosmic-avatars-${roomId}`).send({
-      type: 'broadcast',
-      event: 'constellation-update',
-      payload: {
-        constellationId,
-        constellation,
-      },
-    });
-
-    return constellationId;
-  }, [currentUser, roomId]);
-
-  // Update constellation
-  const updateConstellation = useCallback(async (updatedConstellation) => {
-    if (!currentUser || !updatedConstellation.id) return;
-
-    setConstellations(prev => {
-      const newMap = new Map(prev);
-      newMap.set(updatedConstellation.id, updatedConstellation);
-
-      // Broadcast update
-      supabase.channel(`cosmic-avatars-${roomId}`).send({
-        type: 'broadcast',
-        event: 'constellation-update',
-        payload: {
-          constellationId: updatedConstellation.id,
-          constellation: updatedConstellation,
-        },
-      });
-
-      return newMap;
-    });
-  }, [currentUser, roomId]);
-
-  // Delete constellation
-  const deleteConstellation = useCallback(async (constellationId) => {
-    if (!currentUser) return;
-
-    setConstellations(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(constellationId);
-
-      // Broadcast deletion (you might want to handle this differently)
-      supabase.channel(`cosmic-avatars-${roomId}`).send({
-        type: 'broadcast',
-        event: 'constellation-update',
-        payload: {
-          constellationId,
-          constellation: null, // Indicates deletion
-        },
-      });
-
-      return newMap;
-    });
-  }, [currentUser, roomId]);
-
-  // Get users in current room
-  const getUsersInRoom = useCallback(() => {
-    return Array.from(onlineUsers.values());
-  }, [onlineUsers]);
-
-  // Get constellations in current room
-  const getConstellations = useCallback(() => {
-    return Array.from(constellations.values());
-  }, [constellations]);
-
-  // Initialize on mount
-  useEffect(() => {
-    const cleanup = initializePresence();
-    return () => {
-      cleanup?.then(cleanupFn => cleanupFn?.());
-    };
-  }, [initializePresence]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
+      if (data.constellations) {
+        const constellationsMap = new Map();
+        data.constellations.forEach(constellation => {
+          constellationsMap.set(constellation.id, constellation);
+        });
+        // Update constellations state
+        data.constellations.forEach(constellation => {
+          dispatch({ type: 'ADD_CONSTELLATION', payload: constellation });
+        });
       }
-    };
+    });
+
+    socket.on('cosmic_collaboration_joined', (data) => {
+      console.log('Joined cosmic collaboration:', data);
+    });
+
+    socket.on('action_notification', (data) => {
+      dispatch({
+        type: 'ADD_RECENT_ACTION',
+        payload: {
+          id: Date.now(),
+          userId: data.user_id,
+          username: data.username,
+          action: data.action,
+          actionType: data.action_type,
+          timestamp: data.timestamp
+        }
+      });
+    });
+
+    dispatch({ type: 'SET_SOCKET', payload: socket });
+
+    return () => socket.disconnect();
   }, []);
 
-  const contextValue = useMemo(() => ({
-    // State
-    onlineUsers,
-    currentUser,
-    isConnected,
-    avatars,
-    constellations,
-    userPresence,
+  const updateUserPosition = async (position, rotation = 0) => {
+    if (!state.currentUser) return;
 
-    // Actions
-    updateAvatar,
-    createConstellation,
-    updateConstellation,
-    getUsersInRoom,
-    getConstellations,
+    try {
+      await axios.post('/api/v1/collaboration/position', {
+        x: position[0],
+        y: position[1],
+        z: position[2],
+        rotation
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+    } catch (error) {
+      console.error('Failed to update position:', error);
+    }
+  };
 
-    // Utilities
-    roomId,
-  }), [
-    onlineUsers,
-    currentUser,
-    isConnected,
-    avatars,
-    constellations,
-    userPresence,
-    updateAvatar,
-    createConstellation,
-    updateConstellation,
-    getUsersInRoom,
-    getConstellations,
-    roomId,
-  ]);
+  const createConstellation = async (constellationData) => {
+    try {
+      const response = await axios.post('/api/v1/constellations', constellationData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create constellation:', error);
+      throw error;
+    }
+  };
+
+  const triggerZodiacAction = async (actionType, room = 'cosmos') => {
+    try {
+      const response = await axios.post('/api/v1/action', {
+        action_type: actionType,
+        room: room
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to trigger zodiac action:', error);
+      throw error;
+    }
+  };
+
+  const getUsersInRoom = () => {
+    return Array.from(state.onlineUsers.values());
+  };
+
+  const getConstellations = () => {
+    return Array.from(state.constellations.values());
+  };
 
   return (
-    <CollaborationContext.Provider value={contextValue}>
+    <CollaborationContext.Provider value={{
+      ...state,
+      updateUserPosition,
+      createConstellation,
+      triggerZodiacAction,
+      getUsersInRoom,
+      getConstellations
+    }}>
       {children}
     </CollaborationContext.Provider>
   );
@@ -280,7 +205,6 @@ export const CollaborationProvider = ({ children, roomId = 'cosmic-collaboration
 
 CollaborationProvider.propTypes = {
   children: PropTypes.node.isRequired,
-  roomId: PropTypes.string,
 };
 
 export const useCollaboration = () => {

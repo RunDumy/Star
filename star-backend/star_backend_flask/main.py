@@ -3,6 +3,7 @@
 import logging
 import os
 import random
+# TODO: Replace with Azure Cosmos DB imports
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -22,9 +23,9 @@ from flask_restful import Api, Resource
 from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields, validate
 
-# TODO: Replace with Azure Cosmos DB imports
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import api
 from cosmos_db import get_cosmos_helper
-from . import api
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -61,11 +62,19 @@ limiter.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins=os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(','), async_mode='threading' if os.environ.get('TESTING') == 'true' else 'eventlet')
 
 # -------------------- Azure Cosmos DB --------------------
-cosmos_helper = get_cosmos_helper()
-if cosmos_helper:
-    logger.info("Azure Cosmos DB helper initialized")
+if os.environ.get('TESTING') != 'true':
+    try:
+        cosmos_helper = get_cosmos_helper()
+        if cosmos_helper:
+            logger.info("Azure Cosmos DB helper initialized")
+        else:
+            logger.warning("COSMOS_DB_CONNECTION_STRING not set; Cosmos DB operations will be disabled.")
+    except ValueError as e:
+        cosmos_helper = None
+        logger.warning(f"Failed to initialize Cosmos DB: {e}")
 else:
-    logger.warning("COSMOS_DB_CONNECTION_STRING not set; Cosmos DB operations will be disabled.")
+    cosmos_helper = None
+    logger.info("Testing mode: Cosmos DB initialization skipped")
 
 # -------------------- Cosmos DB Helper Functions --------------------
 def get_user_by_id(user_id):

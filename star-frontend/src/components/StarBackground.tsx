@@ -5,13 +5,12 @@ import Particles from 'react-tsparticles';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadFull } from 'tsparticles';
-import type { Engine } from 'tsparticles-engine';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase.js';
 
 export default function StarBackground({ children }: Readonly<{ children: React.ReactNode }>) {
   const mountRef = useRef<HTMLDivElement>(null);
   const auraMeshesRef = useRef<THREE.Mesh[]>([]);
-  const particlesInit = useCallback(async (engine: Engine) => {
+  const particlesInit = useCallback(async (engine: any) => {
     await loadFull(engine);
   }, []);
 

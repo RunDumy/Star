@@ -75,7 +75,7 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
         ${getAnimationClass()}
       `}
       // eslint-disable-next-line react/style-prop-object
-      style={get3DTransform()}
+      style={get3DTransform() as any}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >

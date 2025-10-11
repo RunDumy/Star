@@ -1,12 +1,11 @@
 'use client';
 
+import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
-import type { Engine } from 'tsparticles-engine';
 import { hapticManager } from '../lib/hapticEffects';
-import { supabase } from '../lib/supabase';
 
 interface CosmicButtonProps {
   children: ReactNode;
@@ -190,7 +189,7 @@ export default function CosmicButton({
     }
   };
 
-  const particlesInit = async (engine: Engine) => {
+  const particlesInit = async (engine: any) => {
     await loadFull(engine);
   };
 

@@ -156,3 +156,5 @@ describe('GazeVoiceNavigator', () => {
     expect(container.querySelector('.gaze-voice-navigator')).toBeInTheDocument();
   });
 });
+  });
+});

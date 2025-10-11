@@ -3,7 +3,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import { Group } from 'three';
-import { useCosmicPhysics } from '../hooks/useCosmicPhysics';
+import { useCosmicPhysics } from '../../hooks/useCosmicPhysics';
 
 interface CosmicSceneProps {
   children?: React.ReactNode;

@@ -71,7 +71,7 @@ export default function FeedPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user.id}`,
+          Authorization: `Bearer ${user?.id || ''}`,
         },
         body: JSON.stringify({ content: newPost, media_url: newMediaUrl || undefined }),
       });
@@ -93,7 +93,7 @@ export default function FeedPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/posts/${postId}/like`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${user.id}` },
+        headers: { Authorization: `Bearer ${user?.id || ''}` },
       });
       const data = await response.json();
       if (data.success) {
@@ -119,7 +119,7 @@ export default function FeedPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user.id}`,
+          Authorization: `Bearer ${user?.id || ''}`,
         },
         body: JSON.stringify({ content }),
       });

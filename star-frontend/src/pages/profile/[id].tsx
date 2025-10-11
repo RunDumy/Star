@@ -1,10 +1,18 @@
 'use client';
 
-import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import StarBackground from '../../components/StarBackground';
-import { getFriends, getPosts, getProfile, sendFriendRequest, supabase } from '../../lib/supabase';
+// import { useAuth } from '../../../lib/AuthContext';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+type User = {
+  id: string;
+  username: string;
+  zodiac_sign: string;
+  full_name?: string;
+};
 
 type Friend = {
   id: string;
@@ -46,15 +54,8 @@ export default function Profile() {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isFriend, setIsFriend] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
-    };
-    getCurrentUser();
-  }, []);
+  // const { user: currentUser } = useAuth();
+  const currentUser: User | null = null; // Temporary
 
   useEffect(() => {
     if (!id) return;
@@ -64,22 +65,31 @@ export default function Profile() {
         setLoading(true);
 
         // Load profile
-        const profileData = await getProfile(id as string);
-        setProfile(profileData);
+        const profileResponse = await fetch(`${API_URL}/api/v1/profiles/${id}`);
+        const profileData = await profileResponse.json();
+        setProfile({
+          ...profileData,
+          zodiac_sign: profileData.zodiac_sign,
+          avatar_url: profileData.avatar_url,
+          display_name: profileData.display_name,
+          user_id: profileData.user_id
+        });
 
         // Load friends
-        const friendsData = await getFriends(id as string);
+        const friendsResponse = await fetch(`${API_URL}/api/v1/friends/${id}`);
+        const friendsData = await friendsResponse.json();
         setFriends(friendsData || []);
 
         // Load posts
-        const postsData = await getPosts(id as string);
-        setPosts(postsData || []);
+        const postsResponse = await fetch(`${API_URL}/api/v1/posts?user_id=${id}`);
+        const postsData = await postsResponse.json();
+        setPosts(postsData.posts || []);
 
         // Check if current user is friends with this profile
-        if (currentUser) {
-          const friendCheck = friendsData?.find(friend => friend.friend_id === currentUser.id);
-          setIsFriend(!!friendCheck);
-        }
+        // if (currentUser) {
+        //   const friendCheck = friendsData?.find((friend: Friend) => friend.id === currentUser.id);
+        //   setIsFriend(!!friendCheck);
+        // }
 
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -93,15 +103,26 @@ export default function Profile() {
   }, [id, currentUser]);
 
   const onFollow = async () => {
-    if (!id || !currentUser) return;
-
-    try {
-      await sendFriendRequest(currentUser.id, id as string);
-      setMessage('Friend request sent!');
-      setIsFriend(true);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to send friend request');
-    }
+    // if (!id || !currentUser) return;
+    // try {
+    //   const response = await fetch(`${API_URL}/api/v1/friends/request`, {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Authorization: `Bearer ${currentUser.id}`,
+    //     },
+    //     body: JSON.stringify({ friend_id: id }),
+    //   });
+    //   const data = await response.json();
+    //   if (data.success) {
+    //     setMessage('Friend request sent!');
+    //     setIsFriend(true);
+    //   } else {
+    //     setMessage(data.error || 'Failed to send friend request');
+    //   }
+    // } catch (error) {
+    //   setMessage('Failed to send friend request');
+    // }
   };
 
   if (loading) {
@@ -159,7 +180,7 @@ export default function Profile() {
                 Joined: {new Date(profile.created_at).toLocaleDateString()}
               </p>
             </div>
-            {currentUser && currentUser.id !== id && (
+            {/* {currentUser && currentUser.id !== id && ( */}
               <button
                 onClick={onFollow}
                 disabled={isFriend}
@@ -171,7 +192,7 @@ export default function Profile() {
               >
                 {isFriend ? 'Friends' : 'Connect'}
               </button>
-            )}
+            {/* )} */}
           </div>
         </div>
 

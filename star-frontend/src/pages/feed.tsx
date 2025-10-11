@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/lib/supabase";
+import { useAuth } from "@/lib/AuthContext";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -31,6 +31,7 @@ export default function FeedPage() {
     if (!user) return;
 
     const fetchPosts = async () => {
+      if (!user) return;
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/posts`, {
           headers: { Authorization: `Bearer ${user.id}` },
@@ -61,6 +62,7 @@ export default function FeedPage() {
   }, [user]);
 
   const createPost = async () => {
+    if (!user) return;
     if (!newPost.trim()) {
       setError("Post content is required");
       return;
@@ -89,6 +91,7 @@ export default function FeedPage() {
   };
 
   const toggleLike = async (postId: number, liked: boolean) => {
+    if (!user) return;
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/posts/${postId}/like`, {
         method: "POST",
@@ -108,6 +111,7 @@ export default function FeedPage() {
   };
 
   const addComment = async (postId: number) => {
+    if (!user) return;
     const content = newComments[postId]?.trim();
     if (!content) {
       setError("Comment content is required");
@@ -151,7 +155,7 @@ export default function FeedPage() {
       <Link href="/home" className="text-blue-400 hover:underline mb-4 inline-block">
         Back to Cosmic Home
       </Link>
-      <h1 className="text-3xl font-bold mb-4">Cosmic Feed ({user.zodiacSign || "Unknown"})</h1>
+      <h1 className="text-3xl font-bold mb-4">Cosmic Feed ({user?.zodiac_sign || "Unknown"})</h1>
       <div className="mb-6 p-4 bg-gray-800 rounded-lg">
         <textarea
           value={newPost}

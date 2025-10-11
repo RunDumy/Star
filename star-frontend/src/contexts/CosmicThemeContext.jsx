@@ -1,70 +1,87 @@
-import PropTypes from 'prop-types';
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { createContext, useContext, useReducer } from 'react';
 
 const CosmicThemeContext = createContext();
 
 const themeReducer = (state, action) => {
   switch (action.type) {
-    case 'SET_PALETTE':
-      return { ...state, palette: action.payload };
-    case 'SET_GEOMETRY':
-      return { ...state, geometry: action.payload };
-    case 'SET_DENSITY':
-      return { ...state, density: action.payload };
-    case 'LOAD_SAVED_THEME':
+    case 'UPDATE_THEME':
       return { ...state, ...action.payload };
+    case 'SET_PRESET':
+      return { ...state, ...action.payload };
+    case 'RESET_THEME':
+      return initialState;
     default:
       return state;
   }
 };
 
-const initialTheme = {
-  palette: {
-    primary: '#4a90e2',
-    secondary: '#9b59b6',
-    nebula: ['#667eea', '#764ba2'],
-    accent: '#f1c40f',
-    background: '#0f0f23'
+const initialState = {
+  // Colors
+  backgroundColor: '#000011',
+  fogColor: '#000033',
+  ambientColor: '#ffffff',
+  pointLightColor: '#ffffff',
+  terrainColor: '#4a4a8a',
+  terrainEmissive: '#2a2a5a',
+
+  // Visual Properties
+  starDensity: 8000,
+  starSize: 6,
+  animationSpeed: 1,
+
+  // Lighting
+  ambientIntensity: 0.3,
+  pointLightIntensity: 0.8,
+
+  // Sky Settings
+  skySettings: {
+    turbidity: 10,
+    rayleigh: 3,
+    mieCoefficient: 0.005,
+    mieDirectionalG: 0.7,
   },
-  geometry: {
-    planetShape: 'sphere', // 'icosahedron', 'dodecahedron', 'torus', 'asteroid'
-    cornerRadius: 'rounded', // 'sharp', 'rounded', 'pill', 'organic'
-    uiDensity: 'medium' // 'compact', 'medium', 'spacious'
-  },
-  density: {
-    stars: 5000,
-    nebulae: 3,
-    particles: 1000
-  }
+
+  // Particles
+  particleColors: ['#ff4444', '#87CEEB', '#4361ee', '#8B4513'],
 };
 
 export const CosmicThemeProvider = ({ children }) => {
-  const [theme, dispatch] = useReducer(themeReducer, initialTheme);
+  const [theme, dispatch] = useReducer(themeReducer, initialState);
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('cosmic-theme', JSON.stringify(theme));
-  }, [theme]);
+  const updateTheme = (updates) => {
+    dispatch({ type: 'UPDATE_THEME', payload: updates });
+  };
 
-  // Load from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('cosmic-theme');
-    if (saved) {
-      dispatch({ type: 'LOAD_SAVED_THEME', payload: JSON.parse(saved) });
-    }
-  }, []);
+  const setPreset = (presetName) => {
+    const presets = {
+      nebula: {
+        backgroundColor: '#110033',
+        fogColor: '#330066',
+        starDensity: 12000,
+        particleColors: ['#ff00ff', '#00ffff', '#ffff00', '#ff0080'],
+      },
+      galaxy: {
+        backgroundColor: '#000022',
+        fogColor: '#001144',
+        starDensity: 15000,
+        animationSpeed: 2,
+      },
+      aurora: {
+        backgroundColor: '#001122',
+        fogColor: '#004466',
+        ambientColor: '#00ff88',
+        particleColors: ['#00ff88', '#0088ff', '#88ff00'],
+      }
+    };
 
-  const contextValue = useMemo(() => ({ theme, dispatch }), [theme]);
+    dispatch({ type: 'SET_PRESET', payload: presets[presetName] });
+  };
 
   return (
-    <CosmicThemeContext.Provider value={contextValue}>
+    <CosmicThemeContext.Provider value={{ theme, updateTheme, setPreset }}>
       {children}
     </CosmicThemeContext.Provider>
   );
-};
-
-CosmicThemeProvider.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 export const useCosmicTheme = () => {

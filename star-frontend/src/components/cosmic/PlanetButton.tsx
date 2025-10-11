@@ -64,7 +64,7 @@ export const PlanetButton: React.FC<PlanetButtonProps> = ({
       onClick={handleClick}
     >
       <animated.mesh geometry={geometry} ref={meshRef}>
-        <meshStandardMaterial
+        <animated.meshStandardMaterial
           map={texture}
           color={color}
           emissive={color}

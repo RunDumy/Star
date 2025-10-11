@@ -83,5 +83,7 @@
     "ms-vscode.js-debug",
     "ms-vscode.vscode-chrome-debug"
   ],
-  "terminal.integrated.env.linux": {}
+  "terminal.integrated.env.linux": {},
+  "azureAutomation.directory.basePath": "c:\\Users\\fudos",
+  "python.analysis.autoImportCompletions": true
 }

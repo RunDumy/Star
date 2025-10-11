@@ -66,3 +66,4 @@ old-history.bfg-report/
 .coverage
 
 .python_packages
+.azure

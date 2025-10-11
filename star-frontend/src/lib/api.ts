@@ -200,3 +200,28 @@ export async function getLocationInsights(ipAddress: string) {
   });
   return res.data;
 }
+
+// Collaboration API functions
+export const collaborationAPI = {
+  updatePosition: (position: { x: number; y: number; z: number; rotation?: number }) =>
+    api.post('/api/v1/collaboration/position', position),
+
+  createConstellation: (data: {
+    name: string;
+    stars: any[];
+    connections: any[];
+    color?: string;
+    is_public?: boolean;
+  }) => api.post('/api/v1/constellations', data),
+
+  getConstellations: () => api.get('/api/v1/constellations'),
+};
+
+export const postsAPI = {
+  getPosts: () => api.get('/api/v1/posts'),
+  createPost: (postData: any) => api.post('/api/v1/posts', postData),
+};
+
+export const zodiacAPI = {
+  getNumbers: () => api.get('/api/v1/zodiac-numbers'),
+};
