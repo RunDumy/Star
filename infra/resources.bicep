@@ -18,14 +18,14 @@ module monitoring 'br/public:avm/ptn/azd/monitoring:0.1.0' = {
     tags: tags
   }
 }
-// App Service Plan
+// App Service Plan - Use F1 (Free) tier to minimize costs
 module appServicePlan 'br/public:avm/res/web/serverfarm:0.2.0' = {
   name: 'app-service-plan'
   params: {
     name: '${abbrs.webServerFarms}${resourceToken}'
     location: location
     tags: tags
-    skuName: 'B1' // Basic tier for development
+    skuName: 'F1' // Free tier for minimal costs
     skuCapacity: 1
     kind: 'Linux'
     reserved: true
@@ -39,85 +39,101 @@ module starIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0
     location: location
   }
 }
-// App Service for Backend (Flask)
-module starBackend 'br/public:avm/res/web/site:0.8.0' = {
-  name: 'star-backend'
+
+// Azure Cosmos DB
+module cosmosDb 'br/public:avm/res/document-db/database-account:0.8.1' = {
+  name: 'cosmos-db'
   params: {
-    name: '${abbrs.webSitesAppService}backend-${resourceToken}'
+    name: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    databaseAccountOfferType: 'Standard'
+    defaultConsistencyLevel: 'Session'
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    sqlDatabases: [
+      {
+        name: 'star-database'
+        containers: [
+          {
+            name: 'users'
+            paths: ['/id']
+          }
+          {
+            name: 'posts'
+            paths: ['/user_id']
+          }
+          {
+            name: 'tarot_readings'
+            paths: ['/user_id']
+          }
+          {
+            name: 'live_streams'
+            paths: ['/host_id']
+          }
+        ]
+      }
+    ]
+  }
+}
+// App Service for STAR Platform (Flask backend serving React PWA)
+module starApp 'br/public:avm/res/web/site:0.8.0' = {
+  name: 'star-app'
+  params: {
+    name: '${abbrs.webSitesAppService}${resourceToken}'
     kind: 'app,linux'
     serverFarmResourceId: appServicePlan.outputs.resourceId
     location: location
-    tags: union(tags, { 'azd-service-name': 'star-backend' })
+    tags: union(tags, { 'azd-service-name': 'app' })
     managedIdentities: {
-      systemAssigned: false
-      userAssignedResourceIds: [starIdentity.outputs.resourceId]
+      systemAssigned: true
     }
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.11'
+      linuxFxVersion: 'PYTHON|3.10'
+      appCommandLine: 'gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:8000 --timeout 120 app:app'
       appSettings: [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: monitoring.outputs.applicationInsightsConnectionString
         }
         {
-          name: 'AZURE_CLIENT_ID'
-          value: starIdentity.outputs.clientId
+          name: 'COSMOS_DB_ENDPOINT'
+          value: cosmosDb.outputs.endpoint
+        }
+        {
+          name: 'COSMOS_DB_DATABASE_NAME'
+          value: 'star-database'
+        }
+        {
+          name: 'FLASK_ENV'
+          value: 'production'
+        }
+        {
+          name: 'SECRET_KEY'
+          value: 'u9rBZF6vpyLXz81mSnt3abEgD7wok0POfqejKUG5McYVJN4ChWAxlTHQsd2RIi'
+        }
+        {
+          name: 'WEBSITE_PYTHON_VERSION'
+          value: '3.10'
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
+          value: 'false'
         }
         {
-          name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
+          name: 'PORT'
+          value: '8000'
         }
       ]
     }
   }
 }
 
-// App Service for Frontend (Next.js)
-module starFrontend 'br/public:avm/res/web/site:0.8.0' = {
-  name: 'star-frontend'
-  params: {
-    name: '${abbrs.webSitesAppService}frontend-${resourceToken}'
-    kind: 'app,linux'
-    serverFarmResourceId: appServicePlan.outputs.resourceId
-    location: location
-    tags: union(tags, { 'azd-service-name': 'star-frontend' })
-    managedIdentities: {
-      systemAssigned: false
-      userAssignedResourceIds: [starIdentity.outputs.resourceId]
-    }
-    siteConfig: {
-      linuxFxVersion: 'NODE|18-lts'
-      appSettings: [
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: monitoring.outputs.applicationInsightsConnectionString
-        }
-        {
-          name: 'AZURE_CLIENT_ID'
-          value: starIdentity.outputs.clientId
-        }
-        {
-          name: 'NEXT_PUBLIC_API_URL'
-          value: 'https://${starBackend.outputs.defaultHostname}/api/v1'
-        }
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
-        }
-        {
-          name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
-        }
-      ]
-    }
-  }
-}
-
-output AZURE_RESOURCE_STAR_BACKEND_ID string = starBackend.outputs.resourceId
-output AZURE_RESOURCE_STAR_FRONTEND_ID string = starFrontend.outputs.resourceId
-output STAR_BACKEND_URI string = 'https://${starBackend.outputs.defaultHostname}'
-output STAR_FRONTEND_URI string = 'https://${starFrontend.outputs.defaultHostname}'
+output AZURE_RESOURCE_STAR_APP_ID string = starApp.outputs.resourceId
+output STAR_APP_URI string = 'https://${starApp.outputs.defaultHostname}'
+output COSMOS_DB_ENDPOINT string = cosmosDb.outputs.endpoint

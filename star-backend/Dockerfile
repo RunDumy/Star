@@ -1,4 +1,4 @@
-FROM python:3.13.4-slim
+FROM python:3.10-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -7,16 +7,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
 
-# Install Python dependencies explicitly
-RUN pip install --no-cache-dir -r requirements.txt gunicorn==23.0.0 redis==5.0.8
+# Copy requirements from the Flask app directory
+COPY star_backend_flask/requirements.txt .
 
-COPY . .
-ENV PORT=5000
+# Install Python dependencies including eventlet for SocketIO
+RUN pip install --no-cache-dir -r requirements.txt gunicorn==21.2.0 eventlet==0.33.3
 
-# Ensure the application is ready to run
-RUN echo "Starting Star Backend for pretty-gentleness project"
+# Copy the Flask application
+COPY star_backend_flask/ .
 
-# Use gunicorn to run the application
-CMD ["gunicorn", "--threads", "4", "-b", "0.0.0.0:5000", "app:app"]
+# Copy the frontend static files (will be handled during deployment)
+# COPY star-frontend/out ./static/
+
+# Set environment variables
+ENV FLASK_ENV=production
+ENV PORT=8000
+ENV PYTHONPATH=/app
+
+# Expose the port
+EXPOSE 8000
+
+# Use Gunicorn with eventlet worker for SocketIO support
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8000", "--timeout", "120", "app:app"]

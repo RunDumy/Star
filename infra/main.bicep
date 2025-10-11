@@ -35,7 +35,6 @@ module resources 'resources.bicep' = {
 }
 
 // Outputs for the deployed resources
-output AZURE_RESOURCE_STAR_BACKEND_ID string = resources.outputs.AZURE_RESOURCE_STAR_BACKEND_ID
-output AZURE_RESOURCE_STAR_FRONTEND_ID string = resources.outputs.AZURE_RESOURCE_STAR_FRONTEND_ID
-output STAR_BACKEND_URI string = resources.outputs.STAR_BACKEND_URI
-output STAR_FRONTEND_URI string = resources.outputs.STAR_FRONTEND_URI
+output AZURE_RESOURCE_STAR_APP_ID string = resources.outputs.AZURE_RESOURCE_STAR_APP_ID
+output STAR_APP_URI string = resources.outputs.STAR_APP_URI
+output COSMOS_DB_ENDPOINT string = resources.outputs.COSMOS_DB_ENDPOINT
