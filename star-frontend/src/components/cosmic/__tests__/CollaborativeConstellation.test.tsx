@@ -21,9 +21,21 @@ jest.mock('@react-three/drei', () => ({
 // Mock the contexts and hooks
 jest.mock('@/contexts/CollaborationContext', () => ({
   useCollaboration: () => ({
-    users: [],
+    users: [
+      { id: 'test-user', name: 'Test User', galactic_tone: 1 },
+      { id: 'user-1', name: 'User 1', galactic_tone: 2 }
+    ],
+    onlineUsers: new Map([
+      ['test-user', { id: 'test-user', name: 'Test User', galactic_tone: 1 }],
+      ['user-1', { id: 'user-1', name: 'User 1', galactic_tone: 2 }]
+    ]),
     currentUser: { id: 'test-user' },
     updateUserPosition: jest.fn(),
+    socket: {
+      emit: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
+    },
   }),
 }));
 
@@ -38,6 +50,15 @@ jest.mock('@/hooks/useWebRTC', () => ({
 describe('CollaborativeConstellation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Create a mock canvas for tests that need it
+    const mockCanvas = document.createElement('canvas');
+    document.body.appendChild(mockCanvas);
+  });
+
+  afterEach(() => {
+    // Clean up mock canvas
+    const canvases = document.querySelectorAll('canvas');
+    canvases.forEach(canvas => canvas.remove());
   });
 
   it('renders constellation scene', () => {
@@ -67,15 +88,21 @@ describe('CollaborativeConstellation', () => {
     };
 
     // Override the useThree mock for this test
-    jest.mock('@react-three/fiber', () => ({
-      useFrame: jest.fn(),
-      useThree: () => ({
-        camera: { position: { set: jest.fn() }, lookAt: jest.fn() },
-        scene: { add: jest.fn(), remove: jest.fn() },
-        gl: { domElement: document.createElement('canvas') },
-        raycaster: mockRaycaster,
-      }),
-    }));
+    jest.mock('@react-three/fiber', () => {
+      const mockCanvas = { tagName: 'CANVAS', width: 800, height: 600 };
+      return {
+        useFrame: jest.fn(),
+        useThree: () => ({
+          camera: { position: { set: jest.fn() }, lookAt: jest.fn() },
+          scene: { add: jest.fn(), remove: jest.fn() },
+          gl: { domElement: mockCanvas },
+          raycaster: {
+            setFromCamera: jest.fn(),
+            intersectObjects: jest.fn().mockReturnValue([]),
+          },
+        }),
+      };
+    });
 
     render(<CollaborativeConstellation />);
 

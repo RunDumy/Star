@@ -1,4 +1,4 @@
-import { render, fireEvent, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { GazeVoiceNavigator } from '../GazeVoiceNavigator';
 
 // Mock the hooks
@@ -134,27 +134,24 @@ describe('GazeVoiceNavigator', () => {
   });
 });
 
-  it('renders children', () => {
-    const { getByText } = render(
-      <GazeVoiceNavigator>
-        <div>Test content</div>
-      </GazeVoiceNavigator>
-    );
+it('renders children', () => {
+  const { getByText } = render(
+    <GazeVoiceNavigator>
+      <div>Test content</div>
+    </GazeVoiceNavigator>
+  );
 
-    expect(getByText('Test content')).toBeInTheDocument();
-  });
-
-  it('shows navigation controls when active', () => {
-    // We can't easily test state changes in the current test environment
-    // but we can verify the component renders with default props
-    const { container } = render(
-      <GazeVoiceNavigator showDebug={true}>
-        <div>Test content</div>
-      </GazeVoiceNavigator>
-    );
-
-    expect(container.querySelector('.gaze-voice-navigator')).toBeInTheDocument();
-  });
+  expect(getByText('Test content')).toBeInTheDocument();
 });
-  });
+
+it('shows navigation controls when active', () => {
+  // We can't easily test state changes in the current test environment
+  // but we can verify the component renders with default props
+  const { container } = render(
+    <GazeVoiceNavigator showDebug={true}>
+      <div>Test content</div>
+    </GazeVoiceNavigator>
+  );
+
+  expect(container.querySelector('.gaze-voice-navigator')).toBeInTheDocument();
 });

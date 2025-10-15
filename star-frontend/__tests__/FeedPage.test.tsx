@@ -5,13 +5,6 @@ jest.mock("@/lib/AuthContext", () => ({
   useAuth: jest.fn(),
 }));
 
-jest.mock("@/lib/supabase", () => ({
-  supabase: {
-    getPosts: jest.fn(),
-    createPost: jest.fn(),
-  },
-}));
-
 import { useAuth } from "@/lib/AuthContext";
 
 global.fetch = jest.fn();

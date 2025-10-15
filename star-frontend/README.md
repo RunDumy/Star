@@ -1,6 +1,6 @@
 # Star App Frontend
 
-A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Deploy on Vercel and connect to the Flask backend on Azure App Service.
+A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Connects to the Flask backend on Azure App Service.
 
 ## Quick Start
 
@@ -17,12 +17,9 @@ A minimal, beginner-friendly Next.js frontend for the Star App with a starry bac
 - Axios helper with JWT Authorization header
 - Input sanitization via DOMPurify
 
-## Deploy to Vercel
+## Deployment
 
-- Push this folder as a repo
-- Import repo in Vercel
-- Add env var NEXT_PUBLIC_API_URL
-- Deploy
+Deploy the frontend to any static hosting provider that supports Next.js. Configure the environment variable NEXT_PUBLIC_API_URL to point to your Azure App Service backend.
 
 Tip: Compress public images and keep particles count low for best performance on free plans.
 

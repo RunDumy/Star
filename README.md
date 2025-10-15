@@ -1,27 +1,94 @@
-# 🌌✨🃏 **STAR** — Revolutionary Zodiac Social Media with Live Streaming & 3D Cosmos 🃏✨🌌
+# 🌌 STAR Platform: Cosmic Social Experience
 
-_Outshining Instagram & TikTok with Archetypal Intelligence, Real-time Social Features, and Cosmic Connection_
+## Overview
 
-[![Deploy on Vercel](https://vercel.com/button)](https://vercel.com)
-[![Deploy on Azure](https://aka.ms/deploytoazurebutton)](https://azure.microsoft.com)
+STAR is a zodiac-themed social media platform that fuses mythic identity, ritual customization, and immersive 3D UX. Built with Next.js + TypeScript frontend and Flask backend on Azure, STAR combines the familiarity of Facebook's layout, MySpace's customization, Instagram/TikTok's addictive feed, and unique features like tarot, badges, numerology, and planetary navigation.
 
-## 🎯 **What is STAR?**
+## 🚀 Quick Start
 
-**STAR** is a revolutionary **Zodiac Social Media Platform** powered by **mythical and occult intelligence**. It transcends traditional social media by weaving together astrology, tarot, archetypes, and planetary symbolism into a living, interactive oracle.
+```bash
+# Clone repository
+git clone https://github.com/RunDumy/Star.git
+cd Star
 
-🔮 **Drag-and-Drop Tarot** — Ritual-based card placement with elemental energy flow
-🎵 **Cosmic Playlists** — AI-curated soundtracks tuned to archetypal moods and planetary alignments
-🌍 **Astrological Context** — Location-aware celestial overlays, moon phase resonance, and sun sign filters
-🎨 **Visual Sharing** — Canvas-generated spreads with starfield gradients and occult glyphs
-🧬 **Personalized Insights** — Elemental balance, zodiac archetype mapping, and mentor overlays drawn from esoteric traditions
+# Docker setup (recommended)
+docker-compose up --build
 
-STAR is not a tool—it's a **living mythos**, a **digital grimoire**, and a **social constellation** where users channel their inner archetypes, share cosmic revelations, and participate in the unfolding zodiacal narrative.
+# Access at:
+# Frontend: http://localhost:3000
+# Backend: http://localhost:5000
+```
 
-## 🚀 **Live Demo**
+## 🧭 User Experience Journey
 
-- **Frontend**: [Deployed on Vercel](https://your-vercel-app.vercel.app)
-- **Backend API**: [Deployed on Azure App Service](https://star-backend.azurewebsites.net)
-- **Tarot Experience**: Visit `/tarot-reading` on your deployed frontend
+### ✨ Registration & Zodiac Discovery
+
+Users input their birthdate to auto-calculate zodiac signs across Western, Chinese, Vedic, Mayan, and Galactic systems, creating a personalized cosmic identity.
+
+**Implementation:** `star-frontend/pages/register.tsx` + `/api/v1/zodiac-calculator`
+
+### 🧬 Cosmic Profile Generation
+
+Generates a comprehensive profile with archetypal analysis, compatibility insights, Life Path Number, and badge customization.
+
+**Implementation:** `star-frontend/components/cosmic/CosmicProfile.tsx` + Cosmos DB `profiles` container
+
+### 🪐 Immersive 3D Cosmos
+
+A 3D environment with planetary navigation, multi-layer parallax starfields, and zodiac avatars with animated traits.
+
+**Implementation:** `star-frontend/components/cosmic/PlanetaryNav.tsx` + `@react-three/fiber`
+
+### 📱 Social Feed & Ritual Actions
+
+Infinite scroll feed with tarot draws, badge unlocks, ritual reflections, and zodiac-specific interactions (e.g., Scorpio's "Sting" comment).
+
+**Implementation:** `star-frontend/pages/cosmic-feed.tsx` + `/api/v1/social-actions`
+
+### 🔮 Tarot Reading System
+
+Drag-and-drop tarot spreads with AI interpretations influenced by zodiac and numerology.
+
+**Implementation:** `star-frontend/components/cosmic/TarotDraw.tsx` + Konva.js canvas
+
+### 📡 Live Streaming & Community
+
+AgoraRTC streaming with zodiac avatar effects and element-based chat rooms (Fire, Water, Air, Earth).
+
+**Implementation:** `star-frontend/components/cosmic/CommunityHub.tsx` + Azure Web PubSub
+
+## 🔗 Documentation
+
+- [Full User Experience Journey](./docs/USER_EXPERIENCE_JOURNEY.md)
+- [Badge & Sigil System](./docs/BADGE_SIGIL_SYSTEM.md)
+- [Implementation Roadmap](./docs/IMPLEMENTATION_ROADMAP.md)
+- [API Reference](./docs/API_REFERENCE.md)  
+- [Onboarding Ritual Narrative](./docs/ONBOARDING_RITUAL.md)
+- [Azure Deployment Guide](./docs/AZURE_DEPLOYMENT_GUIDE.md)
+
+## 🛠️ Development Setup
+
+```bash
+# Install frontend dependencies
+cd star-frontend
+npm install
+
+# Install backend dependencies  
+cd star-backend/star_backend_flask
+pip install -r ../requirements.txt
+
+# Run locally
+docker-compose up --build
+```
+
+## 🎯 Contributing
+
+- Follow `/docs/CONTRIBUTING.md` for guidelines.
+- Use feature branches and test with Docker Compose.
+- Ensure Azure F1 Free Tier compatibility.
+
+---
+*Building mythic interfaces for cosmic identity* ✨
 
 ## 🏗️ **Architecture**
 
@@ -193,35 +260,32 @@ git commit -m "Ready for production launch! 🌌"
 git push origin main
 ```
 
-2. **Vercel Deployment** (Frontend)
+2. **Frontend Deployment**
 
-   - Automatically deploys on push
-   - Global CDN with instant global distribution
-   - `$ vercel --prod` for production release
+   - Deploy to any static hosting provider (Azure Static Web Apps, Netlify, etc.)
+   - Configure environment variables for backend URL
 
-3. **Render Deployment** (Backend)
-   - GitHub-connected auto-deployment
-   - PostgreSQL database auto-configuration
-   - `$ render deploy` if needed
+3. **Azure App Service Deployment** (Backend)
+   - Deploy to Azure App Service for production
+   - Azure Cosmos DB for data persistence
+   - See `AZURE_DEPLOYMENT_GUIDE.md` for details
 
 ### **Deployment Files**
 
-- **`vercel.json`**: Frontend routing and API proxying
-- **`render.yaml`**: Infrastructure-as-code for backend
-- **`DEPLOYMENT_GUIDE.md`**: Complete production setup
+- **`azure.yaml`**: Azure App Service infrastructure configuration
+- **`AZURE_DEPLOYMENT_GUIDE.md`**: Complete Azure production setup
 
 ### **Environment Setup**
 
 ```bash
 # Frontend (.env.local)
-NEXT_PUBLIC_API_URL=https://star-backend.onrender.com
+NEXT_PUBLIC_API_URL=https://star-backend.azurewebsites.net
 
-# Backend (Render dashboard)
+# Backend (Azure App Service Configuration)
 SECRET_KEY=your_secret_key
 JWT_SECRET_KEY=your_jwt_secret
 JWT_ALGORITHM=HS256
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+COSMOS_DB_CONNECTION_STRING=your_cosmos_db_connection_string
 AGORA_APP_ID=your_agora_app_id
 AGORA_APP_CERTIFICATE=your_agora_certificate
 REDIS_URL=your_redis_url

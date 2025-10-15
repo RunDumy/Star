@@ -1,4 +1,5 @@
 'use client';
+import { getZodiacActionByType } from '@/lib/zodiacActions';
 import { MessageCircle, Share2, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
 import LazyLoad from 'react-lazyload';
@@ -104,9 +105,8 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
 
       {/* 3D Content with Interactive Depth */}
       <button
-        className={`text-white mb-4 transition-all duration-300 depth-2 text-left ${
-          isExpanded ? '' : 'line-clamp-3'
-        }`}
+        className={`text-white mb-4 transition-all duration-300 depth-2 text-left ${isExpanded ? '' : 'line-clamp-3'
+          }`}
         onClick={() => setIsExpanded(!isExpanded)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -213,7 +213,12 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
           aria-expanded={!!showComments}
         >
           <MessageCircle className="w-5 h-5" />
-          <span>Comment</span>
+          <span>
+            {(() => {
+              const commentAction = getZodiacActionByType(post.zodiac_sign, 'comment');
+              return commentAction || 'WISDOM';
+            })()}
+          </span>
         </button>
 
         <button
@@ -221,7 +226,12 @@ export function CosmicPost3D({ post, index }: CosmicPost3DProps) {
           aria-label="Echo this post"
         >
           <Share2 className="w-5 h-5" />
-          <span>Echo</span>
+          <span>
+            {(() => {
+              const shareAction = getZodiacActionByType(post.zodiac_sign, 'share');
+              return shareAction || 'COSMIC';
+            })()}
+          </span>
         </button>
       </div>
 

@@ -2,7 +2,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
-    '\\.(css|less|scss)$': 'identity-obj-proxy',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   collectCoverageFrom: [
@@ -15,10 +15,10 @@ module.exports = {
     '<rootDir>/test/**/*.{test,spec}.{ts,tsx}',
   ],
   transformIgnorePatterns: [
-    '/node_modules/(?!react-konva|konva)',
+    'node_modules/(?!(react-konva|konva|three|@react-three|tsparticles|react-tsparticles|@tsparticles)/)',
   ],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel.config.cjs' }],
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
   globals: {
     'import.meta.env': {

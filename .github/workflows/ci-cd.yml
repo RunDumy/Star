@@ -13,17 +13,14 @@ jobs:
     backend:
         uses: ./.github/workflows/backend.yml
 
-    supabase:
-        uses: ./.github/workflows/supabase.yml
-
     success:
-        needs: [frontend, backend, supabase]
+        needs: [frontend, backend]
         if: always()
         runs-on: ubuntu-latest
         steps:
             - name: Check All Jobs Passed
               run: |
-                  if [[ "${{ needs.frontend.result }}" == "success" && "${{ needs.backend.result }}" == "success" && "${{ needs.supabase.result }}" == "success" ]]; then
+                  if [[ "${{ needs.frontend.result }}" == "success" && "${{ needs.backend.result }}" == "success" ]]; then
                     echo "All jobs passed!"
                   else
                     echo "Some jobs failed!"

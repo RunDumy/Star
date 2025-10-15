@@ -9,32 +9,41 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
+// Resource group name parameter - MANDATORY for AZD
+param resourceGroupName string = 'rg-${environmentName}'
+
 // Tags that should be applied to all resources.
-// 
-// Note that 'azd-service-name' tags should be applied separately to service host resources.
-// Example usage:
-//   tags: union(tags, { 'azd-service-name': <service name in azure.yaml> })
 var tags = {
   'azd-env-name': environmentName
 }
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'rg-${environmentName}'
+  name: resourceGroupName
   location: location
   tags: tags
 }
 
+// Deploy all STAR platform resources
 module resources 'resources.bicep' = {
   scope: rg
-  name: 'resources'
+  name: 'star-platform-resources'
   params: {
     location: location
     tags: tags
   }
 }
 
-// Outputs for the deployed resources
-output AZURE_RESOURCE_STAR_APP_ID string = resources.outputs.AZURE_RESOURCE_STAR_APP_ID
-output STAR_APP_URI string = resources.outputs.STAR_APP_URI
-output COSMOS_DB_ENDPOINT string = resources.outputs.COSMOS_DB_ENDPOINT
+// MANDATORY Outputs for AZD
+output RESOURCE_GROUP_ID string = rg.id
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = resources.outputs.AZURE_CONTAINER_REGISTRY_ENDPOINT
+
+// Additional outputs for STAR platform
+output BACKEND_API_URL string = resources.outputs.BACKEND_API_URL
+output FRONTEND_URL string = resources.outputs.FRONTEND_URL
+output COSMOS_DB_ACCOUNT_NAME string = resources.outputs.COSMOS_DB_ACCOUNT_NAME
+output STORAGE_ACCOUNT_NAME string = resources.outputs.STORAGE_ACCOUNT_NAME
+output KEY_VAULT_NAME string = resources.outputs.KEY_VAULT_NAME
+output SIGNALR_SERVICE_NAME string = resources.outputs.SIGNALR_SERVICE_NAME
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.APPLICATIONINSIGHTS_CONNECTION_STRING
+output MANAGED_IDENTITY_CLIENT_ID string = resources.outputs.MANAGED_IDENTITY_CLIENT_ID

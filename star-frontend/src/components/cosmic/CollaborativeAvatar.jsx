@@ -1,4 +1,5 @@
 import { useCollaboration } from '@/contexts/CollaborationContext';
+import { useCosmicTheme } from '@/contexts/CosmicThemeContext';
 import { getActionColor } from '@/lib/zodiacActions';
 import { ALL_ZODIAC_ANIMATIONS, getToneEnhancedAnimation } from '@/lib/zodiacAnimations';
 import { getSystemForSign } from '@/lib/zodiacSystems';
@@ -8,7 +9,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGesture } from '@use-gesture/react';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-  // Custom ParticleSystem component for action effects
+// Custom ParticleSystem component for action effects
 const ParticleSystem = ({ action, isActive, color, userData }) => {
   const particlesRef = useRef();
   const [particles, setParticles] = useState([]);
@@ -161,7 +162,7 @@ export const CollaborativeAvatar = ({ userId, onClick, isCurrentUser = false }) 
     if (user) {
       // Get Galactic Tone information if available
       const galacticToneInfo = user.galactic_tone ? getGalacticTone(user.galactic_tone) : null;
-      
+
       setUserData({
         ...user,
         galacticToneInfo,
@@ -249,7 +250,7 @@ export const CollaborativeAvatar = ({ userId, onClick, isCurrentUser = false }) 
             });
             // Play sound effect
             const audio = new Audio(`/sounds/${action.toLowerCase()}.mp3`);
-            audio.play().catch(() => {}); // Handle playback errors
+            audio.play().catch(() => { }); // Handle playback errors
           }
         }
       }

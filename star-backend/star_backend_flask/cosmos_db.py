@@ -191,6 +191,25 @@ class CosmosDBHelper:
                 logging.error(f"Error getting post {post_id}: {e}")
         return None
 
+    def update_post(self, post_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update a post"""
+        container = self._get_container('posts')
+        if container:
+            try:
+                # Get existing post
+                existing_post = self.get_post_by_id(post_id)
+                if not existing_post:
+                    return None
+                
+                # Update fields
+                existing_post.update(updates)
+                
+                # Save updated post
+                return container.replace_item(item=post_id, body=existing_post)
+            except Exception as e:
+                logging.error(f"Error updating post {post_id}: {e}")
+        return None
+
     # Follow operations
     def create_follow(self, follow_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a follow relationship"""

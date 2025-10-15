@@ -67,3 +67,16 @@ old-history.bfg-report/
 
 .python_packages
 .azure
+
+# Backup and cleanup directories
+**/duplicates_backup/
+**/backup/
+**/old_files/
+**/*_backup/
+**/*_old/
+temp_deploy/
+
+# Cleanup and organization scripts (temporary)
+cleanup_duplicates.ps1
+organize_root.ps1
+move_deployment_docs.ps1

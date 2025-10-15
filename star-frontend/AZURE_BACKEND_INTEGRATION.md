@@ -16,17 +16,12 @@ https://star-app-backend.azurewebsites.net
 
 1. Local development: Update `.env.local` with `NEXT_PUBLIC_API_URL=https://star-app-backend.azurewebsites.net`
 
-## Environment Variables2. Vercel deployment: Add the environment variable in Vercel dashboard:
+2. Production deployment: Configure the environment variable in your hosting provider's dashboard:
+   - Add `NEXT_PUBLIC_API_URL=https://star-app-backend.azurewebsites.net`
 
-   - Settings > Environment Variables
+## Testing
 
-1. Local development: Update `.env.local` with `NEXT_PUBLIC_API_URL=https://star-app-backend.azurewebsites.net`   - Add `NEXT_PUBLIC_API_URL=https://star-app-backend.azurewebsites.net`
-
-2. Vercel deployment: Add the environment variable in Vercel dashboard:
-
-   - Settings > Environment Variables## Testing
-
-   - Add `NEXT_PUBLIC_API_URL=https://star-app-backend.azurewebsites.net`After updating environment variables:
+After updating environment variables:
 
 1. Test locally: `npm run dev` from the `star-frontend` directory
 

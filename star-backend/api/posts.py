@@ -5,18 +5,8 @@ import socketio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-# TODO: Replace with Azure Cosmos DB imports
-# from supabase import create_client
-
 router = APIRouter()
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=["http://localhost:3000", "https://star-app.vercel.app"])
-
-# TODO: Replace with Azure Cosmos DB client initialization
-# supabase = create_client(
-#     os.getenv("SUPABASE_URL", "https://your-supabase-url.supabase.co"),
-#     os.getenv("SUPABASE_ANON_KEY", "your-supabase-anon-key")
-# )
-supabase = None  # Temporarily disabled during Azure migration
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=["http://localhost:3000"])
 
 # Socket.IO event handlers
 @sio.event
@@ -120,7 +110,8 @@ async def get_mood(user_id: str):
 
 def _fetch_recent_interactions(user_id: str):
     """Fetch the 10 most recent user interactions."""
-    return supabase.table("user_interactions").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(10).execute().data
+    # TODO: Replace with Azure Cosmos DB query
+    return []
 
 
 def _count_traits_from_interactions(interactions):
@@ -165,9 +156,5 @@ def _calculate_mood_from_traits(trait_counts):
 
 def _log_mood_interaction(user_id: str, mood: str, intensity: float):
     """Log the mood view interaction."""
-    supabase.table("user_interactions").insert({
-        "user_id": user_id,
-        "interaction_type": "mood_view",
-        "zodiac_sign": None,
-        "details": {"mood": mood, "intensity": intensity, "timestamp": datetime.now(timezone.utc).isoformat()}
-    }).execute()
+    # TODO: Replace with Azure Cosmos DB insert
+    pass

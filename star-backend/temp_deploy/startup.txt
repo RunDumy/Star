@@ -1,4 +1,0 @@
-# Azure App Service startup command
-# This file tells Azure how to start your Flask app
-
-web: gunicorn --bind=0.0.0.0:$PORT --workers=1 --timeout=120 main_azure:application

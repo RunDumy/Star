@@ -20,22 +20,4 @@ services:
       - CHOKIDAR_USEPOLLING=true
     command: ["npm", "run", "dev"]
 
-  # Supabase with local development settings
-  supabase:
-    environment:
-      - POSTGRES_PASSWORD=dev_password_change_me
-
-  # Additional development tools
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: star-pgadmin
-    restart: unless-stopped
-    ports:
-      - "5050:80"
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@star.dev
-      - PGADMIN_DEFAULT_PASSWORD=admin123
-    depends_on:
-      - supabase
-    networks:
-      - star-network
+  # Development tools can be added here if needed

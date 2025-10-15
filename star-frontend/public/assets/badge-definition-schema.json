@@ -1,0 +1,361 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://star-platform.com/schemas/badge-definition.json",
+    "title": "Badge Definition",
+    "description": "Schema for STAR platform badge and sigil definitions",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$",
+            "description": "Unique badge identifier (lowercase, underscores only)"
+        },
+        "name": {
+            "type": "string",
+            "description": "Human-readable badge name"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "sigil",
+                "badge",
+                "emblem",
+                "seal"
+            ],
+            "description": "Visual style category"
+        },
+        "category": {
+            "type": "string",
+            "enum": [
+                "zodiac_primary",
+                "zodiac_secondary",
+                "elemental",
+                "planetary",
+                "numerical",
+                "archetype",
+                "seasonal",
+                "achievement"
+            ],
+            "description": "Badge categorization for organization"
+        },
+        "alignment": {
+            "type": "object",
+            "properties": {
+                "zodiac": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "aries",
+                            "taurus",
+                            "gemini",
+                            "cancer",
+                            "leo",
+                            "virgo",
+                            "libra",
+                            "scorpio",
+                            "sagittarius",
+                            "capricorn",
+                            "aquarius",
+                            "pisces"
+                        ]
+                    },
+                    "description": "Compatible zodiac signs"
+                },
+                "element": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "fire",
+                            "water",
+                            "air",
+                            "earth"
+                        ]
+                    },
+                    "description": "Compatible elements"
+                },
+                "planet": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "sun",
+                            "moon",
+                            "mercury",
+                            "venus",
+                            "mars",
+                            "jupiter",
+                            "saturn",
+                            "uranus",
+                            "neptune",
+                            "pluto"
+                        ]
+                    },
+                    "description": "Compatible planetary rulers"
+                },
+                "archetype": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "seeker",
+                            "guardian",
+                            "rebel",
+                            "mystic"
+                        ]
+                    },
+                    "description": "Compatible archetypes"
+                },
+                "life_path": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "enum": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5,
+                            6,
+                            7,
+                            8,
+                            9,
+                            11,
+                            22,
+                            33
+                        ]
+                    },
+                    "description": "Compatible life path numbers"
+                }
+            }
+        },
+        "rarity": {
+            "type": "string",
+            "enum": [
+                "common",
+                "rare",
+                "epic",
+                "legendary"
+            ],
+            "description": "Badge rarity tier"
+        },
+        "visual": {
+            "type": "object",
+            "properties": {
+                "src": {
+                    "type": "string",
+                    "pattern": "^/assets/badges/.*\\.(svg|png)$",
+                    "description": "Path to badge image file"
+                },
+                "animation": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "gentle_pulse",
+                        "rhythmic_pulse",
+                        "complex_rotation",
+                        "multi_dimensional_transform",
+                        "stinger_sway",
+                        "mane_shimmer",
+                        "fluid_drift"
+                    ],
+                    "description": "Animation type for the badge"
+                },
+                "colors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "description": "Primary colors used in badge (hex format)"
+                },
+                "particles": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "star_dust",
+                        "elemental_sparks",
+                        "energy_waves",
+                        "reality_distortion",
+                        "dark_energy_trail"
+                    ],
+                    "description": "Particle effect system"
+                },
+                "glow": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "subtle_shimmer",
+                        "elemental_aura",
+                        "intense_radiance",
+                        "cosmic_brilliance",
+                        "crimson_aura"
+                    ],
+                    "description": "Glow effect around badge"
+                }
+            },
+            "required": [
+                "src",
+                "colors"
+            ]
+        },
+        "effects": {
+            "type": "object",
+            "properties": {
+                "hover": {
+                    "type": "string",
+                    "description": "Effect when user hovers over badge"
+                },
+                "click": {
+                    "type": "string",
+                    "description": "Effect when user clicks badge"
+                },
+                "placement": {
+                    "type": "string",
+                    "enum": [
+                        "free_form",
+                        "magnetic_snap",
+                        "grid_lock",
+                        "constellation_align"
+                    ],
+                    "description": "Behavior when placing badge in shrine"
+                }
+            }
+        },
+        "unlock_conditions": {
+            "type": "object",
+            "properties": {
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "initial_selection",
+                        "tarot_draw",
+                        "social_action",
+                        "seasonal_event",
+                        "achievement",
+                        "ritual_completion",
+                        "purchase"
+                    ],
+                    "description": "How this badge can be unlocked"
+                },
+                "requirement": {
+                    "type": "string",
+                    "description": "Specific requirement details (e.g., 'draw_death_card_as_scorpio')"
+                },
+                "seasonal": {
+                    "type": "boolean",
+                    "description": "Whether badge is only available during certain seasons"
+                },
+                "seasonal_period": {
+                    "type": "string",
+                    "enum": [
+                        "spring_equinox",
+                        "summer_solstice",
+                        "autumn_equinox",
+                        "winter_solstice",
+                        "scorpio_season",
+                        "full_moon",
+                        "new_moon",
+                        "mercury_retrograde"
+                    ],
+                    "description": "Specific seasonal availability period"
+                },
+                "prerequisites": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Other badges that must be unlocked first"
+                },
+                "difficulty": {
+                    "type": "string",
+                    "enum": [
+                        "trivial",
+                        "easy",
+                        "medium",
+                        "hard",
+                        "extreme"
+                    ],
+                    "description": "Difficulty level to unlock this badge"
+                }
+            },
+            "required": [
+                "method"
+            ]
+        },
+        "lore": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Mystical description and backstory of the badge"
+        },
+        "stats": {
+            "type": "object",
+            "properties": {
+                "mystical_resonance": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "How well this badge resonates with cosmic energies"
+                },
+                "visual_impact": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Visual prominence and eye-catching quality"
+                },
+                "rarity_score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Numerical rarity score for ranking"
+                },
+                "social_prestige": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "How impressive this badge is to other users"
+                }
+            }
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "created_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "When this badge was added to the system"
+                },
+                "created_by": {
+                    "type": "string",
+                    "description": "Designer or creator of the badge"
+                },
+                "version": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                    "description": "Badge definition version (semantic versioning)"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Additional tags for searching and categorization"
+                }
+            }
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "type",
+        "category",
+        "rarity",
+        "visual",
+        "unlock_conditions",
+        "lore"
+    ],
+    "additionalProperties": false
+}

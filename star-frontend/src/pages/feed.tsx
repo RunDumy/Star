@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/lib/AuthContext";
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -47,17 +46,9 @@ export default function FeedPage() {
 
     fetchPosts();
 
-    // Subscribe to real-time updates
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const postsChannel = supabase
-      .channel('posts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchPosts())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, () => fetchPosts())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => fetchPosts())
-      .subscribe();
-
+    // Real-time updates will be handled by backend API polling or WebSocket
     return () => {
-      supabase.removeChannel(postsChannel);
+      // Cleanup if needed
     };
   }, [user]);
 
@@ -106,7 +97,7 @@ export default function FeedPage() {
         ));
       }
     } catch (err) {
-        setError("Failed to update like");
+      setError("Failed to update like");
     }
   };
 

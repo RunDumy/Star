@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Space Environment Test</title>
+    <style>
+        @import url('./star-frontend/src/components/cosmic/universal-space.css');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+        }
+
+        .test-content {
+            position: relative;
+            z-index: 100;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #FFD700;
+        }
+
+        .planet-nav {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .planet-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .planet-button:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px currentColor;
+        }
+
+        .planet-feed {
+            background: linear-gradient(45deg, #10b981, #047857);
+        }
+
+        .planet-chat {
+            background: linear-gradient(45deg, #3b82f6, #1e40af);
+        }
+
+        .planet-profile {
+            background: linear-gradient(45deg, #8b5cf6, #7c3aed);
+        }
+
+        .planet-explore {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+
+        .planet-tarot {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+
+        .planet-community {
+            background: linear-gradient(45deg, #06b6d4, #0891b2);
+        }
+
+        .description {
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Universal space background -->
+    <div class="universal-space-void" id="spaceBackground"></div>
+
+    <!-- Content overlay -->
+    <div class="test-content">
+        <h1 class="glitter-text">🌌 STAR Universal Space Environment 🌌</h1>
+
+        <div class="cosmic-content-overlay">
+            <p class="description">
+                Welcome to the enhanced 3D space experience! This implementation features:
+            </p>
+            <ul style="text-align: left; max-width: 500px; margin: 20px auto;">
+                <li>🌟 Multi-layer parallax starfield with 3000+ twinkling stars</li>
+                <li>☄️ Cosmic dust particles with realistic drift motion</li>
+                <li>🌌 Subtle nebula effects for deep space atmosphere</li>
+                <li>🪐 Interactive planetary navigation system</li>
+                <li>🎭 MySpace-style glitter text and neon borders</li>
+                <li>🌫️ Space fog for enhanced depth perception</li>
+            </ul>
+        </div>
+
+        <div class="planet-nav">
+            <button class="planet-button planet-feed" onclick="navigateTo('feed')">
+                🌱<br>Cosmic<br>Feed
+            </button>
+            <button class="planet-button planet-chat" onclick="navigateTo('chat')">
+                💬<br>Star<br>Chat
+            </button>
+            <button class="planet-button planet-profile" onclick="navigateTo('profile')">
+                ⭐<br>Soul<br>Profile
+            </button>
+            <button class="planet-button planet-explore" onclick="navigateTo('explore')">
+                🔭<br>Cosmic<br>Explorer
+            </button>
+            <button class="planet-button planet-tarot" onclick="navigateTo('tarot')">
+                🔮<br>Tarot<br>Oracle
+            </button>
+            <button class="planet-button planet-community" onclick="navigateTo('community')">
+                👥<br>Cosmic<br>Community
+            </button>
+        </div>
+
+        <div class="universal-space-ui">
+            <div class="space-nav-indicator">
+                <span>🚀 Click planets to navigate • Mouse to explore cosmos</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create enhanced starfield background
+        function createUniversalStarfield() {
+            const container = document.getElementById('spaceBackground');
+
+            // Create multiple star layers
+            const layers = [
+                { count: 1500, className: 'star-layer-1', sizes: ['small', 'medium', 'large'] },
+                { count: 1000, className: 'star-layer-2', sizes: ['small', 'medium', 'large'] },
+                { count: 500, className: 'star-layer-3', sizes: ['small', 'medium', 'large'] }
+            ];
+
+            layers.forEach(layer => {
+                const layerDiv = document.createElement('div');
+                layerDiv.className = `${layer.className} universal-starfield`;
+
+                for (let i = 0; i < layer.count; i++) {
+                    const star = document.createElement('div');
+                    const sizeType = layer.sizes[Math.floor(Math.random() * layer.sizes.length)];
+                    star.className = `star ${sizeType}`;
+                    star.style.left = `${Math.random() * 100}%`;
+                    star.style.top = `${Math.random() * 100}%`;
+                    star.style.animationDelay = `${Math.random() * 8}s`;
+
+                    // Add color variation
+                    const colors = [
+                        'rgba(255,255,255,0.9)',
+                        'rgba(135,206,235,0.8)',
+                        'rgba(255,220,180,0.7)',
+                        'rgba(200,200,255,0.8)'
+                    ];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    star.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
+
+                    layerDiv.appendChild(star);
+                }
+
+                container.appendChild(layerDiv);
+            });
+
+            // Create cosmic dust particles
+            for (let i = 0; i < 60; i++) {
+                const dust = document.createElement('div');
+                dust.className = 'cosmic-dust-particle';
+                dust.style.left = `${Math.random() * 100}%`;
+                dust.style.top = `${Math.random() * 100}%`;
+                dust.style.width = `${Math.random() * 6 + 2}px`;
+                dust.style.height = dust.style.width;
+                dust.style.animationDelay = `${Math.random() * 25}s`;
+                dust.style.setProperty('--move-x', `${Math.random() * 300 - 150}px`);
+                dust.style.setProperty('--move-y', `${Math.random() * 200 - 100}px`);
+                container.appendChild(dust);
+            }
+
+            // Add nebula effects
+            for (let i = 0; i < 5; i++) {
+                const nebula = document.createElement('div');
+                nebula.style.position = 'absolute';
+                nebula.style.left = `${Math.random() * 100}%`;
+                nebula.style.top = `${Math.random() * 100}%`;
+                nebula.style.width = `${200 + Math.random() * 300}px`;
+                nebula.style.height = `${150 + Math.random() * 200}px`;
+                nebula.style.background = `radial-gradient(ellipse, rgba(${Math.floor(Math.random() * 100)}, ${100 + Math.floor(Math.random() * 155)}, ${200 + Math.floor(Math.random() * 55)}, 0.05) 0%, transparent 70%)`;
+                nebula.style.borderRadius = '50%';
+                nebula.style.filter = 'blur(20px)';
+                nebula.style.animation = `dust-drift ${30 + Math.random() * 20}s infinite linear`;
+                nebula.style.setProperty('--move-x', `${Math.random() * 50 - 25}px`);
+                nebula.style.setProperty('--move-y', `${Math.random() * 50 - 25}px`);
+                container.appendChild(nebula);
+            }
+
+            // Add space fog overlay
+            const fogLayer = document.createElement('div');
+            fogLayer.className = 'space-fog';
+            container.appendChild(fogLayer);
+        }
+
+        // Navigation function
+        function navigateTo(destination) {
+            console.log(`🪐 Navigating to: ${destination}`);
+
+            // Create sparkle effect
+            createSparkleEffect(event.target);
+
+            // In a real app, this would use router.push()
+            alert(`🚀 Launching to ${destination.charAt(0).toUpperCase() + destination.slice(1)} Planet!\\n\\nIn the full app, this would navigate to:\\n- Cosmic Feed: /CosmicFeed\\n- Star Chat: /chat\\n- Soul Profile: /ZodiacProfile\\n- Cosmic Explorer: /cosmic-dashboard\\n- Tarot Oracle: /tarot-reading\\n- Cosmic Community: /community`);
+        }
+
+        // Sparkle effect for planet clicks
+        function createSparkleEffect(element) {
+            for (let i = 0; i < 12; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.style.position = 'absolute';
+                sparkle.style.width = '4px';
+                sparkle.style.height = '4px';
+                sparkle.style.background = '#FFD700';
+                sparkle.style.borderRadius = '50%';
+                sparkle.style.pointerEvents = 'none';
+                sparkle.style.zIndex = '1000';
+
+                const rect = element.getBoundingClientRect();
+                sparkle.style.left = (rect.left + rect.width / 2) + 'px';
+                sparkle.style.top = (rect.top + rect.height / 2) + 'px';
+
+                const angle = (i / 12) * Math.PI * 2;
+                const distance = 50 + Math.random() * 30;
+                sparkle.style.animation = `sparkle-burst 0.8s ease-out forwards`;
+                sparkle.style.setProperty('--end-x', Math.cos(angle) * distance + 'px');
+                sparkle.style.setProperty('--end-y', Math.sin(angle) * distance + 'px');
+
+                document.body.appendChild(sparkle);
+
+                setTimeout(() => sparkle.remove(), 800);
+            }
+        }
+
+        // Add sparkle burst animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkle-burst {
+                0% {
+                    transform: translate(0, 0) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(var(--end-x), var(--end-y)) scale(0.2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize the starfield when page loads
+        document.addEventListener('DOMContentLoaded', createUniversalStarfield);
+    </script>
+</body>
+
+</html>

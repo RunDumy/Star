@@ -7,6 +7,9 @@ import { Canvas, extend, useFrame } from "@react-three/fiber";
 import { useDrag } from "@use-gesture/react";
 import Link from "next/link";
 import * as THREE from "three";
+import { CosmicLighting } from "./cosmic/CosmicLighting";
+import { CosmicParticles } from "./cosmic/CosmicParticles";
+import { CosmicSpace } from "./cosmic/CosmicSpace";
 
 // DistortionAuraMaterial (unchanged)
 const DistortionAuraMaterial = shaderMaterial(
@@ -713,19 +716,19 @@ function CosmicTimeline({ position, user }) {
               time={Date.now() / 1000}
             />
           </mesh>
-            <Text
-              position={[points[i].x, points[i].y + 0.15, points[i].z]}
-              fontSize={0.1}
-              color={eventColors[event.type] || new THREE.Color("#ffffff")}
-            >
-              {event.type === "tarot_pull" 
-                ? `Tarot: ${event.details.card}` 
-                : event.type === "transit_view" 
-                ? `Transit: ${event.details.transit}` 
+          <Text
+            position={[points[i].x, points[i].y + 0.15, points[i].z]}
+            fontSize={0.1}
+            color={eventColors[event.type] || new THREE.Color("#ffffff")}
+          >
+            {event.type === "tarot_pull"
+              ? `Tarot: ${event.details.card}`
+              : event.type === "transit_view"
+                ? `Transit: ${event.details.transit}`
                 : `Trait Click: ${event.zodiac_sign}`}
-            </Text>
-          </group>
-        ))}
+          </Text>
+        </group>
+      ))}
       <Text
         position={[0, -0.5, 0]}
         fontSize={0.2}
@@ -915,19 +918,52 @@ export default function CosmicInterface() {
 
   return (
     <div className="h-screen w-full bg-black relative">
-      <Canvas camera={{ position: [0, 0, 15] }}>
-        <ambientLight intensity={0.4} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <Stars />
-        <Nebula />
-        <PlanetButton position={[-3, 2, 0]} text="Home" href="/home" zodiac="Aries" size={0.8} color="#ff4500" />
-        <PlanetButton position={[0, 2, 0]} text="Profile" href="/profile" zodiac="Leo" size={0.4} color="#ffd700" isMoon />
-        <ZodiacDNAStrand position={[-1.5, 2.5, 0]} user={user} />
-        <CosmicTimeline position={[1.5, 2.5, 0]} user={user} />
-        <MoodRings position={[-1.5, 2.5, 0]} user={user} />
-        <PlanetButton position={[3, 2, 0]} text="Feed" href="/feed" zodiac="Virgo" size={0.6} color="#00ff7f" />
-        <PlanetButton position={[0, -1, 0]} text="Community" href="/community" zodiac="Libra" size={0.5} color="#1e90ff" />
-        <OrbitControls enableZoom={true} enablePan={true} />
+      <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
+        <CosmicSpace starCount={25000} nebulaCount={3} shootingStarCount={3}>
+          <CosmicLighting
+            ambientIntensity={0.1}
+            pointLightCount={6}
+            dynamicLights={true}
+            colorScheme="mixed"
+          />
+
+          {/* Cosmic dust particles */}
+          <CosmicParticles
+            count={2000}
+            type="dust"
+            color="#4a90e2"
+            size={0.5}
+            spread={200}
+            speed={0.005}
+          />
+
+          {/* Nebula particles */}
+          <CosmicParticles
+            count={500}
+            type="nebula"
+            color="#7c3aed"
+            size={2}
+            spread={150}
+            speed={0.002}
+            position={[50, 0, -50]}
+          />
+
+          <PlanetButton position={[-3, 2, 0]} label="Home" route="/home" size={0.8} color="#ff4500" planetType="rocky" />
+          <PlanetButton position={[0, 2, 0]} label="Profile" route="/profile" size={0.4} color="#ffd700" planetType="ice" />
+          <ZodiacDNAStrand position={[-1.5, 2.5, 0]} user={user} />
+          <CosmicTimeline position={[1.5, 2.5, 0]} user={user} />
+          <MoodRings position={[-1.5, 2.5, 0]} user={user} />
+          <PlanetButton position={[3, 2, 0]} label="Feed" route="/feed" size={0.6} color="#00ff7f" planetType="rocky" />
+          <PlanetButton position={[0, -1, 0]} label="Community" route="/community" size={0.5} color="#1e90ff" planetType="gas" hasAtmosphere />
+
+          <OrbitControls
+            enableZoom={true}
+            enablePan={true}
+            minDistance={3}
+            maxDistance={150}
+            zoomSpeed={0.6}
+          />
+        </CosmicSpace>
       </Canvas>
       {user && (
         <div className="absolute top-4 left-4 text-white z-10 bg-black/50 p-4 rounded-lg">

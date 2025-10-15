@@ -4,7 +4,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import AuthGuard from './AuthGuard';
+import { AuthGuard } from './AuthGuard';
 
 const TarotCard3D = ({ cardName }: { cardName: string }) => {
   return (
@@ -19,13 +19,13 @@ export function MatchmakingInner(): any {
   const [connections, setConnections] = useState({ sent: [], received: [] });
   const [loading, setLoading] = useState(false);
   const [zodiacFilter, setZodiacFilter] = useState<string>('')
-  const [tab, setTab] = useState<'suggestions'|'connections'|'horoscopes'>('suggestions')
+  const [tab, setTab] = useState<'suggestions' | 'connections' | 'horoscopes'>('suggestions')
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedConnection, setSelectedConnection] = useState<any>(null)
   const [tarotCard, setTarotCard] = useState<any>(null);
   const [isTarotModalOpen, setIsTarotModalOpen] = useState(false);
   const [userMood, setUserMood] = useState<{ mood: string; intensity: number } | null>(null);
-  const ZODIAC_SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
+  const ZODIAC_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
 
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
@@ -65,7 +65,7 @@ export function MatchmakingInner(): any {
     }
   }
 
-  async function respondToConnection(action: 'accept'|'reject', connectionId: number) {
+  async function respondToConnection(action: 'accept' | 'reject', connectionId: number) {
     try {
       await api.post('/api/v1/matchmaking/connection', { action, connection_id: connectionId });
       setModalOpen(false)

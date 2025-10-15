@@ -42,8 +42,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    # The service uses the Supabase CLI to emulate the full stack (Postgres, Realtime, Auth, Storage).
-    # It mounts the local database schema at /work/database so the CLI can apply it on start.
+    # Local PostgreSQL for development if needed (project uses Azure Cosmos DB in production)
 
 volumes:
   postgres_data:

@@ -1,10 +1,10 @@
-// STAR PWA Service Worker
-// Enhanced offline functionality and caching for cosmic social network
+// Star Platform Service Worker - Advanced Offline Support
+// Enhanced offline functionality, background sync, and caching for cosmic social network
 
-const CACHE_NAME = 'star-pwa-v1.0.0';
-const STATIC_CACHE = 'star-static-v1';
-const API_CACHE = 'star-api-v1';
-const IMAGES_CACHE = 'star-images-v1';
+const CACHE_NAME = 'star-cosmic-cache-v2';
+const API_CACHE_NAME = 'star-api-cache-v2';
+const STATIC_CACHE_NAME = 'star-static-cache-v2';
+const IMAGES_CACHE = 'star-images-v2';
 
 // Static assets to cache
 const STATIC_ASSETS = [
@@ -29,7 +29,7 @@ const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ic
 // ===============================
 self.addEventListener('install', (event) => {
   console.log('🌟 STAR Service Worker installing...');
-  
+
   event.waitUntil(
     Promise.all([
       // Cache static assets
@@ -37,18 +37,18 @@ self.addEventListener('install', (event) => {
         console.log('📦 Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       }),
-      
+
       // Initialize other caches
       caches.open(API_CACHE),
       caches.open(IMAGES_CACHE),
     ])
-    .then(() => {
-      console.log('✅ STAR Service Worker installed successfully');
-      return self.skipWaiting();
-    })
-    .catch((error) => {
-      console.error('❌ Service Worker installation failed:', error);
-    })
+      .then(() => {
+        console.log('✅ STAR Service Worker installed successfully');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker installation failed:', error);
+      })
   );
 });
 
@@ -57,23 +57,23 @@ self.addEventListener('install', (event) => {
 // ===============================
 self.addEventListener('activate', (event) => {
   console.log('🔄 STAR Service Worker activating...');
-  
+
   event.waitUntil(
     // Clean up old caches
     caches.keys()
       .then((cacheNames) => {
         const deletePromises = cacheNames
           .filter((cacheName) => {
-            return cacheName.startsWith('star-') && 
-                   cacheName !== STATIC_CACHE && 
-                   cacheName !== API_CACHE && 
-                   cacheName !== IMAGES_CACHE;
+            return cacheName.startsWith('star-') &&
+              cacheName !== STATIC_CACHE &&
+              cacheName !== API_CACHE &&
+              cacheName !== IMAGES_CACHE;
           })
           .map((cacheName) => {
             console.log('🗑️ Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           });
-        
+
         return Promise.all(deletePromises);
       })
       .then(() => {
@@ -92,7 +92,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-HTTP requests
   if (!url.protocol.startsWith('http')) {
     return;
@@ -121,32 +121,32 @@ self.addEventListener('fetch', (event) => {
 // API Request Handler - Network first
 async function handleApiRequest(request) {
   const url = new URL(request.url);
-  
+
   try {
     // Try network first
     const response = await fetch(request);
-    
+
     if (response.ok && request.method === 'GET') {
       // Cache successful GET requests
       const cache = await caches.open(API_CACHE);
       const responseClone = response.clone();
-      
+
       // Cache with TTL for different endpoints
       if (CACHE_API_ENDPOINTS.some(endpoint => url.pathname.includes(endpoint))) {
         cache.put(request, responseClone);
       }
     }
-    
+
     return response;
   } catch (error) {
     console.log('🌐 Network failed for API request, trying cache:', url.pathname);
-    
+
     // Network failed, try cache
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return offline API response
     return new Response(
       JSON.stringify({
@@ -174,16 +174,16 @@ async function handleImageRequest(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Fetch from network
     const response = await fetch(request);
-    
+
     if (response.ok) {
       // Cache successful image requests
       const cache = await caches.open(IMAGES_CACHE);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     // Return placeholder image for offline
@@ -214,18 +214,18 @@ async function handleStaticAsset(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const response = await fetch(request);
-    
+
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     // For critical assets, return cached version if available
-    return caches.match(request) || new Response('Asset unavailable offline', { 
+    return caches.match(request) || new Response('Asset unavailable offline', {
       status: 404,
       statusText: 'Not Found'
     });
@@ -237,29 +237,29 @@ async function handleAppRoute(request) {
   try {
     // Try network first for app routes
     const response = await fetch(request);
-    
+
     if (response.ok) {
       // Cache successful page responses
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     console.log('🌐 Network failed for app route, trying cache or SPA fallback');
-    
+
     // Try cached version
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // SPA fallback - serve cached index.html for app routes
     const indexResponse = await caches.match('/');
     if (indexResponse) {
       return indexResponse;
     }
-    
+
     // Ultimate fallback - offline page
     return caches.match('/offline/') || new Response(
       generateOfflinePage(),
@@ -275,7 +275,7 @@ async function handleAppRoute(request) {
 // ===============================
 self.addEventListener('sync', (event) => {
   console.log('🔄 Background sync triggered:', event.tag);
-  
+
   if (event.tag === 'post-sync') {
     event.waitUntil(syncOfflinePosts());
   } else if (event.tag === 'like-sync') {
@@ -289,7 +289,7 @@ async function syncOfflinePosts() {
     // Get stored offline posts from IndexedDB
     // Implementation would depend on your offline storage strategy
     console.log('📤 Syncing offline posts...');
-    
+
     // Send notifications to user about sync status
     self.registration.showNotification('STAR Sync', {
       body: 'Your offline posts have been synchronized.',
@@ -317,7 +317,7 @@ async function syncOfflineLikes() {
 // ===============================
 self.addEventListener('push', (event) => {
   console.log('📱 Push notification received');
-  
+
   let notificationData = {
     title: 'STAR',
     body: 'You have a new notification',
@@ -337,7 +337,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+
   if (event.data) {
     try {
       const data = event.data.json();
@@ -346,7 +346,7 @@ self.addEventListener('push', (event) => {
       console.error('Failed to parse push notification data:', error);
     }
   }
-  
+
   event.waitUntil(
     self.registration.showNotification(notificationData.title, notificationData)
   );
@@ -355,9 +355,9 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('📱 Notification clicked:', event.action);
-  
+
   event.notification.close();
-  
+
   if (event.action === 'view') {
     // Open the app
     event.waitUntil(

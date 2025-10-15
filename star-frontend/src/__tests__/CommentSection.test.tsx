@@ -147,7 +147,7 @@ describe('CommentSection', () => {
     });
   });
 
-  it('shows load more indicator when there are more pages', () => {
+  it('shows "no more comments" when there are no more pages', () => {
     const mockUseInfiniteQuery = require('@tanstack/react-query').useInfiniteQuery;
     const mockUseInView = require('react-intersection-observer').useInView;
     const mockUseCollaboration = require('@/contexts/CollaborationContext').useCollaboration;
@@ -155,7 +155,7 @@ describe('CommentSection', () => {
     mockUseInfiniteQuery.mockReturnValue({
       data: { pages: [{ comments: [] }] },
       fetchNextPage: jest.fn(),
-      hasNextPage: true,
+      hasNextPage: false,
       isFetchingNextPage: false,
       status: 'success',
     });

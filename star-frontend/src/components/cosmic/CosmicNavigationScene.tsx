@@ -10,32 +10,44 @@ import { PlanetButton } from './PlanetButton';
 const CosmicContent = () => {
   const navigationPlanets = [
     {
-      position: [5, 2, -3] as [number, number, number],
+      position: [8, 3, -5] as [number, number, number],
       route: '/chat',
       label: 'Chat',
       color: '#4a90e2',
-      size: 1.2
+      size: 1.2,
+      orbitSpeed: 0.3,
+      hasAtmosphere: true,
+      planetType: 'gas' as const
     },
     {
-      position: [-4, 1, 2] as [number, number, number],
+      position: [-6, 1, 4] as [number, number, number],
       route: '/profile',
       label: 'Profile',
       color: '#9b59b6',
-      size: 1
+      size: 1,
+      orbitSpeed: 0.4,
+      hasRings: true,
+      planetType: 'ice' as const
     },
     {
-      position: [0, -2, -5] as [number, number, number],
+      position: [0, -3, -8] as [number, number, number],
       route: '/feed',
       label: 'Feed',
       color: '#2ecc71',
-      size: 1.1
+      size: 1.1,
+      orbitSpeed: 0.2,
+      hasAtmosphere: false,
+      planetType: 'rocky' as const
     },
     {
-      position: [3, -1, 4] as [number, number, number],
+      position: [5, -2, 6] as [number, number, number],
       route: '/mirror',
       label: 'Reflection',
       color: '#e74c3c',
-      size: 0.9
+      size: 0.9,
+      orbitSpeed: 0.5,
+      hasRings: false,
+      planetType: 'desert' as const
     }
   ];
 
@@ -60,7 +72,7 @@ const CosmicContent = () => {
 
       {/* Interactive System */}
       <OrbitSystem>
-        <Suspense fallback={<FallbackSphere position={[0,0,0]} color="#666" />}>
+        <Suspense fallback={<FallbackSphere position={[0, 0, 0]} color="#666" />}>
           {navigationPlanets.map((planet, index) => (
             <PlanetButton
               key={planet.route}

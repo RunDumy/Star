@@ -1,46 +1,32 @@
-# Multi-stage build for Next.js
-FROM node:20-alpine AS builder
+FROM node:18-alpine
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies for build)
-RUN npm ci --only=production=false
+# Install dependencies (including dev dependencies for development)
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
 
-# Production stage
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
-# Create non-root user and install dumb-init
-RUN apk add --no-cache dumb-init && \
-    addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./.next/standalone
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
 USER nextjs
 
+# Expose port
 EXPOSE 3000
 
-ENV PORT=3000
-ENV NODE_ENV=production
+# Set environment variables
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", ".next/standalone/server.js"]
+# Start the application in development mode
+CMD ["npm", "run", "dev"]

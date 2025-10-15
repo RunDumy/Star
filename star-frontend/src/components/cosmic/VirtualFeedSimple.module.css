@@ -1,0 +1,12 @@
+.virtualContainer {
+    height: 800px;
+}
+
+.virtualSpacerTop,
+.virtualSpacerBottom {
+    display: block;
+}
+
+.virtualItems {
+    display: block;
+}

@@ -1,47 +1,45 @@
 /* styles/3d-cosmic.css */
 @keyframes floatXYZ {
   0% {
-    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
-      rotateZ(0deg);
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
+
   25% {
-    transform: translate3d(5px, -8px, 10px) rotateX(2deg) rotateY(3deg)
-      rotateZ(-1deg);
+    transform: translate3d(5px, -8px, 10px) rotateX(2deg) rotateY(3deg) rotateZ(-1deg);
   }
+
   50% {
-    transform: translate3d(-3px, -12px, 15px) rotateX(-1deg) rotateY(-2deg)
-      rotateZ(1deg);
+    transform: translate3d(-3px, -12px, 15px) rotateX(-1deg) rotateY(-2deg) rotateZ(1deg);
   }
+
   75% {
-    transform: translate3d(4px, -6px, 8px) rotateX(1deg) rotateY(4deg)
-      rotateZ(-2deg);
+    transform: translate3d(4px, -6px, 8px) rotateX(1deg) rotateY(4deg) rotateZ(-2deg);
   }
+
   100% {
-    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
-      rotateZ(0deg);
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
 }
 
 @keyframes floatXYZReverse {
   0% {
-    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
-      rotateZ(0deg);
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
+
   25% {
-    transform: translate3d(-6px, -10px, 12px) rotateX(-3deg) rotateY(2deg)
-      rotateZ(1deg);
+    transform: translate3d(-6px, -10px, 12px) rotateX(-3deg) rotateY(2deg) rotateZ(1deg);
   }
+
   50% {
-    transform: translate3d(4px, -14px, 18px) rotateX(2deg) rotateY(-3deg)
-      rotateZ(-1deg);
+    transform: translate3d(4px, -14px, 18px) rotateX(2deg) rotateY(-3deg) rotateZ(-1deg);
   }
+
   75% {
-    transform: translate3d(-5px, -8px, 10px) rotateX(-1deg) rotateY(1deg)
-      rotateZ(2deg);
+    transform: translate3d(-5px, -8px, 10px) rotateX(-1deg) rotateY(1deg) rotateZ(2deg);
   }
+
   100% {
-    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)
-      rotateZ(0deg);
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
 }
 
@@ -63,6 +61,84 @@
   perspective: 1000px;
 }
 
+/* Enhanced Space Background */
+.cosmic-space-background {
+  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 70%, #000000 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.cosmic-space-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
+    radial-gradient(2px 2px at 40px 70px, #ffffff, transparent),
+    radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
+    radial-gradient(1px 1px at 130px 80px, #ffffff, transparent),
+    radial-gradient(2px 2px at 160px 30px, #ffffff, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: twinkle-stars 20s linear infinite;
+  opacity: 0.8;
+}
+
+.cosmic-space-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(30, 144, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 20, 147, 0.05) 0%, transparent 50%);
+  animation: drift-nebulae 30s ease-in-out infinite;
+}
+
+@keyframes twinkle-stars {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+
+  33% {
+    transform: translateY(-10px) translateX(5px);
+  }
+
+  66% {
+    transform: translateY(5px) translateX(-10px);
+  }
+
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}
+
+@keyframes drift-nebulae {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+
+  25% {
+    transform: translateY(-20px) translateX(10px) scale(1.05);
+  }
+
+  50% {
+    transform: translateY(10px) translateX(-15px) scale(0.95);
+  }
+
+  75% {
+    transform: translateY(-5px) translateX(20px) scale(1.02);
+  }
+}
+
 /* 3D Hover Effects */
 .cosmic-post-3d {
   --mouse-rotate-x: 0deg;
@@ -70,15 +146,12 @@
   --mouse-translate-z: 0px;
   transform-style: preserve-3d;
   transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-  transform: var(--base-transform, none) rotateX(var(--mouse-rotate-x))
-    rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
+  transform: var(--base-transform, none) rotateX(var(--mouse-rotate-x)) rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
 }
 
 .cosmic-post-3d:hover {
-  --hover-transform: translate3d(0px, -10px, 20px) rotateX(5deg) rotateY(5deg)
-    scale(1.02);
-  transform: var(--hover-transform) rotateX(var(--mouse-rotate-x))
-    rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
+  --hover-transform: translate3d(0px, -10px, 20px) rotateX(5deg) rotateY(5deg) scale(1.02);
+  transform: var(--hover-transform) rotateX(var(--mouse-rotate-x)) rotateY(var(--mouse-rotate-y)) translateZ(var(--mouse-translate-z));
   z-index: 50;
 }
 
@@ -120,7 +193,7 @@
   transform-style: preserve-3d;
 }
 
-/* Cosmic Particles */
+/* Enhanced Cosmic Particles with Depth */
 .cosmic-particle {
   position: absolute;
   width: 4px;
@@ -129,6 +202,7 @@
   border-radius: 50%;
   opacity: 0.6;
   animation: cosmic-float-particle 8s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
 }
 
 .particle-1 {
@@ -154,23 +228,26 @@
 }
 
 @keyframes cosmic-float-particle {
+
   0%,
   100% {
     transform: translateY(0px) translateZ(0px) scale(1);
     opacity: 0.6;
   }
+
   50% {
     transform: translateY(-20px) translateZ(10px) scale(1.2);
     opacity: 0.9;
   }
 }
 
-/* Cosmic Nebulae */
+/* Enhanced Nebulae with Depth */
 .cosmic-nebula {
   position: absolute;
   border-radius: 50%;
   opacity: 0.1;
   filter: blur(40px);
+  animation: nebula-drift 25s ease-in-out infinite;
 }
 
 .nebula-1 {
@@ -179,6 +256,7 @@
   width: 300px;
   height: 300px;
   background: radial-gradient(circle, #7c3aed, #1e1b4b);
+  animation-delay: 0s;
 }
 
 .nebula-2 {
@@ -187,6 +265,101 @@
   width: 400px;
   height: 400px;
   background: radial-gradient(circle, #3b82f6, #1e40af);
+  animation-delay: 8s;
+}
+
+.nebula-3 {
+  top: 60%;
+  left: 60%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #ec4899, #7c2d12);
+  animation-delay: 15s;
+}
+
+@keyframes nebula-drift {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) scale(1) rotate(0deg);
+    opacity: 0.1;
+  }
+
+  25% {
+    transform: translateY(-30px) translateX(20px) scale(1.1) rotate(5deg);
+    opacity: 0.15;
+  }
+
+  50% {
+    transform: translateY(20px) translateX(-25px) scale(0.9) rotate(-3deg);
+    opacity: 0.08;
+  }
+
+  75% {
+    transform: translateY(-15px) translateX(35px) scale(1.05) rotate(8deg);
+    opacity: 0.12;
+  }
+}
+
+/* Shooting Stars */
+.cosmic-shooting-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: linear-gradient(45deg, #ffffff, transparent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: shooting-star 3s linear infinite;
+}
+
+.cosmic-shooting-star::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ffffff, transparent);
+  transform: rotate(45deg);
+}
+
+.shooting-star-1 {
+  top: 20%;
+  left: -5%;
+  animation-delay: 0s;
+}
+
+.shooting-star-2 {
+  top: 50%;
+  left: -5%;
+  animation-delay: 5s;
+}
+
+.shooting-star-3 {
+  top: 80%;
+  left: -5%;
+  animation-delay: 10s;
+}
+
+@keyframes shooting-star {
+  0% {
+    opacity: 0;
+    transform: translateX(0px) translateY(0px);
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+    transform: translateX(calc(100vw + 20px)) translateY(calc(100vh + 20px));
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100vw + 20px)) translateY(calc(100vh + 20px));
+  }
 }
 
 /* Post Wrapper with Staggered Animation */
@@ -202,6 +375,7 @@
     opacity: 0;
     transform: translateY(50px) translateZ(-100px) rotateX(10deg);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0px) translateZ(0px) rotateX(0deg);
@@ -222,8 +396,99 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
+  }
+}
+
+/* Enhanced Planet Button Styles */
+.cosmic-planet-button {
+  transform-style: preserve-3d;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cosmic-planet-button:hover {
+  transform: scale(1.1) translateZ(20px);
+}
+
+.cosmic-planet-button .planet-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+  box-shadow:
+    inset -10px -10px 20px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(255, 255, 255, 0.3),
+    0 0 60px rgba(255, 255, 255, 0.1);
+  animation: planet-glow 4s ease-in-out infinite alternate;
+}
+
+.cosmic-planet-button .planet-atmosphere {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(138, 43, 226, 0.2), transparent);
+  animation: atmosphere-rotate 20s linear infinite;
+  pointer-events: none;
+}
+
+.cosmic-planet-button .planet-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180%;
+  height: 10px;
+  margin-top: -5px;
+  margin-left: -90%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+  transform: rotateX(75deg);
+  animation: ring-rotate 15s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes planet-glow {
+  0% {
+    box-shadow:
+      inset -10px -10px 20px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(255, 255, 255, 0.3),
+      0 0 60px rgba(255, 255, 255, 0.1);
+  }
+
+  100% {
+    box-shadow:
+      inset -10px -10px 20px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(138, 43, 226, 0.4),
+      0 0 80px rgba(138, 43, 226, 0.2);
+  }
+}
+
+@keyframes atmosphere-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes ring-rotate {
+  0% {
+    transform: rotateX(75deg) rotateZ(0deg);
+  }
+
+  100% {
+    transform: rotateX(75deg) rotateZ(360deg);
   }
 }
 
@@ -240,12 +505,10 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(
-    45deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(45deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: -1;
@@ -275,9 +538,11 @@
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.3);
   }
+
   100% {
     transform: scale(1);
   }
@@ -289,16 +554,20 @@
 }
 
 @keyframes spark-icon-pulse {
+
   0%,
   100% {
     transform: scale(1) rotate(0deg);
   }
+
   25% {
     transform: scale(1.2) rotate(90deg);
   }
+
   50% {
     transform: scale(1.1) rotate(180deg);
   }
+
   75% {
     transform: scale(1.15) rotate(270deg);
   }
@@ -323,21 +592,17 @@
     opacity: 1;
     transform: translate(-50%, -50%) scale(0);
   }
+
   20% {
     opacity: 1;
-    transform: translate(
-        calc(-50% + var(--particle-x, 0px)),
-        calc(-50% + var(--particle-y, 0px))
-      )
-      scale(1);
+    transform: translate(calc(-50% + var(--particle-x, 0px)),
+        calc(-50% + var(--particle-y, 0px))) scale(1);
   }
+
   100% {
     opacity: 0;
-    transform: translate(
-        calc(-50% + var(--particle-x, 0px)),
-        calc(-50% + var(--particle-y, 0px))
-      )
-      scale(0.5);
+    transform: translate(calc(-50% + var(--particle-x, 0px)),
+        calc(-50% + var(--particle-y, 0px))) scale(0.5);
   }
 }
 
@@ -348,7 +613,8 @@
   }
 
   .cosmic-particle {
-    display: none; /* Hide particles on mobile for performance */
+    display: none;
+    /* Hide particles on mobile for performance */
   }
 
   .cosmic-nebula {
@@ -362,6 +628,11 @@
   .cosmic-spark-glow {
     box-shadow: 0 0 15px rgba(168, 85, 247, 0.3),
       inset 0 0 15px rgba(255, 255, 255, 0.1);
+  }
+
+  .cosmic-shooting-star {
+    display: none;
+    /* Hide shooting stars on mobile */
   }
 }
 

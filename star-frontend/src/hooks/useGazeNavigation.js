@@ -23,34 +23,38 @@ export const useGazeNavigation = (options = {}) => {
       lastUpdateTime.current = now;
 
       // Check if we're still gazing at the same area
-      if (gazeTarget) {
-        const distance = Math.sqrt(
-          Math.pow(newPosition.x - gazeTarget.x, 2) +
-          Math.pow(newPosition.y - gazeTarget.y, 2)
-        );
+      setGazeTarget((currentTarget) => {
+        if (currentTarget) {
+          const distance = Math.sqrt(
+            Math.pow(newPosition.x - currentTarget.x, 2) +
+            Math.pow(newPosition.y - currentTarget.y, 2)
+          );
 
-        if (distance > gazeRadius) {
-          // Moved outside gaze radius, reset gaze
-          setIsGazing(false);
-          setGazeTarget(null);
-          gazeStartTime.current = null;
-          if (gazeTimer.current) {
-            clearTimeout(gazeTimer.current);
-            gazeTimer.current = null;
+          if (distance > gazeRadius) {
+            // Moved outside gaze radius, reset gaze
+            setIsGazing(false);
+            gazeStartTime.current = null;
+            if (gazeTimer.current) {
+              clearTimeout(gazeTimer.current);
+              gazeTimer.current = null;
+            }
+            return null;
           }
-        }
-      } else {
-        // Start potential gaze at new position
-        setGazeTarget(newPosition);
-        gazeStartTime.current = now;
+          return currentTarget;
+        } else {
+          // Start potential gaze at new position
+          gazeStartTime.current = now;
 
-        // Set timer to detect gaze
-        gazeTimer.current = setTimeout(() => {
-          setIsGazing(true);
-        }, gazeThreshold);
-      }
+          // Set timer to detect gaze
+          gazeTimer.current = setTimeout(() => {
+            setIsGazing(true);
+          }, gazeThreshold);
+
+          return newPosition;
+        }
+      });
     }
-  }, [gazeThreshold, gazeRadius, updateInterval, gazeTarget]);
+  }, [gazeThreshold, gazeRadius, updateInterval]);
 
   // Handle mouse leaving the window
   const handleMouseLeave = useCallback(() => {

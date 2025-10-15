@@ -104,13 +104,13 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
 
   // Staged useTransition animations for sigil generation
   const transitions = useTransition(sigilData, {
-    from: { opacity: 0, scale: 0.8, rotate: -10 },
+    from: { opacity: 0, transform: 'scale(0.8) rotate(-10deg)' },
     enter: [
-      { opacity: 0.4, scale: 0.9, rotate: -5, config: elementConfig.fadeIn.config },
-      { opacity: 0.7, scale: 0.95, rotate: 0, config: elementConfig.scale.config },
-      { opacity: 1, scale: 1, rotate: 2, config: elementConfig.rotate.config }
+      { opacity: 0.4, transform: 'scale(0.9) rotate(-5deg)', config: elementConfig.fadeIn.config },
+      { opacity: 0.7, transform: 'scale(0.95) rotate(0deg)', config: elementConfig.scale.config },
+      { opacity: 1, transform: 'scale(1) rotate(2deg)', config: elementConfig.rotate.config }
     ],
-    leave: { opacity: 0, scale: 0.9, rotate: 10 },
+    leave: { opacity: 0, transform: 'scale(0.9) rotate(10deg)' },
     config: { duration: 1000 }
   });
 
@@ -145,10 +145,10 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
   }, [elementConfig.glow.intensity, elementConfig.glow.pulsateDuration]);
 
   const generateSigil = async () => {
-      if (userId === undefined || userId === null || userId === '') {
-        setError('User ID required for sigil generation');
-        return;
-      }
+    if (userId === undefined || userId === null || userId === '') {
+      setError('User ID required for sigil generation');
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
@@ -201,6 +201,30 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
     }
   };
 
+  // Extracted function to render strokes, reducing nesting
+  const renderStrokes = (sigilData: SigilData, currentGlow: number) => {
+    return sigilData.strokes.map((stroke) => {
+      const strokePoints = stroke.flatMap(pointIndex => [
+        sigilData.points[pointIndex].x,
+        sigilData.points[pointIndex].y
+      ]);
+
+      return (
+        <Line
+          key={stroke.join('-')} // Unique key based on stroke points
+          points={strokePoints}
+          stroke={sigilData.color}
+          strokeWidth={stroke === sigilData.strokes[0] ? 3 : 2}
+          lineCap="round"
+          lineJoin="round"
+          shadowColor={sigilData.color}
+          shadowBlur={currentGlow * 2}
+          shadowOffset={{ x: 0, y: 0 }}
+        />
+      );
+    });
+  };
+
   const renderSigil = () => {
     if (!sigilData) return null;
 
@@ -213,7 +237,7 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
           className="sigil-canvas-container"
           style={{
             opacity: style.opacity,
-            transform: style.scale.to(s => `scale(${s}) rotate(${style.rotate}deg)`),
+            transform: style.transform,
           }}
         >
           <Stage
@@ -240,27 +264,7 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
               />
 
               {/* Render sigil paths with glow effect */}
-              {sigilData.strokes.map((stroke, strokeIndex) => {
-                const strokePoints: number[] = [];
-                stroke.forEach(pointIndex => {
-                  const point = sigilData.points[pointIndex];
-                  strokePoints.push(point.x, point.y);
-                });
-
-                return (
-                  <Line
-                    key={strokeIndex}
-                    points={strokePoints}
-                    stroke={sigilData.color}
-                    strokeWidth={strokeIndex === 0 ? 3 : 2}
-                    lineCap="round"
-                    lineJoin="round"
-                    shadowColor={sigilData.color}
-                    shadowBlur={currentGlow * 2}
-                    shadowOffset={{ x: 0, y: 0 }}
-                  />
-                );
-              })}
+              {renderStrokes(sigilData, currentGlow)}
 
               {/* Center element indicator with glow */}
               <Circle
@@ -312,6 +316,7 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
 
   return (
     <animated.div
+      ref={ref}
       style={animatedProps}
       className="sigil-generator p-6 bg-gradient-to-br from-purple-50 to-indigo-100 rounded-lg shadow-lg"
     >
@@ -332,6 +337,7 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
 
       <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-6">
         <button
+          type="button"
           onClick={generateSigil}
           disabled={isGenerating}
           className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-purple-300"
@@ -352,6 +358,7 @@ const SigilGenerator = forwardRef<HTMLDivElement, SigilGeneratorProps>(({
 
         {sigilData && (
           <button
+            type="button"
             onClick={downloadSigil}
             className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-green-300"
             aria-label="Download sigil as PNG image"

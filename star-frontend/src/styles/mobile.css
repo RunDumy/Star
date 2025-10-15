@@ -1,0 +1,395 @@
+/* Mobile Optimization CSS
+ * Responsive styles for STAR platform mobile experience
+ */
+
+/* Global mobile optimizations */
+html {
+    --vh: 1vh;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+}
+
+/* Prevent zoom and selection on mobile */
+.mobile-app {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile viewport handling */
+.mobile-cosmos,
+.mobile-app {
+    height: calc(var(--vh, 1vh) * 100);
+    min-height: -webkit-fill-available;
+}
+
+/* Touch-optimized interactive elements */
+.touch-enabled {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+}
+
+.touch-enabled:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Mobile navigation styles */
+.mobile-navigation {
+    z-index: 1000;
+}
+
+.mobile-nav-item {
+    min-height: 44px;
+    /* iOS touch target minimum */
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.95);
+}
+
+/* Energy bar animations */
+.energy-bar {
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.energy-bar-glow {
+    box-shadow: 0 0 10px currentColor;
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from {
+        box-shadow: 0 0 5px currentColor;
+    }
+
+    to {
+        box-shadow: 0 0 20px currentColor;
+    }
+}
+
+/* Planet colors for dynamic styling */
+.planet-fire {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+}
+
+.planet-water {
+    background: linear-gradient(135deg, #4ecdc4, #0abde3);
+    color: white;
+}
+
+.planet-air {
+    background: linear-gradient(135deg, #45b7d1, #5f27cd);
+    color: white;
+}
+
+.planet-earth {
+    background: linear-gradient(135deg, #96ceb4, #6c5ce7);
+    color: white;
+}
+
+.planet-spirit {
+    background: linear-gradient(135deg, #ffeaa7, #fd79a8);
+    color: white;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 576px) {
+
+    /* Extra small mobile */
+    .mobile-nav-item {
+        padding: 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .mobile-nav-icon {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* Mobile styles */
+    .mobile-app {
+        padding-bottom: 8rem;
+        /* Space for bottom navigation */
+    }
+
+    .mobile-cosmos canvas {
+        touch-action: none;
+    }
+
+    /* Hide desktop elements on mobile */
+    .desktop-only {
+        display: none !important;
+    }
+
+    /* Optimize text sizes for mobile */
+    .mobile-text-xs {
+        font-size: 0.625rem;
+    }
+
+    .mobile-text-sm {
+        font-size: 0.75rem;
+    }
+
+    .mobile-text-base {
+        font-size: 0.875rem;
+    }
+
+    .mobile-text-lg {
+        font-size: 1rem;
+    }
+
+    .mobile-text-xl {
+        font-size: 1.125rem;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    /* Tablet styles */
+    .tablet-app {
+        padding-left: 5rem;
+        /* Space for side navigation */
+    }
+
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+@media (min-width: 1024px) {
+
+    /* Desktop styles */
+    .desktop-app {
+        padding-top: 5rem;
+        /* Space for top navigation */
+    }
+
+    .mobile-only,
+    .tablet-only {
+        display: none !important;
+    }
+}
+
+/* Landscape orientation optimizations */
+@media (orientation: landscape) and (max-height: 500px) {
+    .mobile-app {
+        height: 100vh;
+        padding-bottom: 4rem;
+    }
+
+    .mobile-nav-item {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .high-dpi .mobile-nav-icon {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .mobile-app {
+        background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Performance optimizations for slow connections */
+@media (max-width: 768px) and (connection: slow-2g) {
+    .performance-mode {
+        /* Disable expensive animations */
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .performance-mode .energy-bar-glow {
+        animation: none;
+        box-shadow: none;
+    }
+}
+
+/* iOS specific styles */
+.ios .mobile-app {
+    -webkit-overflow-scrolling: touch;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 8rem);
+}
+
+/* Android specific styles */
+.android .mobile-app {
+    /* Handle Android navigation bar */
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Focus styles for accessibility */
+.mobile-nav-item:focus,
+button:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Touch feedback */
+.touch-feedback {
+    position: relative;
+    overflow: hidden;
+}
+
+.touch-feedback::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.touch-feedback:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* Cosmic theme colors */
+:root {
+    --cosmic-fire: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    --cosmic-water: linear-gradient(135deg, #4ecdc4, #0abde3);
+    --cosmic-air: linear-gradient(135deg, #45b7d1, #5f27cd);
+    --cosmic-earth: linear-gradient(135deg, #96ceb4, #6c5ce7);
+    --cosmic-spirit: linear-gradient(135deg, #ffeaa7, #fd79a8);
+
+    --cosmic-background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
+    --cosmic-surface: rgba(255, 255, 255, 0.1);
+    --cosmic-text: #ffffff;
+    --cosmic-text-secondary: rgba(255, 255, 255, 0.7);
+}
+
+/* Utility classes for mobile */
+.mobile-hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-visible {
+        display: block;
+    }
+
+    .mobile-flex {
+        display: flex;
+    }
+
+    .mobile-grid {
+        display: grid;
+    }
+}
+
+/* Swipe indicators */
+.swipe-indicator {
+    position: relative;
+}
+
+.swipe-indicator::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+    animation: swipe-hint 2s ease-in-out infinite;
+}
+
+@keyframes swipe-hint {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.2);
+    }
+}
+
+/* Performance monitoring */
+.performance-indicator {
+    position: fixed;
+    top: 2rem;
+    right: 1rem;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-family: monospace;
+}
+
+.performance-good {
+    color: #10b981;
+}
+
+.performance-medium {
+    color: #f59e0b;
+}
+
+.performance-poor {
+    color: #ef4444;
+}

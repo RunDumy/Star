@@ -1,4 +1,4 @@
-# Azure App Service startup command
-# This file tells Azure how to start your Flask app
+# Azure App Service startup command for STAR Platform (Frontend + Backend)
+# Flask app serves both React frontend and API endpoints
 
-web: gunicorn --bind=0.0.0.0:$PORT --workers=1 --timeout=120 main_azure:application
+gunicorn --bind=0.0.0.0:$PORT --workers=1 --timeout=300 --chdir star_backend_flask app:app

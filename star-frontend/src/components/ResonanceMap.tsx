@@ -1,13 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { ResonanceMapProps } from '../types/archetype-oracle';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ResonanceMap({
+interface MoodState {
+  primary: string;
+  intensity: number;
+  elements: string[];
+  zodiacInfluence: string;
+}
+
+interface ResonancePoint {
+  id: string;
+  x: number;
+  y: number;
+  intensity: number;
+  element: string;
+  timestamp: number;
+  mood: string;
+}
+
+interface ResonanceMapProps {
+  resonanceMap: any;
+  cosmicUI?: any;
+  currentMood?: MoodState;
+  width?: number;
+  height?: number;
+}
+
+const ResonanceMap: React.FC<ResonanceMapProps> = ({
   resonanceMap,
-  cosmicUI
-}: ResonanceMapProps) {
+  cosmicUI,
+  currentMood = { primary: 'balanced', intensity: 5, elements: ['spirit'], zodiacInfluence: 'neutral' },
+  width = 400,
+  height = 300
+}) => {
+  const [resonancePoints, setResonancePoints] = useState<ResonancePoint[]>([]);
   const [selectedAspect, setSelectedAspect] = useState<string | null>(null);
+  const [activeConnections, setActiveConnections] = useState<Array<{ from: ResonancePoint; to: ResonancePoint; strength: number }>>([]);
+  const [energyFlow, setEnergyFlow] = useState<string>('balanced');
 
   const aspects = ['life_path', 'destiny', 'soul_urge', 'personality', 'birth_day'] as const;
 
@@ -25,6 +56,15 @@ export default function ResonanceMap({
     soul_urge: '💫',
     personality: '🎭',
     birth_day: '🌙'
+  };
+
+  // Element colors for visualization
+  const elementColors = {
+    fire: '#ff6b35',
+    water: '#42a5f5',
+    air: '#29b6f6',
+    earth: '#8bc34a',
+    spirit: '#ab47bc'
   };
 
   const getPosition = (index: number, total: number) => {
@@ -45,6 +85,8 @@ export default function ResonanceMap({
     index: number;
     total: number;
   }) => {
+    if (!resonanceMap || !resonanceMap[aspect]) return null;
+
     const data = resonanceMap[aspect];
     const cosmicData = cosmicUI?.[aspect];
     const position = getPosition(index, total);
@@ -54,9 +96,10 @@ export default function ResonanceMap({
       <g>
         {/* Connection lines when aspect is selected */}
         {isSelected && aspects.map((otherAspect, otherIndex) => {
-          if (otherAspect !== aspect) {
+          if (otherAspect !== aspect && resonanceMap[otherAspect]) {
             const pos = getPosition(otherIndex, total);
             const strength = (data.number || 0) * 5; // Line thickness based on number
+            
             return (
               <line
                 key={`${aspect}-${otherAspect}`}
@@ -146,6 +189,40 @@ export default function ResonanceMap({
     );
   };
 
+  // Add new resonance point when mood changes
+  useEffect(() => {
+    if (currentMood.primary) {
+      const newPoint: ResonancePoint = {
+        id: `point_${Date.now()}`,
+        x: Math.random() * (width - 40) + 20,
+        y: Math.random() * (height - 40) + 20,
+        intensity: currentMood.intensity,
+        element: currentMood.elements[0] || 'spirit',
+        timestamp: Date.now(),
+        mood: currentMood.primary
+      };
+
+      setResonancePoints(prev => {
+        const updated = [...prev, newPoint];
+        // Keep only last 12 points
+        return updated.slice(-12);
+      });
+    }
+  }, [currentMood, width, height]);
+
+  if (!resonanceMap) {
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-starlight mb-3">Cosmic Resonance Map</h2>
+          <p className="text-gray-300 max-w-2xl mx-auto">
+            Loading resonance data...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-8">
@@ -167,14 +244,13 @@ export default function ResonanceMap({
           <circle cx="0" cy="0" r="30" fill="none" stroke="#00bcd4" strokeWidth="1" opacity="0.05" />
 
           {/* Center glow */}
-          <circle cx="0" cy="0" r="20" fill="url(#centerGradient)" className="animate-pulse">
-            <defs>
-              <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#FACC15" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#FACC15" stopOpacity="0.1" />
-              </radialGradient>
-            </defs>
-          </circle>
+          <defs>
+            <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#FACC15" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FACC15" stopOpacity="0.1" />
+            </radialGradient>
+          </defs>
+          <circle cx="0" cy="0" r="20" fill="url(#centerGradient)" className="animate-pulse" />
 
           {/* Resonance Points */}
           {aspects.map((aspect, index) => (
@@ -189,7 +265,7 @@ export default function ResonanceMap({
       </div>
 
       {/* Detailed Information Panel */}
-      {selectedAspect && (
+      {selectedAspect && resonanceMap[selectedAspect as keyof typeof resonanceMap] && (
         <div className="bg-gradient-to-r from-cosmic-deep to-cosmic-purple/20 rounded-xl p-6 border border-cosmic-glow/30">
           <h3 className="text-xl font-semibold text-starlight mb-4 text-center">
             {aspectIcons[selectedAspect as keyof typeof aspectIcons]} {aspectTitles[selectedAspect as keyof typeof aspectTitles]} Resonance
@@ -223,24 +299,24 @@ export default function ResonanceMap({
                 </div>
               ));
             })()}
-
-            {/* Mystical Interpretation */}
-            {(() => {
-              const data = resonanceMap[selectedAspect as keyof typeof resonanceMap];
-              return (
-                <div className="md:col-span-3 text-center p-4 bg-cosmic-gold/10 rounded-lg border border-cosmic-gold/30">
-                  <div className="text-sm text-cosmic-glow italic">
-                    "{data.poetic_description || `Your ${aspectTitles[selectedAspect as keyof typeof aspectTitles].toLowerCase()} resonates with the mystique of ${data.planet}, carrying the elemental force of ${data.element}.`}"
-                  </div>
-                  {data.karmic_ritual && (
-                    <div className="mt-3 text-xs text-red-300 border-t border-red-300/30 pt-2">
-                      <strong>Karmic Ritual:</strong> {data.karmic_ritual.ritual}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
           </div>
+
+          {/* Mystical Interpretation */}
+          {(() => {
+            const data = resonanceMap[selectedAspect as keyof typeof resonanceMap];
+            return (
+              <div className="md:col-span-3 text-center p-4 bg-cosmic-gold/10 rounded-lg border border-cosmic-gold/30">
+                <div className="text-sm text-cosmic-glow italic">
+                  "{data.poetic_description || `Your ${aspectTitles[selectedAspect as keyof typeof aspectTitles].toLowerCase()} resonates with the mystique of ${data.planet}, carrying the elemental force of ${data.element}.`}"
+                </div>
+                {data.karmic_ritual && (
+                  <div className="mt-3 text-xs text-red-300 border-t border-red-300/30 pt-2">
+                    <strong>Karmic Ritual:</strong> {data.karmic_ritual.ritual}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -252,4 +328,6 @@ export default function ResonanceMap({
       )}
     </div>
   );
-}
+};
+
+export default ResonanceMap;

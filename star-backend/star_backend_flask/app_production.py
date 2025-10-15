@@ -51,8 +51,6 @@ app.config.update({
 # Enhanced CORS for production
 allowed_origins = [
     'http://localhost:3000',
-    'https://star-frontend.vercel.app',
-    'https://*.vercel.app',
     'https://star-backend.azurewebsites.net'
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)

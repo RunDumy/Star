@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAR Zodiac Profile Test</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .test-button {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+
+        .test-button:hover {
+            transform: scale(1.05);
+        }
+
+        .result {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .cosmic-dna {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .daily-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tarot-card {
+            background: linear-gradient(45deg, #8360c3, #2ebf91);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+
+        .status.success {
+            background-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .status.error {
+            background-color: rgba(244, 67, 54, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🌟 STAR Zodiac Profile System Test 🌟</h1>
+
+        <div class="test-section">
+            <h2>🏥 Backend Health Check</h2>
+            <button class="test-button" onclick="testHealth()">Check Backend Health</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔮 Zodiac Calculator</h2>
+            <label for="birth-date">Birth Date:</label>
+            <input type="date" id="birth-date" value="1990-06-15"
+                style="margin: 10px; padding: 8px; border-radius: 5px; border: none;">
+            <button class="test-button" onclick="calculateZodiac()">Calculate My Zodiac</button>
+            <div id="zodiac-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧬 Cosmic DNA Profile</h2>
+            <button class="test-button" onclick="getCosmicDNA()">Get My Cosmic DNA</button>
+            <div id="dna-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌅 Daily Zodiac Features</h2>
+            <button class="test-button" onclick="getDailyFeatures()">Get Today's Features</button>
+            <div id="daily-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🃏 Weekly Tarot Reading</h2>
+            <button class="test-button" onclick="getWeeklyTarot()">Get Weekly Tarot</button>
+            <div id="tarot-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌌 Cosmic Feed</h2>
+            <button class="test-button" onclick="getCosmicFeed()">Load Cosmic Feed</button>
+            <div id="feed-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                return await response.json();
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        function displayResult(elementId, data, title = '') {
+            const element = document.getElementById(elementId);
+            if (data.error) {
+                element.innerHTML = `<div class="status error"><strong>Error:</strong> ${data.error}</div>`;
+                return;
+            }
+
+            let html = title ? `<h3>${title}</h3>` : '';
+            html += `<div class="status success">✅ Success!</div>`;
+            html += `<pre style="white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(data, null, 2)}</pre>`;
+            element.innerHTML = html;
+        }
+
+        async function testHealth() {
+            const result = await apiRequest('/api/health');
+            displayResult('health-result', result, '🏥 Backend Health Status');
+        }
+
+        async function calculateZodiac() {
+            const birthDate = document.getElementById('birth-date').value;
+            if (!birthDate) {
+                alert('Please select a birth date');
+                return;
+            }
+
+            const result = await apiRequest('/api/v1/zodiac-calculator', {
+                method: 'POST',
+                body: JSON.stringify({ birth_date: birthDate })
+            });
+
+            if (!result.error) {
+                let html = `
+                    <div class="cosmic-dna">
+                        <h3>🔮 Your Zodiac Profile</h3>
+                        <p><strong>Western Zodiac:</strong> ${result.western}</p>
+                        <p><strong>Chinese Zodiac:</strong> ${result.chinese}</p>
+                        <p><strong>Mayan:</strong> ${result.mayan}</p>
+                        <p><strong>Celtic:</strong> ${result.celtic}</p>
+                        <p><strong>Vedic:</strong> ${result.vedic}</p>
+                        <p><strong>Galactic Tone:</strong> ${result.galactic_tone}</p>
+                    </div>
+                `;
+                document.getElementById('zodiac-result').innerHTML = html;
+            } else {
+                displayResult('zodiac-result', result);
+            }
+        }
+
+        async function getCosmicDNA() {
+            // Using mock user ID
+            const result = await apiRequest('/api/v1/user/profile?user_id=test_user');
+            if (!result.error && result.cosmic_dna) {
+                let html = `
+                    <div class="cosmic-dna">
+                        <h3>🧬 Your Cosmic DNA</h3>
+                        <p><strong>Archetype:</strong> ${result.cosmic_dna.archetype}</p>
+                        <p><strong>Compatibility:</strong> ${result.cosmic_dna.compatibility.join(', ')}</p>
+                        <p><strong>Element:</strong> ${result.cosmic_dna.element || 'Fire'}</p>
+                        <p><strong>Modality:</strong> ${result.cosmic_dna.modality || 'Fixed'}</p>
+                    </div>
+                `;
+                document.getElementById('dna-result').innerHTML = html;
+            } else {
+                displayResult('dna-result', result);
+            }
+        }
+
+        async function getDailyFeatures() {
+            const result = await apiRequest('/api/v1/daily-features');
+            if (!result.error) {
+                let html = '<div class="daily-features">';
+                result.features.forEach(feature => {
+                    html += `
+                        <div class="feature-card">
+                            <h4>${feature.title}</h4>
+                            <p>${feature.description}</p>
+                            <small>Type: ${feature.type}</small>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                document.getElementById('daily-result').innerHTML = html;
+            } else {
+                displayResult('daily-result', result);
+            }
+        }
+
+        async function getWeeklyTarot() {
+            const result = await apiRequest('/api/v1/tarot/weekly');
+            if (!result.error) {
+                let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+                result.cards.forEach(card => {
+                    html += `
+                        <div class="tarot-card">
+                            <h4>${card.name}</h4>
+                            <p><strong>Position:</strong> ${card.position}</p>
+                            <p><strong>Meaning:</strong> ${card.meaning}</p>
+                            <p><strong>Element:</strong> ${card.element}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                document.getElementById('tarot-result').innerHTML = html;
+            } else {
+                displayResult('tarot-result', result);
+            }
+        }
+
+        async function getCosmicFeed() {
+            const result = await apiRequest('/api/v1/feed');
+            if (!result.error) {
+                let html = '';
+                result.posts.forEach(post => {
+                    html += `
+                        <div class="feature-card" style="margin: 10px 0;">
+                            <h4>@${post.username} (${post.zodiac_sign})</h4>
+                            <p>${post.content}</p>
+                            <div style="display: flex; gap: 15px; margin-top: 10px;">
+                                <span>❤️ ${post.likes}</span>
+                                <span>💬 ${post.comments}</span>
+                                <span>🔄 ${post.shares}</span>
+                            </div>
+                            <small>${post.timestamp}</small>
+                        </div>
+                    `;
+                });
+                document.getElementById('feed-result').innerHTML = html;
+            } else {
+                displayResult('feed-result', result);
+            }
+        }
+
+        // Auto-test health on load
+        document.addEventListener('DOMContentLoaded', testHealth);
+    </script>
+</body>
+
+</html>

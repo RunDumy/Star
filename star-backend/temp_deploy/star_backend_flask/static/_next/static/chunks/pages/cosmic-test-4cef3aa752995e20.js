@@ -1,1 +1,0 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[5603],{8850:(_,n,s)=>{"use strict";s.r(n),s.d(n,{default:()=>t});var u=s(55),e=s(7876);function t(){return(0,e.jsx)(u.A,{})}},9616:(_,n,s)=>{(window.__NEXT_P=window.__NEXT_P||[]).push(["/cosmic-test",function(){return s(8850)}])}},_=>{_.O(0,[7391,5037,8230,5095,5464,6991,55,636,6593,8792],()=>_(_.s=9616)),_N_E=_.O()}]);

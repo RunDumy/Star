@@ -42,21 +42,32 @@ const mockPosts = [
 ];
 
 export default function FloatingPostIslandsPage() {
-  // Calculate orbital positions for posts
+  // Calculate orbital positions for posts with more depth
   const calculateOrbitalPosition = (index: number) => {
     const angle = (index / mockPosts.length) * Math.PI * 2;
-    const radius = 15 + (index * 5);
+    const distance = 20 + (index * 8); // Increased distance for depth
+    const height = Math.sin(angle * 1.5) * 6;
     return [
-      Math.cos(angle) * radius,
-      Math.sin(angle * 0.5) * 8,
-      Math.sin(angle) * radius
+      Math.cos(angle) * distance,
+      height,
+      Math.sin(angle) * distance
     ] as [number, number, number];
   };
 
   return (
-    <div className="w-full h-screen bg-black">
-      <CosmicInterface cameraPosition={[0, 5, 30]}>
-        <ContentNebula density={0.7} emotionalResonance={0.6}>
+    <div className="w-full h-screen cosmic-space-background relative overflow-hidden">
+      {/* Animated Nebulae */}
+      <div className="cosmic-nebula nebula-1"></div>
+      <div className="cosmic-nebula nebula-2"></div>
+      <div className="cosmic-nebula nebula-3"></div>
+
+      {/* Shooting Stars */}
+      <div className="cosmic-shooting-star shooting-star-1"></div>
+      <div className="cosmic-shooting-star shooting-star-2"></div>
+      <div className="cosmic-shooting-star shooting-star-3"></div>
+
+      <CosmicInterface cameraPosition={[0, 5, 40]}>
+        <ContentNebula density={0.8} emotionalResonance={0.7}>
           {mockPosts.map((post, index) => (
             <PostAsteroid
               key={post.id}
@@ -68,10 +79,22 @@ export default function FloatingPostIslandsPage() {
         </ContentNebula>
       </CosmicInterface>
 
-      {/* UI Overlay */}
-      <div className="absolute top-4 left-4 text-white">
-        <h1 className="text-2xl font-bold text-purple-300 mb-2">Floating Post Islands</h1>
-        <p className="text-sm text-purple-200">Click on asteroids to excavate cosmic posts</p>
+      {/* Enhanced UI Overlay */}
+      <div className="absolute top-4 left-4 text-white z-10">
+        <h1 className="text-3xl font-bold text-purple-300 mb-2 cosmic-float-3d">Floating Post Islands</h1>
+        <p className="text-sm text-purple-200">Navigate the cosmos • Click asteroids to excavate posts</p>
+        <div className="mt-4 text-xs text-purple-300/70">
+          🌟 Planets orbit in 3D space<br />
+          🌌 Nebulae drift through the void<br />
+          ⭐ Shooting stars illuminate the darkness
+        </div>
+      </div>
+
+      {/* Cosmic particles overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="cosmic-particle particle-1"></div>
+        <div className="cosmic-particle particle-2"></div>
+        <div className="cosmic-particle particle-3"></div>
       </div>
     </div>
   );

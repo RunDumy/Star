@@ -1,3 +1,210 @@
+"""
+Enhanced Sigil Generator for STAR Platform
+Generates personalized sigils based on zodiac signs and archetypal alignments
+"""
+
+import hashlib
+import math
+import random
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Tuple
+
+
+def generate_base_sigil(zodiac_sign: str, archetype: str, user_id: str) -> Dict[str, Any]:
+    """Generate a base sigil combining zodiac and archetype influences"""
+    
+    # Create deterministic seed from user data
+    seed_string = f"{zodiac_sign}_{archetype}_{user_id}"
+    seed = int(hashlib.md5(seed_string.encode()).hexdigest()[:8], 16)
+    random.seed(seed)
+    
+    # Base geometric patterns for zodiac signs
+    zodiac_patterns = {
+        'aries': {'sides': 3, 'base_angle': 0, 'symmetry': 'radial', 'complexity': 'sharp'},
+        'taurus': {'sides': 4, 'base_angle': 45, 'symmetry': 'bilateral', 'complexity': 'grounded'},
+        'gemini': {'sides': 6, 'base_angle': 30, 'symmetry': 'mirror', 'complexity': 'dual'},
+        'cancer': {'sides': 8, 'base_angle': 22.5, 'symmetry': 'spiral', 'complexity': 'protective'},
+        'leo': {'sides': 5, 'base_angle': 0, 'symmetry': 'radial', 'complexity': 'dramatic'},
+        'virgo': {'sides': 6, 'base_angle': 0, 'symmetry': 'precise', 'complexity': 'detailed'},
+        'libra': {'sides': 6, 'base_angle': 30, 'symmetry': 'perfect', 'complexity': 'balanced'},
+        'scorpio': {'sides': 8, 'base_angle': 45, 'symmetry': 'spiral', 'complexity': 'intense'},
+        'sagittarius': {'sides': 3, 'base_angle': 60, 'symmetry': 'arrow', 'complexity': 'dynamic'},
+        'capricorn': {'sides': 4, 'base_angle': 0, 'symmetry': 'mountain', 'complexity': 'structured'},
+        'aquarius': {'sides': 7, 'base_angle': 25.7, 'symmetry': 'wave', 'complexity': 'innovative'},
+        'pisces': {'sides': 8, 'base_angle': 45, 'symmetry': 'flow', 'complexity': 'fluid'}
+    }
+    
+    # Archetype modifiers
+    archetype_modifiers = {
+        'seeker': {'scale': 1.2, 'rotation': 15, 'inner_complexity': 1.5, 'openness': 0.8},
+        'guardian': {'scale': 0.9, 'rotation': 0, 'inner_complexity': 0.8, 'openness': 0.6},
+        'rebel': {'scale': 1.4, 'rotation': 45, 'inner_complexity': 1.8, 'openness': 1.2},
+        'mystic': {'scale': 1.1, 'rotation': 30, 'inner_complexity': 2.0, 'openness': 0.9}
+    }
+    
+    pattern = zodiac_patterns.get(zodiac_sign.lower(), zodiac_patterns['scorpio'])
+    modifier = archetype_modifiers.get(archetype.lower(), archetype_modifiers['mystic'])
+    
+    # Generate geometric points
+    points = generate_sigil_geometry(pattern, modifier)
+    
+    # Generate connecting strokes
+    strokes = generate_connecting_strokes(points, pattern, modifier)
+    
+    # Add elemental influences
+    element = get_zodiac_element(zodiac_sign)
+    points, strokes = apply_elemental_influence(points, strokes, element)
+    
+    return {
+        'id': f"{zodiac_sign}_{archetype}_{user_id[:8]}",
+        'points': points,
+        'strokes': strokes,
+        'metadata': {
+            'zodiac_sign': zodiac_sign,
+            'archetype': archetype,
+            'element': element,
+            'pattern': pattern,
+            'modifier': modifier,
+            'generated_at': datetime.now(timezone.utc).isoformat()
+        }
+    }
+
+def generate_sigil_geometry(pattern: Dict, modifier: Dict) -> List[Tuple[float, float]]:
+    """Generate the core geometric points for the sigil"""
+    sides = pattern['sides']
+    base_angle = math.radians(pattern['base_angle'] + modifier['rotation'])
+    
+    points = []
+    center_x, center_y = 150, 150  # Canvas center
+    base_radius = 60 * modifier['scale']
+    
+    for i in range(sides):
+        angle = base_angle + (2 * math.pi * i / sides)
+        
+        # Add some variation based on archetype
+        radius_variation = 1 + (random.random() - 0.5) * 0.3 * modifier['inner_complexity']
+        radius = base_radius * radius_variation
+        
+        x = center_x + radius * math.cos(angle)
+        y = center_y + radius * math.sin(angle)
+        points.append((x, y))
+    
+    # Add inner points for complexity
+    inner_points = []
+    inner_radius = base_radius * 0.4 * modifier['openness']
+    
+    for i in range(sides):
+        angle = base_angle + (2 * math.pi * i / sides) + math.pi / sides
+        x = center_x + inner_radius * math.cos(angle)
+        y = center_y + inner_radius * math.sin(angle)
+        inner_points.append((x, y))
+    
+    return points + inner_points
+
+def generate_connecting_strokes(points: List[Tuple[float, float]], pattern: Dict, modifier: Dict) -> List[Dict]:
+    """Generate connecting strokes between sigil points"""
+    strokes = []
+    outer_points = points[:pattern['sides']]
+    inner_points = points[pattern['sides']:] if len(points) > pattern['sides'] else []
+    
+    # Connect outer points
+    for i in range(len(outer_points)):
+        next_i = (i + 1) % len(outer_points)
+        strokes.append({
+            'from': outer_points[i],
+            'to': outer_points[next_i],
+            'weight': 2.0,
+            'style': 'solid'
+        })
+    
+    # Connect to inner points based on archetype
+    if inner_points:
+        connection_style = get_connection_style(pattern['symmetry'])
+        
+        for i, outer_point in enumerate(outer_points):
+            if i < len(inner_points):
+                strokes.append({
+                    'from': outer_point,
+                    'to': inner_points[i],
+                    'weight': 1.5 * modifier['inner_complexity'],
+                    'style': connection_style
+                })
+    
+    return strokes
+
+def get_zodiac_element(zodiac_sign: str) -> str:
+    """Get the elemental correspondence for a zodiac sign"""
+    elemental_map = {
+        'aries': 'fire', 'leo': 'fire', 'sagittarius': 'fire',
+        'taurus': 'earth', 'virgo': 'earth', 'capricorn': 'earth',
+        'gemini': 'air', 'libra': 'air', 'aquarius': 'air',
+        'cancer': 'water', 'scorpio': 'water', 'pisces': 'water'
+    }
+    return elemental_map.get(zodiac_sign.lower(), 'water')
+
+def apply_elemental_influence(points: List[Tuple[float, float]], strokes: List[Dict], element: str) -> Tuple[List[Tuple[float, float]], List[Dict]]:
+    """Apply elemental styling to the sigil"""
+    if element == 'fire':
+        # Sharp, angular modifications
+        for stroke in strokes:
+            stroke['style'] = 'sharp'
+            stroke['weight'] *= 1.2
+    elif element == 'earth':
+        # Grounded, stable modifications
+        for stroke in strokes:
+            stroke['style'] = 'solid'
+            stroke['weight'] *= 0.9
+    elif element == 'air':
+        # Light, flowing modifications
+        for stroke in strokes:
+            stroke['style'] = 'flowing'
+            stroke['weight'] *= 0.7
+    elif element == 'water':
+        # Curved, fluid modifications
+        for stroke in strokes:
+            stroke['style'] = 'curved'
+            stroke['weight'] *= 1.1
+    
+    return points, strokes
+
+def get_connection_style(symmetry: str) -> str:
+    """Get stroke connection style based on symmetry pattern"""
+    styles = {
+        'radial': 'solid',
+        'bilateral': 'dashed',
+        'mirror': 'dotted',
+        'spiral': 'curved',
+        'arrow': 'sharp',
+        'mountain': 'solid',
+        'wave': 'flowing',
+        'flow': 'curved',
+        'precise': 'solid',
+        'perfect': 'solid'
+    }
+    return styles.get(symmetry, 'solid')
+
+def generate_sigil_variations(base_sigil: Dict[str, Any], count: int = 3) -> List[Dict[str, Any]]:
+    """Generate multiple variations of a base sigil for user selection"""
+    variations = [base_sigil]  # Include original
+    
+    for i in range(count - 1):
+        variation = base_sigil.copy()
+        variation['id'] = f"{base_sigil['id']}_var{i+1}"
+        
+        # Apply minor variations
+        varied_points = []
+        for point in base_sigil['points']:
+            x, y = point
+            # Small random offset
+            x += (random.random() - 0.5) * 10
+            y += (random.random() - 0.5) * 10
+            varied_points.append((x, y))
+        
+        variation['points'] = varied_points
+        variations.append(variation)
+    
+    return variations
+
 def modify_for_tarot(points, strokes, tarot_card):
     """Modify sigil geometry based on tarot influences"""
 

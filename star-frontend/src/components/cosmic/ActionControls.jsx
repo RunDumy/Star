@@ -1,5 +1,12 @@
 import { useCollaboration } from '@/contexts/CollaborationContext';
-import { CHINESE_ZODIAC_ACTIONS, getActionColor } from '@/lib/zodiacActions';
+import {
+  AZTEC_ZODIAC_ACTIONS,
+  CHINESE_ZODIAC_ACTIONS,
+  getActionColor,
+  MAYAN_ZODIAC_ACTIONS,
+  VEDIC_ZODIAC_ACTIONS,
+  WESTERN_ZODIAC_ACTIONS
+} from '@/lib/zodiacActions';
 import { useEffect, useState } from 'react';
 
 const ActionControls = ({ currentUser, onActionTriggered }) => {
@@ -29,8 +36,35 @@ const ActionControls = ({ currentUser, onActionTriggered }) => {
   };
 
   const getZodiacActions = () => {
-    const zodiacSign = currentUser?.chinese_zodiac || 'Rat';
-    return CHINESE_ZODIAC_ACTIONS[zodiacSign] || CHINESE_ZODIAC_ACTIONS.Rat;
+    // Support multi-system zodiac preferences
+    const preferredSystem = currentUser?.zodiac_system || currentUser?.preferred_zodiac_system || 'chinese';
+
+    let zodiacSign;
+    let actionSource;
+
+    switch (preferredSystem) {
+      case 'western':
+        zodiacSign = currentUser?.western_zodiac || 'Aries';
+        actionSource = WESTERN_ZODIAC_ACTIONS;
+        break;
+      case 'vedic':
+        zodiacSign = currentUser?.vedic_zodiac || 'Mesha';
+        actionSource = VEDIC_ZODIAC_ACTIONS;
+        break;
+      case 'mayan':
+        zodiacSign = currentUser?.mayan_zodiac || 'Imix';
+        actionSource = MAYAN_ZODIAC_ACTIONS;
+        break;
+      case 'aztec':
+        zodiacSign = currentUser?.aztec_zodiac || 'Cipactli';
+        actionSource = AZTEC_ZODIAC_ACTIONS;
+        break;
+      default: // 'chinese'
+        zodiacSign = currentUser?.chinese_zodiac || 'Rat';
+        actionSource = CHINESE_ZODIAC_ACTIONS;
+    }
+
+    return actionSource[zodiacSign] || actionSource.Rat || actionSource.Aries || actionSource.Mesha || actionSource.Imix || actionSource.Cipactli;
   };
 
   const actions = getZodiacActions();
@@ -90,7 +124,7 @@ const ActionControls = ({ currentUser, onActionTriggered }) => {
 
               {/* Hover effect */}
               <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity"
-                   style={{ backgroundColor: getActionColor(currentUser?.zodiacSign, actionName) }} />
+                style={{ backgroundColor: getActionColor(currentUser?.zodiacSign, actionName) }} />
 
               {/* Active indicator */}
               {isThrottled && (
@@ -104,7 +138,28 @@ const ActionControls = ({ currentUser, onActionTriggered }) => {
         <div className="mt-3 pt-3 border-t border-purple-500/30">
           <div className="text-center">
             <span className="text-purple-300 text-xs">
-              {currentUser?.chinese_zodiac || 'Rat'} Spirit
+              {(() => {
+                const preferredSystem = currentUser?.zodiac_system || currentUser?.preferred_zodiac_system || 'chinese';
+                let displaySign;
+
+                switch (preferredSystem) {
+                  case 'western':
+                    displaySign = currentUser?.western_zodiac || 'Aries';
+                    break;
+                  case 'vedic':
+                    displaySign = currentUser?.vedic_zodiac || 'Mesha';
+                    break;
+                  case 'mayan':
+                    displaySign = currentUser?.mayan_zodiac || 'Imix';
+                    break;
+                  case 'aztec':
+                    displaySign = currentUser?.aztec_zodiac || 'Cipactli';
+                    break;
+                  default:
+                    displaySign = currentUser?.chinese_zodiac || 'Rat';
+                }
+                return displaySign;
+              })()} Spirit ({currentUser?.zodiac_system || currentUser?.preferred_zodiac_system || 'chinese'})
             </span>
           </div>
         </div>

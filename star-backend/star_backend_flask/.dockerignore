@@ -1,0 +1,71 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node modules and frontend
+star-frontend/
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+logs/
+
+# Infrastructure files (not needed in container)
+infra/
+.azure/
+azure.yaml
+Dockerfile
+.dockerignore
+
+# Deployment scripts
+deploy*.ps1
+deploy*.sh
+deploy*.bat
+
+# Test files
+test/
+tests/
+*test.py
+*_test.py

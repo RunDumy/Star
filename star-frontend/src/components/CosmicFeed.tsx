@@ -18,20 +18,20 @@ interface CosmicFeedProps {
   className?: string;
 }
 
-// Zodiac-specific action terminology and styling
+// Zodiac-specific action terminology and styling (ALIGNED WITH BACKEND)
 const ZODIAC_ACTIONS: ZodiacActions = {
-  'Aries': { comment: 'Blare', like: 'Ram', follow: 'Dash', share: 'Charge' },
-  'Taurus': { comment: 'Moo', like: 'Stamp', follow: 'Bond', share: 'Ground' },
-  'Gemini': { comment: 'Chirp', like: 'Clap', follow: 'Sync', share: 'Twin' },
-  'Cancer': { comment: 'Whisper', like: 'Pinch', follow: 'Embrace', share: 'Shelter' },
-  'Leo': { comment: 'Roar', like: 'Paw', follow: 'Stride', share: 'Radiate' },
-  'Virgo': { comment: 'Hum', like: 'Point', follow: 'Guide', share: 'Organize' },
-  'Libra': { comment: 'Chime', like: 'Sway', follow: 'Blend', share: 'Balance' },
-  'Scorpio': { comment: 'Hiss', like: 'Flick', follow: 'Dive', share: 'Intensify' },
-  'Sagittarius': { comment: 'Yelp', like: 'Kick', follow: 'Wander', share: 'Explore' },
-  'Capricorn': { comment: 'Bleat', like: 'Nudge', follow: 'Climb', share: 'Build' },
-  'Aquarius': { comment: 'Buzz', like: 'Tap', follow: 'Flow', share: 'Innovate' },
-  'Pisces': { comment: 'Splash', like: 'Flutter', follow: 'Drift', share: 'Dream' }
+  'Aries': { like: 'Charge', comment: 'Spark', follow: 'Lead', share: 'Ignite' },
+  'Taurus': { like: 'Graze', comment: 'Root', follow: 'Tread', share: 'Sustain' },
+  'Gemini': { like: 'Chatter', comment: 'Flit', follow: 'Connect', share: 'Spread' },
+  'Cancer': { like: 'Nurture', comment: 'Embrace', follow: 'Guide', share: 'Shelter' },
+  'Leo': { like: 'Roar', comment: 'Shine', follow: 'Strut', share: 'Inspire' },
+  'Virgo': { like: 'Analyze', comment: 'Tidy', follow: 'Serve', share: 'Refine' },
+  'Libra': { like: 'Balance', comment: 'Harmonize', follow: 'Align', share: 'Share' },
+  'Scorpio': { like: 'Probe', comment: 'Sting', follow: 'Hunt', share: 'Transform' },
+  'Sagittarius': { like: 'Quest', comment: 'Aim', follow: 'Explore', share: 'Inspire' },
+  'Capricorn': { like: 'Plan', comment: 'Climb', follow: 'Build', share: 'Achieve' },
+  'Aquarius': { like: 'Innovate', comment: 'Spark', follow: 'Rebel', share: 'Enlighten' },
+  'Pisces': { like: 'Dream', comment: 'Flow', follow: 'Drift', share: 'Connect' }
 };
 
 // Planetary hour color mappings
@@ -117,14 +117,14 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
           prev.map(item =>
             item.id === itemId
               ? {
-                  ...item,
-                  engagement: {
-                    ...item.engagement,
-                    likes: response.data.message === 'Post liked successfully'
-                      ? item.engagement.likes + 1
-                      : Math.max(0, item.engagement.likes - 1)
-                  }
+                ...item,
+                engagement: {
+                  ...item.engagement,
+                  likes: response.data.message === 'Post liked successfully'
+                    ? item.engagement.likes + 1
+                    : Math.max(0, item.engagement.likes - 1)
                 }
+              }
               : item
           )
         );
@@ -139,12 +139,12 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
           prev.map(item =>
             item.id === itemId
               ? {
-                  ...item,
-                  engagement: {
-                    ...item.engagement,
-                    comments: item.engagement.comments + 1
-                  }
+                ...item,
+                engagement: {
+                  ...item.engagement,
+                  comments: item.engagement.comments + 1
                 }
+              }
               : item
           )
         );
@@ -253,11 +253,10 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
             {/* Like Button */}
             <button
               onClick={() => handleEngagement('like', item.id)}
-              className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
-                item.engagement.likes > 0
+              className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${item.engagement.likes > 0
                   ? 'text-red-400 bg-red-900/20'
                   : 'text-gray-400 hover:text-red-400'
-              }`}
+                }`}
             >
               <Heart
                 className={`w-4 h-4 ${item.engagement.likes > 0 ? 'fill-current' : ''}`}

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import UserRegistration from '../src/components/cosmic/UserRegistration';
+import CosmicAwakeningRitual from '../src/components/cosmic/CosmicAwakeningRitual';
 import StarBackground from '../src/components/StarBackground';
 
 export default function Register() {
@@ -19,7 +19,7 @@ export default function Register() {
   if (profile) {
     return (
       <StarBackground>
-        <motion.div 
+        <motion.div
           className="relative z-10 min-h-screen flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -44,7 +44,7 @@ export default function Register() {
   return (
     <StarBackground>
       <div className="relative z-10">
-        <UserRegistration onProfileCreated={handleProfileCreated} />
+        <CosmicAwakeningRitual onProfileCreated={handleProfileCreated} />
       </div>
     </StarBackground>
   );

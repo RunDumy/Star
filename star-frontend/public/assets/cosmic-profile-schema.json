@@ -1,0 +1,349 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://star-platform.com/schemas/cosmic-profile.json",
+    "title": "Cosmic Profile",
+    "description": "Complete zodiac and numerology profile for STAR users",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique profile identifier"
+        },
+        "userId": {
+            "type": "string",
+            "description": "Associated user account ID"
+        },
+        "zodiacSigns": {
+            "type": "object",
+            "properties": {
+                "western": {
+                    "type": "string",
+                    "enum": [
+                        "aries",
+                        "taurus",
+                        "gemini",
+                        "cancer",
+                        "leo",
+                        "virgo",
+                        "libra",
+                        "scorpio",
+                        "sagittarius",
+                        "capricorn",
+                        "aquarius",
+                        "pisces"
+                    ]
+                },
+                "chinese": {
+                    "type": "string",
+                    "enum": [
+                        "rat",
+                        "ox",
+                        "tiger",
+                        "rabbit",
+                        "dragon",
+                        "snake",
+                        "horse",
+                        "goat",
+                        "monkey",
+                        "rooster",
+                        "dog",
+                        "pig"
+                    ]
+                },
+                "vedic": {
+                    "type": "string",
+                    "description": "Sidereal zodiac sign"
+                },
+                "mayan": {
+                    "type": "string",
+                    "enum": [
+                        "imix",
+                        "ik",
+                        "akbal",
+                        "kan",
+                        "chicchan",
+                        "cimi",
+                        "manik",
+                        "lamat",
+                        "muluc",
+                        "oc",
+                        "chuen",
+                        "eb",
+                        "ben",
+                        "ix",
+                        "men",
+                        "cib",
+                        "caban",
+                        "etznab",
+                        "cauac",
+                        "ahau"
+                    ]
+                },
+                "galacticTone": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 13,
+                    "description": "Galactic tone from Tzolkin calendar"
+                }
+            },
+            "required": [
+                "western",
+                "chinese",
+                "galacticTone"
+            ]
+        },
+        "numerology": {
+            "type": "object",
+            "properties": {
+                "lifePathNumber": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        11,
+                        22,
+                        33
+                    ]
+                },
+                "personalYear": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9
+                },
+                "soulUrgeNumber": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9
+                }
+            },
+            "required": [
+                "lifePathNumber"
+            ]
+        },
+        "elementalBalance": {
+            "type": "object",
+            "properties": {
+                "fire": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "water": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "air": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "earth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                }
+            },
+            "required": [
+                "fire",
+                "water",
+                "air",
+                "earth"
+            ]
+        },
+        "archetypalTraits": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Core personality archetypes"
+        },
+        "compatibilityMatrix": {
+            "type": "object",
+            "description": "Compatibility scores with other signs"
+        },
+        "badges": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "x": {
+                        "type": "number"
+                    },
+                    "y": {
+                        "type": "number"
+                    },
+                    "z": {
+                        "type": "number",
+                        "description": "3D depth for orbital layouts"
+                    },
+                    "zIndex": {
+                        "type": "integer"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "zodiac_primary",
+                            "zodiac_secondary",
+                            "elemental",
+                            "planetary",
+                            "numerical",
+                            "archetype",
+                            "seasonal",
+                            "achievement"
+                        ]
+                    },
+                    "rarity": {
+                        "type": "string",
+                        "enum": [
+                            "common",
+                            "rare",
+                            "epic",
+                            "legendary"
+                        ]
+                    },
+                    "size": {
+                        "type": "string",
+                        "enum": [
+                            "small",
+                            "medium",
+                            "large",
+                            "featured"
+                        ],
+                        "default": "medium"
+                    },
+                    "effects_enabled": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "unlock_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When this badge was unlocked"
+                    },
+                    "unlock_method": {
+                        "type": "string",
+                        "enum": [
+                            "initial_selection",
+                            "tarot_draw",
+                            "social_action",
+                            "seasonal_event",
+                            "achievement",
+                            "ritual_completion"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "x",
+                    "y",
+                    "category",
+                    "rarity"
+                ]
+            }
+        },
+        "sigilShrine": {
+            "type": "object",
+            "properties": {
+                "layout": {
+                    "type": "string",
+                    "enum": [
+                        "constellation",
+                        "grid",
+                        "orbit",
+                        "spiral"
+                    ],
+                    "default": "constellation"
+                },
+                "background_effects": {
+                    "type": "object",
+                    "properties": {
+                        "element_aura": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "star_pattern": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "planetary_glow": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    }
+                },
+                "animation_settings": {
+                    "type": "object",
+                    "properties": {
+                        "enable_particles": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "animation_speed": {
+                            "type": "string",
+                            "enum": [
+                                "slow",
+                                "normal",
+                                "fast"
+                            ],
+                            "default": "normal"
+                        },
+                        "mood_responsive": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                }
+            }
+        },
+        "ritualTag": {
+            "type": "string",
+            "enum": [
+                "Initiation",
+                "Integration",
+                "Ascension"
+            ],
+            "description": "User's selected ritual tag"
+        },
+        "archetype": {
+            "type": "string",
+            "enum": [
+                "Seeker",
+                "Guardian",
+                "Rebel",
+                "Mystic"
+            ],
+            "description": "User's selected archetype"
+        },
+        "lastPlanet": {
+            "type": "string",
+            "enum": [
+                "Profile (Venus)",
+                "Feed (Mercury)",
+                "Tarot (Moon)",
+                "Rituals (Saturn)"
+            ],
+            "description": "Last visited planetary navigation node"
+        }
+    },
+    "required": [
+        "id",
+        "userId",
+        "zodiacSigns",
+        "numerology",
+        "elementalBalance",
+        "ritualTag",
+        "archetype",
+        "lastPlanet"
+    ]
+}

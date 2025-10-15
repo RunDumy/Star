@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -15,12 +16,12 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'test-secret-key')
-CORS(app, origins=['http://localhost:3000', 'https://star-frontend.vercel.app'])
+CORS(app, origins=['http://localhost:3000'])
 
 # Import our core modules
 try:
-    from oracle_engine import OccultOracleEngine
     from cosmos_db import get_cosmos_helper
+    from oracle_engine import OccultOracleEngine
     oracle_available = True
     logger.info("Oracle engine and Cosmos DB loaded successfully")
 except ImportError as e:

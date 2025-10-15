@@ -1,0 +1,655 @@
+/* ZodiacDashboard.css - God-Tier Styling for Multi-Zodiac System */
+
+.zodiac-dashboard {
+    background: linear-gradient(135deg, rgba(10, 10, 42, 0.95) 0%, rgba(26, 26, 58, 0.95) 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 16px 0;
+    color: white;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    box-shadow:
+        0 8px 32px rgba(74, 144, 226, 0.2),
+        0 0 0 1px rgba(74, 144, 226, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.zodiac-dashboard::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(74, 144, 226, 0.03) 0%, transparent 70%);
+    animation: cosmicGlow 8s ease-in-out infinite alternate;
+    z-index: 0;
+}
+
+.zodiac-dashboard.animated::before {
+    animation: cosmicPulse 2s ease-out, cosmicGlow 8s ease-in-out infinite alternate;
+}
+
+.zodiac-dashboard>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Loading State */
+.zodiac-dashboard.loading {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.cosmic-spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(74, 144, 226, 0.3);
+    border-top: 3px solid #4a90e2;
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite;
+    margin: 0 auto 16px;
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.share-status {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.tab.active {
+    background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+/* Tab Content */
+.tab-content {
+    min-height: 300px;
+}
+
+/* Overview Content */
+.overview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cosmic-signature-card {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(123, 104, 238, 0.1) 100%);
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(74, 144, 226, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.cosmic-signature-card::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #4a90e2, #7b68ee, #4a90e2);
+    border-radius: 14px;
+    z-index: -1;
+    animation: borderGlow 3s linear infinite;
+}
+
+.cosmic-signature-card h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.signature-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.signature-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+.signature-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail span:first-child {
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.detail span:last-child {
+    font-weight: 600;
+    color: #ffd700;
+}
+
+/* Quick Signs */
+.quick-signs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.sign-card {
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.sign-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.sign-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+}
+
+.sign-card:hover::before {
+    opacity: 0.1;
+}
+
+.sign-card.western {
+    background: linear-gradient(135deg, rgba(255, 69, 0, 0.1) 0%, rgba(255, 140, 0, 0.1) 100%);
+}
+
+.sign-card.western::before {
+    background: linear-gradient(135deg, #ff4500 0%, #ff8c00 100%);
+}
+
+.sign-card.chinese {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
+}
+
+.sign-card.chinese::before {
+    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+}
+
+.sign-card.aztec {
+    background: linear-gradient(135deg, rgba(34, 139, 34, 0.1) 0%, rgba(50, 205, 50, 0.1) 100%);
+}
+
+.sign-card.aztec::before {
+    background: linear-gradient(135deg, #228b22 0%, #32cd32 100%);
+}
+
+.sign-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.sign-card p {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffd700;
+}
+
+/* Systems Content */
+.systems-content {
+    padding: 8px 0;
+}
+
+.system-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.system-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.system-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.2);
+}
+
+.system-card h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.system-sign {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffd700;
+    margin: 16px 0;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Cosmic Content */
+.cosmic-content {
+    padding: 8px 0;
+}
+
+.cosmic-detailed h3 {
+    margin: 0 0 24px 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.cosmic-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.cosmic-element {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.cosmic-element h4 {
+    margin: 0 0 16px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4a90e2;
+}
+
+.energy-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.cosmic-element p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.cosmic-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.placeholder-content h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.placeholder-content p {
+    margin: 0 0 24px 0;
+    opacity: 0.8;
+}
+
+.cosmic-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.signature-preview {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Buttons */
+.share-btn {
+    background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.share-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+}
+
+.share-btn:hover::before {
+    left: 100%;
+}
+
+.share-btn.small {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+}
+
+.share-btn.large {
+    padding: 14px 28px;
+    font-size: 1rem;
+}
+
+.share-btn.cosmic {
+    background: linear-gradient(135deg, #ff1493 0%, #4a90e2 50%, #7b68ee 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+}
+
+/* Footer */
+.dashboard-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.stats span:first-child {
+    font-weight: 600;
+    color: #4a90e2;
+}
+
+/* Animations */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes cosmicGlow {
+    0% {
+        opacity: 0.5;
+        transform: rotate(0deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes cosmicPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+}
+
+@keyframes textGlow {
+    0% {
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    100% {
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+}
+
+@keyframes borderGlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .zodiac-dashboard {
+        padding: 16px;
+        margin: 12px 0;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .tab-navigation {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .signature-display {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .quick-signs {
+        grid-template-columns: 1fr;
+    }
+
+    .system-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cosmic-breakdown {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        flex-direction: column;
+        text-align: center;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .zodiac-dashboard {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .signature-details {
+        grid-template-columns: 1fr;
+    }
+
+    .detail {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .zodiac-dashboard {
+        background: rgba(0, 0, 0, 0.95);
+        border: 2px solid white;
+    }
+
+    .tab.active {
+        background: white;
+        color: black;
+    }
+
+    .share-btn {
+        background: white;
+        color: black;
+        border: 2px solid white;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

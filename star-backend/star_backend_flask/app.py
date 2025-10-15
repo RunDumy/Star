@@ -5,15 +5,22 @@ import json
 import logging
 import os
 import random
+import uuid
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, request, send_from_directory
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+# Constants
+LOCALHOST_URL = 'http://localhost:3000'
+DATABASE_UNAVAILABLE_ERROR = "Database not available"
+ORACLE_UNAVAILABLE_ERROR = "Oracle engine not available"
+IMAGE_PNG_TYPE = "image/png"
 
 # Load environment variables first
 try:
@@ -48,9 +55,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
 
 # Enhanced CORS for production
 allowed_origins = [
-    'http://localhost:3000',
-    'https://star-frontend.vercel.app',
-    'https://*.vercel.app',
+    LOCALHOST_URL,
     'https://star-backend.azurewebsites.net'
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
@@ -107,6 +112,55 @@ except ImportError:
     init_redis = None
     redis_available = False
 
+# SocketIO and Collaboration imports
+socketio_available = False
+collaboration_engine = None
+
+try:
+    from collaboration_api import collaboration_bp
+    from collaboration_engine import (get_collaboration_engine,
+                                      init_collaboration_engine)
+    from flask_socketio import SocketIO
+
+    # Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # Initialize collaboration engine
+    collaboration_engine = init_collaboration_engine(socketio)
+    
+    # Register collaboration API blueprint
+    app.register_blueprint(collaboration_bp)
+    
+    socketio_available = True
+    logger.info("SocketIO and collaboration engine initialized")
+    
+except ImportError as e:
+    logger.warning(f"SocketIO/Collaboration features not available: {e}")
+    socketio = None
+
+# Analytics imports and initialization
+analytics_available = False
+
+try:
+    # Add the parent directory to the path for analytics imports
+    import sys
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if parent_dir not in sys.path:
+        sys.path.append(parent_dir)
+    
+    from analytics_api import analytics_bp
+    from analytics_engine import get_analytics_engine
+
+    # Register analytics API blueprint with v1 prefix
+    app.register_blueprint(analytics_bp, url_prefix='/api/v1/analytics')
+    
+    analytics_available = True
+    logger.info("Analytics engine and API initialized")
+    
+except ImportError as e:
+    logger.warning(f"Analytics features not available: {e}")
+    analytics_bp = None
+
 # Rate limiting (enhanced if available)
 if advanced_imports_available:
     limiter = Limiter(
@@ -116,6 +170,15 @@ if advanced_imports_available:
     )
 else:
     limiter = None
+
+# Safe rate limiting decorator that works with or without limiter
+def safe_rate_limit(limit):
+    """Rate limiting decorator that works whether limiter is available or not"""
+    def decorator(func):
+        if limiter:
+            return limiter.limit(limit)(func)
+        return func
+    return decorator
 
 # Core module imports with enhanced error handling
 oracle_available = False
@@ -176,6 +239,33 @@ except ImportError as e:
     logger.warning(f"Analytics blueprint not available: {e}")
     analytics_bp = None
 
+# Enhanced Tarot System (Optional functionality)
+try:
+    from enhanced_tarot_api import enhanced_tarot_bp
+    enhanced_tarot_available = True
+    logger.info("Enhanced tarot blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Enhanced tarot blueprint not available: {e}")
+    enhanced_tarot_bp = None
+
+# Enhanced Spotify Integration (Optional functionality)
+try:
+    from enhanced_spotify_api import spotify_bp
+    spotify_available = True
+    logger.info("Enhanced Spotify blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Enhanced Spotify blueprint not available: {e}")
+    spotify_bp = None
+
+# Main API Blueprint with Enhanced Tarot Endpoints
+try:
+    from api import api_bp
+    api_bp_available = True
+    logger.info("Main API blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Main API blueprint not available: {e}")
+    api_bp = None
+
 # React Frontend serving routes
 @app.route('/')
 def serve_react_app():
@@ -216,7 +306,7 @@ def health():
     })
 
 @app.route('/api/status')
-@limiter.limit("10 per minute")
+@safe_rate_limit("10 per minute")
 def api_status():
     """Detailed API status for monitoring"""
     return jsonify({
@@ -231,10 +321,246 @@ def api_status():
         "cors_enabled": True
     })
 
+# Authentication Endpoints
+@app.route('/api/v1/register', methods=['POST'])
+@safe_rate_limit("5 per minute")
+def register():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+
+        username = data['username'].strip()
+        password = data['password']
+
+        # Check if user already exists using CosmosDB helper
+        if cosmos_helper:
+            try:
+                existing_user = cosmos_helper.get_user_by_username(username)
+                if existing_user:
+                    return jsonify({'error': 'Username already exists'}), 409
+            except Exception as e:
+                logging.error(f"Database check error: {e}")
+
+        # Hash password
+        if advanced_imports_available:
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        else:
+            return jsonify({'error': 'Registration temporarily unavailable'}), 503
+
+        # Create user data
+        user_data = {
+            'id': str(uuid.uuid4()),
+            'username': username,
+            'password_hash': hashed_password,
+            'zodiac_sign': data.get('zodiac_sign', ''),
+            'chinese_zodiac': data.get('chinese_zodiac', ''),
+            'vedic_zodiac': data.get('vedic_zodiac', ''),
+            'bio': data.get('bio', ''),
+            'full_name': data.get('full_name', ''),
+            'birth_date': data.get('birth_date', ''),
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'last_seen': datetime.now(timezone.utc).isoformat(),
+            'is_online': False
+        }
+
+        # Create user in Cosmos DB using helper method
+        if cosmos_helper:
+            try:
+                created_user = cosmos_helper.create_user(user_data)
+            except Exception as e:
+                logging.error(f"User creation error: {e}")
+                return jsonify({'error': 'Failed to create user'}), 500
+        else:
+            return jsonify({'error': 'Database unavailable'}), 503
+
+        # Generate JWT token
+        if advanced_imports_available:
+            token = jwt.encode({
+                'user_id': user_data['id'],
+                'username': username,
+                'exp': datetime.now(timezone.utc) + timedelta(days=7)
+            }, app.config.get('JWT_SECRET_KEY', 'fallback-secret'), algorithm='HS256')
+        else:
+            token = f"temp-token-{user_data['id']}"
+
+        return jsonify({
+            'message': 'User registered successfully',
+            'token': token
+        }), 201
+
+    except Exception as e:
+        logging.error(f"Registration error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/login', methods=['POST'])
+@safe_rate_limit("10 per minute")
+def login():
+    """Login user"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+
+        username = data['username'].strip()
+        password = data['password']
+
+        # Get user by username using CosmosDB helper
+        if not cosmos_helper:
+            return jsonify({'error': 'Database unavailable'}), 503
+            
+        try:
+            user = cosmos_helper.get_user_by_username(username)
+            if not user:
+                return jsonify({'error': 'Invalid username or password'}), 401
+        except Exception as e:
+            logging.error(f"User lookup error: {e}")
+            return jsonify({'error': 'Database error'}), 500
+
+        # Check password
+        if advanced_imports_available:
+            if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+                return jsonify({'error': 'Invalid username or password'}), 401
+        else:
+            return jsonify({'error': 'Authentication temporarily unavailable'}), 503
+
+        # Generate JWT token
+        if advanced_imports_available:
+            token = jwt.encode({
+                'user_id': user['id'],
+                'username': username,
+                'exp': datetime.now(timezone.utc) + timedelta(days=7)
+            }, app.config.get('JWT_SECRET_KEY', 'fallback-secret'), algorithm='HS256')
+        else:
+            token = f"temp-token-{user['id']}"
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'user': {
+                'id': user['id'],
+                'username': username,
+                'zodiac_sign': user.get('zodiac_sign', '')
+            }
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Login error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/zodiac-calculator', methods=['POST'])
+def zodiac_calculator():
+    """Calculate zodiac signs from birth date"""
+    try:
+        data = request.get_json()
+        birth_date = data.get('birth_date')
+        
+        if not birth_date:
+            return jsonify({'error': 'Birth date required'}), 400
+        
+        date = datetime.strptime(birth_date, '%Y-%m-%d')
+        day = date.day
+        month = date.month
+        year = date.year
+        
+        # Calculate Western Zodiac
+        western_signs = {
+            (3, 21): 'Aries', (4, 20): 'Taurus', (5, 21): 'Gemini',
+            (6, 21): 'Cancer', (7, 23): 'Leo', (8, 23): 'Virgo',
+            (9, 23): 'Libra', (10, 23): 'Scorpio', (11, 22): 'Sagittarius',
+            (12, 22): 'Capricorn', (1, 20): 'Aquarius', (2, 19): 'Pisces'
+        }
+        
+        western = 'Capricorn'  # Default
+        for (start_month, start_day), sign in western_signs.items():
+            if (month == start_month and day >= start_day) or \
+               (month == start_month + 1 and day < start_day) or \
+               (start_month == 12 and month == 1 and day < start_day):
+                western = sign
+                break
+        
+        # Calculate Chinese Zodiac
+        chinese_animals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 
+                          'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig']
+        chinese = chinese_animals[(year - 1900) % 12]
+        
+        # Calculate Galactic Tone (1-13)
+        galactic_tone = (day % 13) + 1
+        
+        return jsonify({
+            'western': western,
+            'chinese': chinese,
+            'vedic': western,  # Simplified mapping
+            'mayan': f'Day {day % 20 + 1}',
+            'galactic': f'Tone {galactic_tone}',
+            'galactic_tone': galactic_tone
+        })
+        
+    except Exception as e:
+        logging.error(f"Zodiac calculation error: {e}")
+        return jsonify({'error': 'Calculation failed'}), 500
+
+@app.route('/api/v1/agora-token', methods=['POST'])
+def generate_agora_token():
+    """Generate AgoraRTC token for live streaming"""
+    try:
+        data = request.get_json()
+        channel_name = data.get('channel_name', f'test-channel-{uuid.uuid4()}')
+        uid = data.get('uid', 0)
+        
+        # Get Agora credentials from environment
+        agora_app_id = os.environ.get('AGORA_APP_ID')
+        agora_app_certificate = os.environ.get('AGORA_APP_CERTIFICATE')
+        
+        if not agora_app_id or not agora_app_certificate:
+            return jsonify({
+                'error': 'AgoraRTC credentials not configured',
+                'app_id_present': bool(agora_app_id),
+                'certificate_present': bool(agora_app_certificate)
+            }), 500
+        
+        # Token valid for 1 hour
+        from datetime import timedelta
+        expiration_time = int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+        
+        # Import Agora token builder if available
+        try:
+            from agora_token_builder import Role_Publisher, RtcTokenBuilder
+            
+            agora_token = RtcTokenBuilder.buildTokenWithUid(
+                agora_app_id,
+                agora_app_certificate,
+                channel_name,
+                uid,
+                Role_Publisher,
+                expiration_time
+            )
+            
+            return jsonify({
+                'success': True,
+                'agora_token': agora_token,
+                'channel_name': channel_name,
+                'app_id': agora_app_id,
+                'uid': uid,
+                'expires_at': expiration_time
+            })
+            
+        except ImportError:
+            return jsonify({
+                'error': 'Agora token builder not available',
+                'app_id': agora_app_id,
+                'channel_name': channel_name
+            }), 503
+            
+    except Exception as e:
+        logging.error(f"Agora token generation error: {e}")
+        return jsonify({'error': 'Token generation failed'}), 500
+
 @app.route('/api/oracle/natal-chart', methods=['POST'])
 def get_natal_chart():
     if not oracle_available:
-        return jsonify({"error": "Oracle engine not available"}), 503
+        return jsonify({"error": ORACLE_UNAVAILABLE_ERROR}), 503
 
     try:
         data = request.get_json()
@@ -353,7 +679,7 @@ def get_daily_tonalpohualli():
 # Social Feed API Endpoints (Optimized for Performance)
 @app.route('/api/posts', methods=['GET'])
 @cache.cached(timeout=30)  # Cache for 30 seconds
-@limiter.limit("100 per minute")
+@safe_rate_limit("100 per minute")
 def get_posts():
     """Get social feed posts with pagination and filtering"""
     try:
@@ -364,7 +690,7 @@ def get_posts():
         user_id = request.args.get('user_id')
         
         if not cosmos_helper:
-            return jsonify({"error": "Database not available"}), 503
+            return jsonify({"error": DATABASE_UNAVAILABLE_ERROR}), 503
             
         # Build query
         query = "SELECT * FROM c WHERE c.type = 'post'"
@@ -414,7 +740,7 @@ def get_posts():
         return jsonify({"error": "Failed to fetch posts"}), 500
 
 @app.route('/api/posts', methods=['POST'])
-@limiter.limit("10 per minute")
+@safe_rate_limit("10 per minute")
 def create_post():
     """Create a new social post"""
     try:
@@ -487,7 +813,7 @@ def get_post(post_id):
         return jsonify({"error": "Failed to fetch post"}), 500
 
 @app.route('/api/posts/<post_id>/like', methods=['POST'])
-@limiter.limit("20 per minute")
+@safe_rate_limit("20 per minute")
 def like_post(post_id):
     """Like/unlike a post"""
     try:
@@ -633,7 +959,7 @@ def serve_service_worker():
     return response
 
 @app.route('/api/notifications/subscribe', methods=['POST'])
-@limiter.limit("5 per minute")
+@safe_rate_limit("5 per minute")
 def subscribe_notifications():
     """Subscribe to push notifications"""
     try:
@@ -696,7 +1022,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
     
-    logger.info(f"Starting STAR Backend Server")
+    logger.info("Starting STAR Backend Server")
     logger.info(f"Port: {port}")
     logger.info(f"Debug: {debug_mode}")
     logger.info(f"Environment: {os.environ.get('FLASK_ENV', 'production')}")
@@ -1331,7 +1657,7 @@ else:
     # ==================== API RESOURCES ====================
 
     class Register(Resource):
-        @limiter.limit("100/hour")
+        @safe_rate_limit("100/hour")
         def post(self):
             schema = RegisterSchema()
             try:
@@ -1405,7 +1731,7 @@ else:
                 return {'error': 'Registration failed'}, 500
 
     class Login(Resource):
-        @limiter.limit("100/hour")
+        @safe_rate_limit("100/hour")
         def post(self):
             data = request.get_json(silent=True) or request.form.to_dict() or {}
             username = data.get('username')
@@ -1448,7 +1774,7 @@ else:
                 return {'error': 'Login failed'}, 500
 
     class PostResource(Resource):
-        @limiter.limit("50/hour")
+        @safe_rate_limit("50/hour")
         @cache.cached(timeout=60)
         def get(self):
             """Get all posts with caching and optional planet filtering"""
@@ -1519,7 +1845,7 @@ else:
                 logger.error(f"Failed to fetch posts: {str(e)}")
                 return {'error': 'Failed to fetch posts'}, 500
 
-        @limiter.limit("20/hour")
+        @safe_rate_limit("20/hour")
         @token_required
         def post(self, current_user):
             """Create a new post"""
@@ -1556,7 +1882,7 @@ else:
 
     # TODO: Replace with Azure Blob Storage upload functionality
     class TrendDiscoveryResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @cache.cached(timeout=300)
         def get(self):
             """Discover trending content with caching"""
@@ -1577,7 +1903,7 @@ else:
                 return {'error': 'Failed to fetch trends'}, 500
 
     class ProfileResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         def get(self, user_id):
             """Get user profile with numerology"""
             try:
@@ -1624,7 +1950,7 @@ else:
                 return {'error': 'Failed to fetch profile'}, 500
 
     class ZodiacNumberResource(Resource):
-        @limiter.limit("100/hour")
+        @safe_rate_limit("100/hour")
         @cache.cached(timeout=300)
         def get(self):
             """Generate three single-digit numbers for zodiac systems"""
@@ -1637,7 +1963,7 @@ else:
                 return {'error': 'Failed to generate zodiac numbers'}, 500
 
     class FollowResource(Resource):
-        @limiter.limit("50/hour")
+        @safe_rate_limit("50/hour")
         @token_required
         def post(self, current_user, user_id):
             """Follow another user"""
@@ -1698,8 +2024,19 @@ else:
                 # Update post spark count
                 post['spark_count'] = cosmos_helper.get_sparks_count(post_id)
                 
-                # TODO: Update post in Cosmos DB (need update_post method)
-                # TODO: Create notification if not own post
+                # Update post in Cosmos DB
+                cosmos_helper.update_post(post_id, {'spark_count': post['spark_count']})
+                
+                # Create notification if not own post
+                if post.get('user_id') != g.current_user['id']:
+                    cosmos_helper.create_notification({
+                        'id': str(uuid.uuid4()),
+                        'user_id': post.get('user_id'),
+                        'type': 'spark',
+                        'message': f"{g.current_user['username']} sparked your post",
+                        'created_at': datetime.now(timezone.utc).isoformat(),
+                        'read': False
+                    })
                 
                 # Clear cache
                 cache.delete('posts')
@@ -1747,8 +2084,20 @@ else:
                 }
                 created_comment = cosmos_helper.create_comment(comment_data)
                 
-                # TODO: Update post echo_count in Cosmos DB
-                # TODO: Create notification if not own post
+                # Update post echo_count (comment count) in Cosmos DB
+                comment_count = len(cosmos_helper.get_comments_for_post(post_id))
+                cosmos_helper.update_post(post_id, {'echo_count': comment_count})
+                
+                # Create notification if not own post
+                if post.get('user_id') != current_user['id']:
+                    cosmos_helper.create_notification({
+                        'id': str(uuid.uuid4()),
+                        'user_id': post.get('user_id'),
+                        'type': 'comment',
+                        'message': f"{current_user['username']} commented on your post",
+                        'created_at': datetime.now(timezone.utc).isoformat(),
+                        'read': False
+                    })
                 
                 # Clear cache
                 cache.delete('posts')
@@ -1786,9 +2135,8 @@ else:
                 all_posts = cosmos_helper.get_posts(limit=100)
                 
                 # Get users that current user follows
-                # TODO: Add get_following method to CosmosDBHelper
-                # For now, assume no follows and get all posts as trending
-                followed_usernames = []  # TODO: Get from Cosmos DB
+                following_list = cosmos_helper.get_following(current_user['id'])
+                followed_usernames = [follow.get('followed_username', '') for follow in following_list]
                 
                 # Separate followed and trending posts
                 followed_posts = []
@@ -1836,7 +2184,7 @@ else:
                         'image_url': post.get('image_url'),
                         'spark_count': post.get('spark_count', 0),
                         'echo_count': post.get('echo_count', 0),
-                        'comment_count': 0,  # TODO: Get comment count from Cosmos DB
+                        'comment_count': len(cosmos_helper.get_comments_for_post(post.get('id', ''))),
                         'created_at': post.get('created_at'),
                         'is_followed': post.get('username') in followed_usernames
                     } for post in unique_posts[:30]]
@@ -1886,7 +2234,7 @@ else:
                 return f"⚡ Interesting dynamic! {sign1} and {sign2} can learn from their differences."
 
     class HoroscopeResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @cache.memoize(timeout=3600)  # Cache for 1 hour
         def get(self, zodiac_sign=None):
             """Get daily horoscope for zodiac sign"""
@@ -1947,7 +2295,7 @@ else:
             return {'error': 'Notifications feature temporarily disabled during Azure migration. Please check back later.'}, 503
 
     class NumerologyResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @token_required
         def get(self, current_user):
             """Get user's complete numerology reading"""
@@ -1974,14 +2322,14 @@ else:
                 return {'error': 'Failed to calculate numerology'}, 500
 
     class NumerologyCompatibilityResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @token_required
         def post(self, current_user):
             """Check numerology compatibility with another user - Temporarily disabled during Azure migration"""
             return {'error': 'Numerology compatibility feature temporarily disabled during Azure migration. Please check back later.'}, 503
 
     class NumerologyCalculatorResource(Resource):
-        @limiter.limit("30/hour")
+        @safe_rate_limit("30/hour")
         def post(self):
             """Calculate numerology for any name and birth date (public endpoint)"""
             try:
@@ -2019,7 +2367,7 @@ else:
             return {'error': 'User settings update temporarily disabled during Azure migration. Please check back later.'}, 503
 
     class ArchetypeOracleResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @token_required
         def get(self, current_user):
             """Get user's complete archetype oracle reading"""
@@ -2059,7 +2407,7 @@ else:
                 return {'error': 'Failed to generate archetype oracle reading'}, 500
 
     class PublicOracleResource(Resource):
-        @limiter.limit("30/hour")
+        @safe_rate_limit("30/hour")
         def post(self):
             """Generate public oracle reading"""
             try:
@@ -2077,7 +2425,7 @@ else:
                 return {'error': 'Failed to generate public oracle reading'}, 500
 
     class CosmicProfileResource(Resource):
-        @limiter.limit("30/hour")
+        @safe_rate_limit("30/hour")
         def post(self):
             """Generate cosmic profile with UI augmentation"""
             try:
@@ -2110,7 +2458,7 @@ else:
                 return {'error': 'Failed to generate cosmic profile'}, 500
 
     class BirthChartResource(Resource):
-        @limiter.limit("30/hour")
+        @safe_rate_limit("30/hour")
         def post(self):
             """Calculate birth chart for given birth details"""
             try:
@@ -2404,7 +2752,7 @@ else:
 
     # Occult Oracle AI Endpoints
     class ArchetypeSynthesizerResource(Resource):
-        @limiter.limit("30/hour")
+        @safe_rate_limit("30/hour")
         @token_required
         def get(self, current_user):
             """Get user's archetype synthesis"""
@@ -2422,7 +2770,7 @@ else:
                 return {'error': 'Failed to generate archetype synthesis'}, 500
 
     class MentorPersonalityResource(Resource):
-        @limiter.limit("100/hour")
+        @safe_rate_limit("100/hour")
         @token_required
         def post(self, current_user):
             """Generate mentor response based on user input"""
@@ -2449,7 +2797,7 @@ else:
                 return {'error': 'Failed to generate mentor response'}, 500
 
     class ResonanceTrackerResource(Resource):
-        @limiter.limit("60/hour")
+        @safe_rate_limit("60/hour")
         @token_required
         def get(self, current_user):
             """Get current resonance tracking data"""
@@ -2465,7 +2813,7 @@ else:
                 return {'error': 'Failed to generate resonance tracking'}, 500
 
     class EmotionalOSResource(Resource):
-        @limiter.limit("50/hour")
+        @safe_rate_limit("50/hour")
         @token_required
         def post(self, current_user):
             """Process emotional query through Emotional OS"""
@@ -2490,7 +2838,7 @@ else:
                 return {'error': 'Failed to process emotional query'}, 500
 
     class OccultOracleAIResource(Resource):
-        @limiter.limit("20/hour")
+        @safe_rate_limit("20/hour")
         @token_required
         def post(self, current_user):
             """Generate complete Occult Oracle AI experience"""
@@ -2656,23 +3004,44 @@ else:
             trend_engine.generate_trends()
             logger.info("Trend engine initialized with cosmic trends")
         
+        # Register main API blueprint (contains enhanced tarot endpoints)
+        if api_bp_available and api_bp:
+            app.register_blueprint(api_bp)
+            logger.info("Main API blueprint with enhanced tarot endpoints registered")
+
+        # Register enhanced tarot system blueprint
+        if enhanced_tarot_available and enhanced_tarot_bp:
+            app.register_blueprint(enhanced_tarot_bp)
+            logger.info("Enhanced tarot API endpoints registered")
+
+        # Register enhanced Spotify integration blueprint
+        if spotify_available and spotify_bp:
+            app.register_blueprint(spotify_bp)
+            logger.info("Enhanced Spotify API endpoints registered")
+
         # Register tarot interactions blueprint
-        app.register_blueprint(tarot_bp, url_prefix='/api/v1/tarot')
+        if 'tarot_bp' in globals():
+            app.register_blueprint(tarot_bp, url_prefix='/api/v1/tarot')
 
         # Register feed blueprint
-        app.register_blueprint(feed, url_prefix='/api/v1')
+        if 'feed' in globals():
+            app.register_blueprint(feed, url_prefix='/api/v1')
 
         # Register star points blueprint
-        app.register_blueprint(star_points, url_prefix='/api/v1')
+        if 'star_points' in globals():
+            app.register_blueprint(star_points, url_prefix='/api/v1')
 
         # Register notifications blueprint
-        app.register_blueprint(notifications, url_prefix='/api/v1')
+        if 'notifications' in globals():
+            app.register_blueprint(notifications, url_prefix='/api/v1')
 
         # Register group chat blueprint
-        app.register_blueprint(group_chat_bp, url_prefix='/api/v1')
+        if 'group_chat_bp' in globals():
+            app.register_blueprint(group_chat_bp, url_prefix='/api/v1')
 
         # Register analytics blueprint
-        app.register_blueprint(analytics_bp, url_prefix='/api/v1')
+        if analytics_available and analytics_bp:
+            app.register_blueprint(analytics_bp, url_prefix='/api/v1')
 
     # ==================== AZURE APP SERVICE CONFIGURATION ====================
 
