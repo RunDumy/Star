@@ -1,7 +1,7 @@
 # STAR Backend Production Dependencies (No Redis)
 # Core Flask Dependencies
 Flask==2.3.3
-Flask-CORS==4.0.0
+Flask-CORS==6.0.0
 Flask-Caching==2.1.0
 Werkzeug==2.3.7
 
@@ -12,7 +12,7 @@ python-dotenv==1.0.0
 azure-cosmos==4.7.0
 azure-storage-blob==12.18.3
 azure-monitor-opentelemetry==1.1.0
-azure-identity==1.15.0
+azure-identity==1.16.1
 
 # Authentication & Security
 PyJWT==2.8.0
@@ -23,7 +23,7 @@ ephem==4.1.5
 pyswisseph==2.10.3.2
 
 # HTTP requests
-requests==2.31.0
+requests==2.32.4
 
 # Development Dependencies
 pytest==7.4.2
