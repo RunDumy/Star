@@ -249,20 +249,22 @@ class EnvironmentCleanupUtility {
             }
         }
 
-        // Check Azure Key Vault variables
-        const hasKeyVaultVars = ENV_VALIDATION.backend.azure_keyvault.some(v => envVars[v]);
-        if (hasKeyVaultVars) {
-            for (const keyVaultVar of ENV_VALIDATION.backend.azure_keyvault) {
-                if (!envVars[keyVaultVar]) {
-                    this.warnings.push(`Missing Azure Key Vault variable: ${keyVaultVar}`);
+        // Check Supabase variables
+        const hasSupabaseVars = ENV_VALIDATION.backend.supabase.some(v => envVars[v]);
+        if (hasSupabaseVars) {
+            for (const supabaseVar of ENV_VALIDATION.backend.supabase) {
+                if (!envVars[supabaseVar]) {
+                    this.warnings.push(`Missing Supabase variable: ${supabaseVar}`);
                 }
             }
         }
 
-        // Validate Cosmos DB connection string format
-        if (envVars.COSMOS_DB_CONNECTION_STRING) {
-            if (!envVars.COSMOS_DB_CONNECTION_STRING.includes('AccountEndpoint=')) {
-                this.errors.push('COSMOS_DB_CONNECTION_STRING appears to be invalid');
+        // Validate Supabase URL format
+        if (envVars.SUPABASE_URL) {
+            try {
+                new URL(envVars.SUPABASE_URL);
+            } catch {
+                this.errors.push('SUPABASE_URL is not a valid URL');
             }
         }
 

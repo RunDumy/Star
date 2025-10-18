@@ -4,12 +4,12 @@
 
 ## Overview
 
-STAR is a zodiac-themed social platform with Next.js + TypeScript frontend (`star-frontend/`) and Flask backend (`star-backend/star_backend_flask/`) using Supabase Database. Core features include interactive tarot readings, 3D collaborative cosmos, live streaming via AgoraRTC, and real-time social features with multi-zodiac theming (76+ signs, 13 galactic tones, 304 animations).
+STAR is a zodiac-themed social platform with Next.js + TypeScript frontend (`star-frontend/`) and Flask backend (`star-backend/star_backend_flask/`) using Supabase Database. Core features include interactive tarot readings, 3D collaborative cosmos, live streaming via AgoraRTC, and real-time social features with multi-zodiac theming (91+ signs across 5 traditions, 364+ actions, 304 animations).
 
 ## Architecture
 
-- **Frontend (`star-frontend/`)**: Next.js 15 + React 18 + TypeScript. Routes in `pages/`, components in `components/`, hooks in `hooks/`, utilities in `lib/`. API calls to `NEXT_PUBLIC_API_URL` (default `http://localhost:5000`).
-- **Backend (`star-backend/star_backend_flask/`)**: Flask app with Supabase Database. Main app in `app.py`, v1 API in `api.py` (`/api/v1/*`), auth in `star_auth.py` (`@token_required`), DB helper in `cosmos_db.py` (`SupabaseDBHelper` class).
+- **Frontend (`star-frontend/`)**: Next.js 14 + React 18 + TypeScript. Routes in `pages/`, components in `src/components/`, hooks in `src/hooks/`, utilities in `src/lib/`. API calls to `NEXT_PUBLIC_API_URL` (default `http://localhost:5000`).
+- **Backend (`star-backend/star_backend_flask/`)**: Flask 3.0 app with Supabase Database. Main app in `app.py`, API blueprints in `api_blueprint.py` (`/api/v1/*`), analytics in `analytics_api.py`, auth in `star_auth.py` (`@token_required`), DB helper in `cosmos_db.py` (`SupabaseDBHelper` class).
 - **Data Flow**: Frontend calls `/api/v1/*` endpoints; backend queries Supabase tables (users, posts, chats, etc.), returns JSON.
 - **Real-time**: SocketIO for chat/notifications, AgoraRTC for live streaming.
 - **Why**: Monorepo for dependency management; Flask for stability; Supabase for global distribution; Docker for consistency; AgoraRTC for real-time.
@@ -17,49 +17,414 @@ STAR is a zodiac-themed social platform with Next.js + TypeScript frontend (`sta
 ## Critical Architecture Patterns
 
 ### Dual Frontend Structure
-- **Pages**: `star-frontend/pages/` - Next.js routing (main UI pages like `cosmic-feed.tsx`, `tarot-reading.tsx`)  
-- **Components**: `star-frontend/src/components/` - Reusable React components
+- **Pages**: `star-frontend/pages/` - Next.js routing (main UI pages like `cosmic-feed.tsx`, `tarot-reading.tsx`)
+- **Components**: `star-frontend/src/components/` - Reusable React components organized by feature (cosmic/, zodiac/, collaborative/)
 - **3D Engine**: `star-frontend/src/EnhancedStarCosmos.jsx` - Main 3D environment using React Three Fiber
+- **Contexts**: `star-frontend/src/contexts/` - React contexts for state management (AuthContext, etc.)
 
 ### Backend Data Layer
+- **Blueprint Pattern**: API endpoints organized in `api_blueprint.py` and `analytics_api.py` blueprints
 - **Single DB Helper**: All Supabase operations MUST use `SupabaseDBHelper` class from `cosmos_db.py`
-- **Table Pattern**: Pre-defined tables (`users`, `posts`, `chats`, `profiles`, `zodiac_dna`, etc.) - use `helper.table(name)`
-- **API Structure**: All endpoints in `api.py` under `/api/v1/*` prefix - use `@token_required` decorator for auth
+- **Table Pattern**: Pre-defined Supabase tables (users, posts, profiles, chats, follows, etc.) - use `supabase.table(name)`
+- **API Structure**: All endpoints in blueprints under `/api/v1/*` prefix - use `@token_required` decorator for auth
 
 ## File Placement
 
 - **Frontend**: Configs (`next.config.mjs`, `package.json`, `tsconfig.json`, `jest.config.cjs`) in `star-frontend/`.
-- **Backend**: Core files (`app.py`, `api.py`, `star_auth.py`, `cosmos_db.py`) in `star-backend/star_backend_flask/`. DB migrations in `star-backend/database/`.
+- **Backend**: Core files (`app.py`, `api_blueprint.py`, `analytics_api.py`, `star_auth.py`, `cosmos_db.py`) in `star-backend/star_backend_flask/`. DB schema in root `supabase_schema.sql`.
 - **Docker**: `docker-compose.yml` for local dev with backend (5000), frontend (3000).
+- **Environment**: `.env` files in backend directory, `.env.local` in frontend directory.
 
 ## Developer Workflows
 
-- **Docker Setup (Required)**: Run `docker-compose up --build` to start services.
-- **Backend Setup (Without Docker)**: `cd star-backend/star_backend_flask; pip install -r ../requirements.txt; python app.py`.
+- **Docker Setup (Required)**: Run `docker-compose up --build` to start services with health checks.
+- **Backend Setup (Without Docker)**: `cd star-backend/star_backend_flask; pip install -r ../../requirements.txt; python app.py`.
 - **Frontend Setup (Without Docker)**: `cd star-frontend; npm install; npm run dev`.
-- **Testing**: Backend: `cd star-backend; python -m pytest tests/ -v`; Frontend: `cd star-frontend; npm test`.
+- **Testing**: Backend: `cd star-backend/star_backend_flask; python -m pytest ../tests/ -v`; Frontend: `cd star-frontend; npm test`.
 - **AgoraRTC Testing**: Use `/agora-test` page with Docker + valid credentials.
+- **Database**: Schema auto-created via `supabase_schema.sql`; use Supabase dashboard for management.
 
 ## Conventions
 
 ### Authentication Flow
-- **JWT Tokens**: 24-hour expiry for login, 7-day for registration. Token in `Authorization: Bearer <token>` header
-- **Frontend Auth**: Use `AuthContext` from `src/lib/AuthContext.tsx` - stores token in localStorage
-- **Backend Auth**: `@token_required` decorator validates JWT and injects `g.current_user`
+- **Supabase Auth**: JWT tokens managed by Supabase Auth service. Token in `Authorization: Bearer <token>` header
+- **Frontend Auth**: Use AuthContext from `src/contexts/AuthContext.tsx` - stores token in localStorage
+- **Backend Auth**: `@token_required` decorator validates JWT and injects `current_user` parameter
 - **API Setup**: Axios interceptor auto-adds auth headers from localStorage
 
 ### API & Database Patterns
-- **Frontend**: TypeScript strict mode. API calls via `axios` to `NEXT_PUBLIC_API_URL`. 3D: `@react-three/fiber` and `@react-three/drei`. Live streaming: `agora-rtc-sdk-ng` and `agora-react-uikit`.
-- **Testing**: Backend: `star-backend/tests/test_*.py` (pytest); Frontend: `star-frontend/__tests__/*.test.tsx` (Jest).
+- **Frontend**: TypeScript strict mode. API calls via `axios` to `NEXT_PUBLIC_API_URL`. 3D: `@react-three/fiber` and `@react-three/drei`. Live streaming: `agora-rtc-sdk-ng`.
+- **Backend**: All database operations through Supabase client. Use `supabase.table(name)` pattern.
+- **Testing**: Backend: `pytest` in `star-backend/tests/`; Frontend: `Jest` in `star-frontend/__tests__/`
 - **File Naming**: snake_case for Python (e.g., `cosmos_db.py`), camelCase for TypeScript (e.g., `useAuth.ts`).
-- **Zodiac Actions**: Use `ZODIAC_ACTIONS` dict from `api.py` for sign-specific behaviors (e.g., Aries: 'Charge', 'Spark', 'Lead', 'Ignite').
+- **Zodiac Actions**: Use zodiac utilities from `src/utils/zodiacUtils.ts` for sign-specific behaviors.
 
 ## Integration Points
-- **Supabase Database**: Config via `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Tables: users, posts, chats, follows, likes, comments, profiles, notifications, streams. Use `SupabaseDBHelper` for all operations.
+- **Supabase Database**: Config via `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Tables: users, profiles, posts, chats, follows, likes, comments, notifications, streams. Use Supabase client for all operations.
 - **AgoraRTC**: App ID and cert in env vars. For live streaming in `/collaborative-cosmos` and `/agora-test`. Requires valid credentials for functionality.
 - **SocketIO**: Real-time chat and notifications via Flask-SocketIO. Rooms for collaborative features.
-- **Spotify**: Integration for cosmic playlists (env vars: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`). AI-curated based on elemental energies.
+- **Spotify**: Integration for cosmic playlists (env vars: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`).
 - **IPGeolocation**: Location-aware astrological insights (env var: `IPGEOLOCATION_API_KEY`).
+
+### Frontend Testing (`jest.config.cjs`, `jest.setup.ts`)
+- **Mocks**: Three.js, React Three Fiber, Konva.js, SpeechRecognition API all pre-configured
+- **Test Structure**: Use `@testing-library/react` - tests in `src/**/__tests__/*.test.tsx`
+- **3D Components**: Mock `@react-three/fiber` useFrame, useThree hooks
+- **Context Testing**: Mock AuthContext and other React contexts
+
+### Backend Testing (`conftest.py`, `test/api.test.py`)
+- **Auth Testing**: Use `@token_required` decorator tests with mock tokens
+- **API Mocking**: External APIs (Spotify, IPGeolocation) mocked with controlled responses
+- **Database Testing**: Mock Supabase client for unit tests
+
+## Gotchas
+
+- **Supabase Migration**: Recently migrated from Azure Cosmos DB - use `SupabaseDBHelper` instead of CosmosDBHelper. No Redis caching layer.
+- **3D Cosmos**: React Three Fiber needs proper canvas setup in `/collaborative-cosmos`. Use `@react-three/drei` for controls.
+- **Component Organization**: All components now in `star-frontend/src/components/` - no more duplicate directories.
+- **Backend Paths**: Use main `star-backend/star_backend_flask/` only - ignore any `/temp_deploy/` directories.
+- **Environment Variables**: Backend uses `.env` in `star-backend/star_backend_flask/`, frontend uses `.env.local` in `star-frontend/`.
+
+## Error Handling Patterns
+
+### Backend Error Responses
+- **Logging**: All errors logged with `logging.error(f"Context: {e}")`
+- **Rate Limiting**: Login endpoints use `@limiter.limit("50/hour")` decorators
+- **Validation**: Request validation in API blueprints
+
+### Frontend Error Boundaries
+- **API Failures**: Axios interceptors handle auth errors and network issues
+- **3D Errors**: Graceful fallback when WebGL not supported
+- **Auth Expiry**: Auto-logout and redirect to login on 401 responses
+
+## Performance Considerations
+
+### Database Optimization
+- **Supabase Queries**: Use proper indexing and RLS policies
+- **Batch Operations**: Group related DB operations to reduce round trips
+- **Real-time**: Leverage Supabase real-time subscriptions where possible
+
+### 3D Engine Performance
+- **LOD System**: Level of Detail for mobile optimization in `EnhancedStarCosmos.jsx`
+- **Coordinate Bounds**: 3D space limited to X: -15→+15, Y: -15→+12, Z: -12→+10
+- **Frame Rate**: Use `useFrame` sparingly, prefer React state for UI updates
+
+## Checklist for Contributions
+
+- Move frontend configs to `star-frontend/`.
+- Move backend files to `star-backend/star_backend_flask/`.
+- Use Supabase client for DB ops (e.g., `supabase.table(name)`).
+- Run backend tests: `cd star-backend/star_backend_flask; python -m pytest ../tests/ -v`.
+- Run frontend tests: `cd star-frontend; npm test`.
+- Test AgoraRTC with Docker and valid credentials.
+- Verify with Docker compose.
+- Check `app.log` for errors.
+- Update API blueprints in `api_blueprint.py` for new features.
+- Use `@token_required` decorator for protected routes.
+- Follow multi-zodiac theming in UI components.
+- Test tarot drag-and-drop with Konva.js integration.
+
+## Key File Structure
+
+```
+star-frontend/
+├── pages/
+│   ├── register.tsx           # Zodiac discovery flow
+│   ├── cosmic-profile-enhanced.tsx  # Profile management
+│   ├── cosmic-feed.tsx       # Social feed
+│   └── tarot-reading.tsx      # Tarot system
+├── src/components/
+│   ├── cosmic/
+│   │   ├── PlanetaryNav.tsx      # 3D planetary navigation
+│   │   ├── CosmicProfile.tsx     # Profile components
+│   │   ├── SocialFeed.tsx        # Feed interactions
+│   │   └── TarotDraw.tsx         # Tarot reading component
+│   ├── zodiac/
+│   │   ├── ZodiacCompatibility.tsx
+│   │   └── ZodiacDashboard.tsx
+│   └── collaborative/
+│       └── CommunityHub.tsx
+├── src/lib/
+│   └── AuthContext.tsx        # Authentication context
+
+star-backend/star_backend_flask/
+├── app.py                    # Main Flask application
+├── api_blueprint.py          # API endpoints (/api/v1/*)
+├── analytics_api.py          # Analytics endpoints
+├── cosmos_db.py              # Supabase DB helper
+├── star_auth.py              # Authentication utilities
+└── database_utils.py         # Database helper functions
+```
+
+## Core User Experience Journey
+
+### ✨ Registration & Zodiac Discovery - The Cosmic Awakening Ritual
+Users experience a mythic initiation process that feels like destiny, not just registration. The sign-up flows through 4 phases of cosmic discovery and archetypal alignment.
+
+**Implementation:** `star-frontend/pages/register.tsx` + multiple `/api/v1/*` endpoints
+
+#### 🌌 **STAR Sign-Up Ritual Flow**
+
+**Phase 1: Cosmic Initiation**
+1. **Birthdate Entry**: Glowing input field with starfield background triggers zodiac discovery across 5 systems via `/api/v1/zodiac-calculator`
+2. **Zodiac Reveal Ceremony**: Animated glyphs reveal Western, Chinese, Vedic, Mayan, Galactic Tone with elemental overlays and audio cues
+
+**Phase 2: Archetypal Alignment**
+3. **Archetype Selector**: Choose from Seeker, Guardian, Rebel, Mystic with visual auras and mentor overlay previews via `/api/v1/archetype`
+4. **Sigil & Badge Preview**: Display suggested sigils based on zodiac + archetype combination via `/api/v1/sigils`
+
+**Phase 3: Profile Customization**
+5. **Bio & Profile Picture**: Drag-and-drop layout editor with elemental auras via `/api/v1/profile/customization`
+6. **Daily Soundtrack**: Choose elemental playlist or sync Spotify via `/api/v1/profile/soundtrack`
+
+**Phase 4: Social Resonance Setup**
+7. **Top Follows & Interests**: Suggested mentors based on zodiac compatibility
+8. **Account Credentials**: Email, password, JWT token via `/api/v1/auth/register`
+9. **Cosmic Entry**: Transition into `EnhancedStarCosmos.jsx` with zodiac avatar and welcome message
+
+### 🧬 Cosmic Profile Generation
+Generates a comprehensive profile with archetypal analysis, compatibility insights, Life Path Number, and badge customization.
+
+**Implementation:** `star-frontend/src/components/cosmic/CosmicProfile.tsx` + Supabase `profiles` table
+
+### 🪐 Immersive 3D Cosmos
+A 3D environment with planetary navigation, multi-layer parallax starfields, and zodiac avatars with animated traits.
+
+**Implementation:** `star-frontend/src/components/cosmic/PlanetaryNav.tsx` + `@react-three/fiber`
+
+### 📱 Social Feed & Ritual Actions
+Infinite scroll feed with tarot draws, badge unlocks, ritual reflections, and zodiac-specific interactions (e.g., Scorpio's "Sting" comment).
+
+**Implementation:** `star-frontend/pages/cosmic-feed.tsx` + `/api/v1/social-actions`
+
+### 🔮 Tarot Reading System
+Drag-and-drop tarot spreads with AI interpretations influenced by zodiac and numerology.
+
+**Implementation:** `star-frontend/src/components/cosmic/TarotDraw.tsx` + Konva.js canvas
+
+### 📡 Live Streaming & Community
+AgoraRTC streaming with zodiac avatar effects and element-based chat rooms (Fire, Water, Air, Earth).
+
+**Implementation:** `star-frontend/src/components/collaborative/CommunityHub.tsx` + Socket.IO
+
+## Technical Stack Details
+
+### Frontend Dependencies
+```json
+{
+  "@react-three/fiber": "^8.18.0",
+  "@react-three/drei": "^9.122.0",
+  "agora-rtc-sdk-ng": "^4.22.2",
+  "axios": "^1.12.2",
+  "framer-motion": "^12.23.22",
+  "konva": "^10.0.2",
+  "react-konva": "^18.2.14",
+  "next": "^14.2.15",
+  "react": "^18.3.1",
+  "zustand": "^4.5.4"
+}
+```
+
+### Backend Dependencies
+```python
+# Key packages in requirements.txt
+flask==3.0.0
+supabase==2.7.1
+flask-socketio==5.3.0
+python-socketio==5.8.0
+python-engineio==4.7.1
+httpx==0.26.0
+psycopg2-binary==2.9.7
+spotipy==2.23.0
+pytest==7.4.0
+```
+
+### Environment Variables
+```bash
+# Frontend (.env.local in star-frontend/)
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# Backend (.env in star-backend/star_backend_flask/)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SECRET_KEY=your-very-secure-random-secret-key
+JWT_SECRET_KEY=your-jwt-secret-key
+AGORA_APP_ID=your-agora-app-id
+AGORA_APP_CERTIFICATE=your-agora-certificate
+SPOTIFY_CLIENT_ID=your-spotify-client-id
+SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
+IPGEOLOCATION_API_KEY=your-ipgeolocation-key
+```
+
+## Database Schema
+
+### Supabase Tables
+- **users**: Authentication and basic user data (managed by Supabase Auth)
+- **profiles**: Zodiac profiles, numerology, badges, archetype data
+- **posts**: Social feed content
+- **chats**: Real-time messaging
+- **follows**: User relationships
+- **likes**: Post interactions
+- **comments**: Post comments
+- **notifications**: User notifications
+- **streams**: Live streaming sessions
+- **tarot_draws**: Reading history and interpretations
+- **social_actions**: Likes, comments, zodiac reactions
+
+## API Endpoints Reference
+
+### Core Endpoints
+- `POST /api/v1/zodiac-calculator` - Multi-system zodiac calculation (5 traditions)
+- `POST /api/v1/archetype` - Archetypal alignment and selection
+- `POST /api/v1/sigils` - Sigil and badge suggestions based on zodiac + archetype
+- `POST /api/v1/profile/customization` - Drag-and-drop profile layout editor
+- `POST /api/v1/profile/soundtrack` - Elemental playlists and Spotify sync
+- `POST /api/v1/auth/register` - Mythic account creation with JWT tokens
+- `GET/POST /api/v1/cosmic-profile` - Profile management
+- `POST /api/v1/tarot/enhanced-draw` - Tarot readings
+- `GET/POST /api/v1/profile/badges` - Badge positioning
+- `POST /api/v1/social-actions` - Zodiac-themed interactions
+- `POST /api/v1/mood/share` - Mood updates
+- `GET /api/v1/feed` - Social feed with pagination
+- `GET /api/v1/notifications` - User notifications
+
+### Authentication
+All protected endpoints require JWT from Supabase Auth:
+```http
+Authorization: Bearer {jwt_token}
+```
+
+## Code Quality Standards
+
+### TypeScript Guidelines
+```typescript
+// Use strict typing
+interface CosmicProfile {
+  id: string;
+  userId: string;
+  zodiacSigns: ZodiacSigns;
+  numerology: Numerology;
+  badges: Badge[];
+}
+
+// Prefer functional components with hooks
+const CosmicProfile: React.FC<CosmicProfileProps> = ({ userId }) => {
+  const [profile, setProfile] = useState<CosmicProfile | null>(null);
+  // Component logic
+};
+```
+
+### Python Guidelines
+```python
+# Use type hints
+from typing import Dict, List, Optional
+
+@app.route('/api/v1/cosmic-profile', methods=['POST'])
+@token_required
+def create_cosmic_profile(current_user) -> Dict[str, Any]:
+    """Create or update user's cosmic profile."""
+    try:
+        # Endpoint logic with Supabase
+        result = supabase.table('profiles').insert(profile_data).execute()
+        return jsonify({'success': True, 'profile': result.data[0]})
+    except Exception as e:
+        logging.error(f"Profile creation failed: {e}")
+        return jsonify({'error': str(e)}), 500
+```
+
+## Development Debugging
+
+### Common Issues & Solutions
+
+**Issue**: 3D components not rendering
+**Solution**: Check WebGL support and Three.js canvas setup in `EnhancedStarCosmos.jsx`
+
+**Issue**: Supabase connection fails
+**Solution**: Verify `SUPABASE_URL` and `SUPABASE_ANON_KEY` in environment variables
+
+**Issue**: AgoraRTC not working
+**Solution**: Ensure valid `AGORA_APP_ID` and `AGORA_APP_CERTIFICATE`
+
+**Issue**: Authentication failing
+**Solution**: Check JWT token format and Supabase Auth configuration
+
+### Logging
+```python
+# Backend logging setup
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# In route handlers
+logger.error(f"Error context: {e}")
+```
+
+```typescript
+// Frontend debugging
+console.log('[STAR]', 'Debug info here');
+// Use browser dev tools for React components
+```
+
+## Implementation Status & Roadmap
+
+### ✅ Completed Features
+- Multi-zodiac calculation (Western, Chinese, Vedic, Mayan, Galactic)
+- 3D cosmos with planetary navigation
+- Tarot reading with drag-and-drop
+- Badge customization system
+- Real-time chat and streaming
+- Vercel + Render + Supabase deployment pipeline
+- Comprehensive testing suite (Jest + PyTest)
+
+### 🟡 In Progress
+- Infinite scroll social feed
+- Enhanced numerology integration
+- Community matching algorithms
+
+### 📋 Planned Features
+- Advanced tarot spreads (Celtic Cross, Zodiac Wheel)
+- Sigil generation based on zodiac + archetype combinations
+- Ritual quest system with achievement progression
+- Mobile app (React Native)
+
+## Security & Privacy
+
+### Data Protection
+- JWT tokens with Supabase Auth
+- No sensitive data in localStorage
+- HTTPS required for production
+- Input validation on all endpoints
+
+### Privacy Controls
+- User data anonymization options
+- GDPR compliance features
+- Opt-out mechanisms for data collection
+- Secure deletion of user accounts
+
+## Performance Optimization
+
+### Frontend Performance
+- Lazy loading for 3D components
+- Image optimization for badges/avatars
+- Code splitting for route-based chunks
+- Service worker for offline capabilities
+
+### Backend Performance
+- Supabase query optimization
+- Connection pooling
+- Rate limiting on API endpoints
+
+## Deployment
+
+- **Frontend**: Vercel for static hosting. Configure `NEXT_PUBLIC_API_URL`.
+- **Backend**: Render for container hosting. Use `render.yaml` for config.
+- **Database**: Supabase with tables auto-created via `supabase_schema.sql`.
+- **CI/CD**: GitHub Actions for automated deployment
+- **Monitoring**: Vercel Analytics + Supabase Dashboard
+- **Docker**: Local development with `docker-compose.yml`
 
 
 ### Frontend Testing (`jest.config.cjs`, `jest.setup.ts`)

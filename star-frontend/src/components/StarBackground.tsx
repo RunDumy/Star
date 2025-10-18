@@ -1,11 +1,11 @@
 'use client';
 
+import { supabase } from '@/lib/supabase';
 import { useCallback, useEffect, useRef } from 'react';
 import Particles from 'react-tsparticles';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadFull } from 'tsparticles';
-import { supabase } from '../lib/supabase.js';
 
 export default function StarBackground({ children }: Readonly<{ children: React.ReactNode }>) {
   const mountRef = useRef<HTMLDivElement>(null);

@@ -1,15 +1,15 @@
 'use client';
 
+import CosmicButton from '@/components/CosmicButton';
+import CosmicFeed from '@/components/CosmicFeed';
+import CosmicNotifications from '@/components/CosmicNotifications';
+import StarBackground from '@/components/StarBackground';
+import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import CosmicButton from '../src/components/CosmicButton';
-import CosmicFeed from '../src/components/CosmicFeed';
-import CosmicNotifications from '../src/components/CosmicNotifications';
-import StarBackground from '../src/components/StarBackground';
-import { supabase } from '../src/lib/supabase';
 
 interface User {
   id: string;
@@ -58,11 +58,11 @@ export default function Home() {
                 Home
               </CosmicButton>
             </Link>
-              <Link href="/matchmaking">
-                <CosmicButton variant="secondary" size="md" zodiacSign={user?.zodiac_sign}>
-                  Matchmaking
-                </CosmicButton>
-              </Link>
+            <Link href="/matchmaking">
+              <CosmicButton variant="secondary" size="md" zodiacSign={user?.zodiac_sign}>
+                Matchmaking
+              </CosmicButton>
+            </Link>
             <CosmicButton variant="secondary" size="md" zodiacSign={user?.zodiac_sign} onClick={toggleMenu}>
               Menu
             </CosmicButton>

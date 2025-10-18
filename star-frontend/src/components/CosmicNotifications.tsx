@@ -1,10 +1,10 @@
 'use client';
 
+import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
-import { supabase } from '../lib/supabase';
 
 interface Notification {
   id: string;
@@ -63,16 +63,16 @@ const ConstellationPattern = () => (
         </linearGradient>
       </defs>
       {/* Ursa Major (Big Dipper) */}
-      <path d="M50,50 L80,45 L110,60 L140,55 L170,70 L200,65 L230,80" 
-            stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.6" />
+      <path d="M50,50 L80,45 L110,60 L140,55 L170,70 L200,65 L230,80"
+        stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.6" />
       {/* Orion's Belt */}
-      <path d="M250,120 L280,125 L310,120" 
-            stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.6" />
+      <path d="M250,120 L280,125 L310,120"
+        stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.6" />
       {/* Random connecting lines */}
-      <path d="M100,200 L130,180 L160,190 L190,170" 
-            stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.4" />
+      <path d="M100,200 L130,180 L160,190 L190,170"
+        stroke="url(#constellation)" strokeWidth="1" fill="none" opacity="0.4" />
     </svg>
-    
+
     {/* Shooting stars */}
     {Array.from({ length: 3 }).map((_, i) => (
       <ShootingStar key={Math.random().toString(36).slice(2, 11)} delay={i * 3} />
@@ -279,9 +279,8 @@ export default function CosmicNotifications({ className = '' }: Readonly<CosmicN
                     key={notification.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`p-4 border-b border-gray-700/50 hover:bg-gray-800/50 transition-colors ${
-                      !notification.is_read ? 'bg-purple-900/20' : ''
-                    }`}
+                    className={`p-4 border-b border-gray-700/50 hover:bg-gray-800/50 transition-colors ${!notification.is_read ? 'bg-purple-900/20' : ''
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="text-2xl flex-shrink-0">

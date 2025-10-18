@@ -92,7 +92,7 @@ docker-compose up --build
 ## 🏗️ **Architecture**
 
 ```
-🌌 STAR Platform — Zodiac Social Media Ecosystem
+🌌 STAR Platform — Zodiac Social Media Platform (Ecosystem)
 ├── 🎨 Frontend (Next.js + React + TypeScript)
 │   ├── Archetype Oracle & Birth Chart Calculator
 │   ├── Interactive Tarot Reader with Konva.js canvases

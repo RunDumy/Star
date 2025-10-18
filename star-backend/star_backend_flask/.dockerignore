@@ -54,8 +54,6 @@ logs/
 
 # Infrastructure files (not needed in container)
 infra/
-.azure/
-azure.yaml
 Dockerfile
 .dockerignore
 

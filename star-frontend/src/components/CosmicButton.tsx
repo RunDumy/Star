@@ -1,11 +1,11 @@
 'use client';
 
+import { hapticManager } from '@/lib/hapticEffects';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
-import { hapticManager } from '../lib/hapticEffects';
 
 interface CosmicButtonProps {
   children: ReactNode;
@@ -166,7 +166,7 @@ export default function CosmicButton({
       // Play sound
       if (planet && planetSounds[planet]) {
         audioRef.current = new Audio(planetSounds[planet]);
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       }
       // Haptic feedback
       hapticManager.light();

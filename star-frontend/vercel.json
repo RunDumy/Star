@@ -1,0 +1,29 @@
+{
+    "framework": "nextjs",
+    "rootDirectory": "star-frontend",
+    "buildCommand": "npm run build",
+    "outputDirectory": ".next",
+    "regions": [
+        "iad1"
+    ],
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://star-backend-l7u1.onrender.com/api/$1"
+        }
+    ],
+    "images": {
+        "remotePatterns": [
+            {
+                "protocol": "https",
+                "hostname": "hiwmpmvqcxzshdmhhlsb.supabase.co",
+                "pathname": "/**"
+            }
+        ],
+        "formats": [
+            "image/webp",
+            "image/avif"
+        ],
+        "minimumCacheTTL": 31536000
+    }
+}

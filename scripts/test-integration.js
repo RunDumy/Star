@@ -314,20 +314,20 @@ class CosmicIntegrationTester {
     async testServiceIntegrations() {
         this.log('Testing service integrations...', 'yellow');
 
-        // Test Azure Cosmos DB connection
+        // Test Supabase database connection
         try {
             const response = await axios.get(`${TEST_CONFIG.apiUrl}/api/v1/system/database-status`);
-            this.addResult('Cosmos DB Integration', response.data.healthy ? 'PASS' : 'FAIL', 'Database connectivity');
+            this.addResult('Supabase Integration', response.data.healthy ? 'PASS' : 'FAIL', 'Database connectivity');
         } catch {
-            this.addResult('Cosmos DB Integration', 'WARN', 'Status endpoint not available');
+            this.addResult('Supabase Integration', 'WARN', 'Status endpoint not available');
         }
 
-        // Test Azure Key Vault integration
+        // Test Supabase auth integration
         try {
-            const response = await axios.get(`${TEST_CONFIG.apiUrl}/api/v1/admin/keyvault/status`);
-            this.addResult('Azure Key Vault', response.data.available ? 'PASS' : 'WARN', 'Key Vault status');
+            const response = await axios.get(`${TEST_CONFIG.apiUrl}/api/v1/admin/auth/status`);
+            this.addResult('Supabase Auth', response.data.available ? 'PASS' : 'WARN', 'Auth status');
         } catch {
-            this.addResult('Azure Key Vault', 'WARN', 'Status endpoint not available');
+            this.addResult('Supabase Auth', 'WARN', 'Status endpoint not available');
         }
     }
 
@@ -388,7 +388,7 @@ class CosmicIntegrationTester {
             'Services': this.results.filter(r => r.test.includes('Service')),
             'Components': this.results.filter(r => r.test.includes('Tests')),
             'API Endpoints': this.results.filter(r => r.test.includes('API:')),
-            'Integrations': this.results.filter(r => r.test.includes('Integration') || r.test.includes('WebSocket') || r.test.includes('Azure'))
+            'Integrations': this.results.filter(r => r.test.includes('Integration') || r.test.includes('WebSocket') || r.test.includes('Supabase'))
         };
 
         for (const [category, tests] of Object.entries(categories)) {
@@ -415,7 +415,7 @@ class CosmicIntegrationTester {
         this.log('\n🌟 Next Steps:', 'cyan');
         this.log('   1. Review any failed tests and address issues');
         this.log('   2. Ensure all environment variables are properly configured');
-        this.log('   3. Validate Azure Key Vault setup for production');
+        this.log('   3. Validate Supabase setup for production');
         this.log('   4. Run deployment pipeline when all tests pass');
         this.log('   5. Monitor application performance post-deployment');
     }

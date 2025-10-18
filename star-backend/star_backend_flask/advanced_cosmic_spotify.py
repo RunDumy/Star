@@ -16,8 +16,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import spotipy
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from enhanced_spotify_engine import (CosmicMood, CosmicPlaylist, CosmicTrack,
                                      ElementalEnergy, EnhancedSpotifyEngine)
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
@@ -91,9 +89,6 @@ class AdvancedCosmicSpotifyEngine(EnhancedSpotifyEngine):
         """Initialize with enhanced cosmic algorithms"""
         super().__init__()
         
-        # Initialize Azure Key Vault for secure credential management
-        self._init_key_vault()
-        
         # Enhanced tarot-music mappings
         self.tarot_music_profiles = self._initialize_tarot_music_mappings()
         
@@ -107,28 +102,6 @@ class AdvancedCosmicSpotifyEngine(EnhancedSpotifyEngine):
         self.active_sessions = {}
         
         logger.info("Advanced Cosmic Spotify Engine initialized")
-
-    def _init_key_vault(self):
-        """Initialize Azure Key Vault for secure credential management"""
-        try:
-            credential = DefaultAzureCredential()
-            vault_url = os.getenv('AZURE_KEY_VAULT_URL', 'https://star-platform-vault.vault.azure.net/')
-            self.secret_client = SecretClient(vault_url=vault_url, credential=credential)
-            
-            # Get Spotify credentials from Key Vault
-            if not self.client_id:
-                spotify_client_id = self.secret_client.get_secret("spotify-client-id")
-                self.client_id = spotify_client_id.value
-            
-            if not self.client_secret:
-                spotify_client_secret = self.secret_client.get_secret("spotify-client-secret")
-                self.client_secret = spotify_client_secret.value
-                
-            logger.info("Azure Key Vault integration successful")
-            
-        except Exception as e:
-            logger.warning(f"Key Vault not available, using environment variables: {e}")
-            self.secret_client = None
 
     def _initialize_tarot_music_mappings(self) -> Dict[TarotCardMusicMood, Dict[str, Any]]:
         """Initialize comprehensive tarot card music influences"""

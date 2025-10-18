@@ -1,11 +1,11 @@
 'use client';
 
+import { fetchFeed as apiFetchFeed } from '@/lib/api';
+import { FeedItem, ZodiacActions } from '@/types/feed';
 import axios from 'axios';
 import { Bookmark, Heart, MessageCircle, Share2, Sparkles, Star } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { fetchFeed as apiFetchFeed } from '../lib/api';
-import { FeedItem, ZodiacActions } from '../types/feed';
 import ArchetypeJourney from './ArchetypeJourney';
 import ErrorMessage from './ErrorMessage';
 import LoadingSpinner from './LoadingSpinner';
@@ -254,8 +254,8 @@ const CosmicFeed: React.FC<CosmicFeedProps> = ({ userId, className = '' }) => {
             <button
               onClick={() => handleEngagement('like', item.id)}
               className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${item.engagement.likes > 0
-                  ? 'text-red-400 bg-red-900/20'
-                  : 'text-gray-400 hover:text-red-400'
+                ? 'text-red-400 bg-red-900/20'
+                : 'text-gray-400 hover:text-red-400'
                 }`}
             >
               <Heart

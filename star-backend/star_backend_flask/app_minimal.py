@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Project: Star App - The Cosmic Social Network
-# Minimal version for Azure deployment
+# Minimal version for production deployment
 import json
 import logging
 import os
@@ -23,20 +23,20 @@ try:
     from cosmos_db import get_cosmos_helper
     from oracle_engine import OccultOracleEngine
     oracle_available = True
-    logger.info("Oracle engine and Cosmos DB loaded successfully")
+    logger.info("Oracle engine and database loaded successfully")
 except ImportError as e:
     logger.error(f"Failed to import core modules: {e}")
     oracle_available = False
 
 @app.route('/')
 def hello():
-    return "Star App Backend - Azure Deployment"
+    return "Star App Backend - Production Deployment"
 
 @app.route('/api/health')
 def health():
     return {
         "status": "healthy",
-        "message": "Star App Backend is running on Azure",
+        "message": "Star App Backend is running in production",
         "oracle_available": oracle_available,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }

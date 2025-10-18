@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run linting
+cd star-frontend && npm run lint
+
+# Run tests
+cd star-frontend && npm run test -- --watchAll=false --passWithNoTests

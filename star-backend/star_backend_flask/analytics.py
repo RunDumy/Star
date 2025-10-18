@@ -5,30 +5,50 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from star_auth import token_required
 
-# TODO: Replace with Azure Cosmos DB imports
-# from supabase import create_client
+from supabase import create_client
 
 analytics_bp = Blueprint('analytics', __name__)
 
 # Initialize Supabase client
 supabase_url = os.environ.get('SUPABASE_URL')
 supabase_key = os.environ.get('SUPABASE_ANON_KEY')
-# TODO: Replace with Azure Cosmos DB client initialization
-# try:
-#     supabase = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
-# except Exception as e:
-#     print(f"Failed to initialize Supabase client: {e}")
-#     supabase = None
-supabase = None  # Temporarily disabled during Azure migration
+try:
+    supabase = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
+except Exception as e:
+    print(f"Failed to initialize Supabase client: {e}")
+    supabase = None
 
 @analytics_bp.route('/analytics', methods=['GET'])
 @token_required
 def get_analytics(current_user):
-    """Get analytics data for the platform - TEMPORARILY DISABLED during Azure migration"""
-    return jsonify({
-        'error': 'Analytics feature temporarily disabled during Azure migration',
-        'message': 'This feature will be re-enabled with Cosmos DB integration'
-    }), 503
+    """Get analytics data for the platform"""
+    if not supabase:
+        return jsonify({'error': 'Database connection not available'}), 503
+
+    try:
+        # Get user count
+        user_count_result = supabase.table('users').select('id', count='exact').execute()
+        user_count = user_count_result.count if hasattr(user_count_result, 'count') else 0
+
+        # Get post count
+        post_count_result = supabase.table('posts').select('id', count='exact').execute()
+        post_count = post_count_result.count if hasattr(post_count_result, 'count') else 0
+
+        # Get recent activity (last 7 days)
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        recent_posts = supabase.table('posts').select('id').gte('created_at', seven_days_ago.isoformat()).execute()
+        recent_post_count = len(recent_posts.data) if recent_posts.data else 0
+
+        return jsonify({
+            'total_users': user_count,
+            'total_posts': post_count,
+            'recent_activity': recent_post_count,
+            'platform_health': 'active'
+        }), 200
+
+    except Exception as e:
+        print(f"Analytics error: {str(e)}")
+        return jsonify({'error': 'Failed to fetch analytics'}), 500
 
 
 @analytics_bp.route('/zodiac/compatibility', methods=['POST'])
