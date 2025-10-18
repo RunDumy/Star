@@ -2,23 +2,27 @@ version: "1"
 services:
   - type: web
     name: star-backend
-    runtime: python
-    buildCommand: pip install -r star-backend/requirements.txt
-    startCommand: cd star-backend/star_backend_flask && gunicorn app:app
+    runtime: docker
+    dockerfilePath: star-backend/star_backend_flask/Dockerfile
+    dockerContext: .
     envVars:
       - key: SUPABASE_URL
-        value: https://hiwmpmvqcxzshdmhhlsb.supabase.co
+        sync: false
       - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: SECRET_KEY
-        value: star-platform-production-secret-key-2025-secure-random-hex
-      - key: JWT_SECRET_KEY
-        value: star-platform-jwt-secret-key-2025-production-secure
-      - key: JWT_ALGORITHM
-        value: HS256
+        sync: false
       - key: AGORA_APP_ID
-        value: 27d39aff6ec6469c86397e5043da3e51
+        sync: false
       - key: AGORA_APP_CERTIFICATE
-        value: fe330d25d4fe4954b747fd43c1e98db1
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: IPGEOLOCATION_API_KEY
+        sync: false
       - key: NO_REDIS
         value: "true"

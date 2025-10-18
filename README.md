@@ -2,7 +2,7 @@
 
 ## Overview
 
-STAR is a zodiac-themed social media platform that fuses mythic identity, ritual customization, and immersive 3D UX. Built with Next.js + TypeScript frontend and Flask backend on Azure, STAR combines the familiarity of Facebook's layout, MySpace's customization, Instagram/TikTok's addictive feed, and unique features like tarot, badges, numerology, and planetary navigation.
+STAR is a zodiac-themed social media platform that fuses mythic identity, ritual customization, and immersive 3D UX. Built with Next.js + TypeScript frontend and Flask backend on Vercel + Render + Supabase, STAR combines the familiarity of Facebook's layout, MySpace's customization, Instagram/TikTok's addictive feed, and unique features like tarot, badges, numerology, and planetary navigation.
 
 ## 🚀 Quick Start
 
@@ -31,7 +31,7 @@ Users input their birthdate to auto-calculate zodiac signs across Western, Chine
 
 Generates a comprehensive profile with archetypal analysis, compatibility insights, Life Path Number, and badge customization.
 
-**Implementation:** `star-frontend/components/cosmic/CosmicProfile.tsx` + Cosmos DB `profiles` container
+**Implementation:** `star-frontend/components/cosmic/CosmicProfile.tsx` + Supabase `profiles` table
 
 ### 🪐 Immersive 3D Cosmos
 
@@ -55,7 +55,7 @@ Drag-and-drop tarot spreads with AI interpretations influenced by zodiac and num
 
 AgoraRTC streaming with zodiac avatar effects and element-based chat rooms (Fire, Water, Air, Earth).
 
-**Implementation:** `star-frontend/components/cosmic/CommunityHub.tsx` + Azure Web PubSub
+**Implementation:** `star-frontend/components/cosmic/CommunityHub.tsx` + Socket.IO
 
 ## 🔗 Documentation
 
@@ -64,7 +64,6 @@ AgoraRTC streaming with zodiac avatar effects and element-based chat rooms (Fire
 - [Implementation Roadmap](./docs/IMPLEMENTATION_ROADMAP.md)
 - [API Reference](./docs/API_REFERENCE.md)  
 - [Onboarding Ritual Narrative](./docs/ONBOARDING_RITUAL.md)
-- [Azure Deployment Guide](./docs/AZURE_DEPLOYMENT_GUIDE.md)
 
 ## 🛠️ Development Setup
 
@@ -85,7 +84,7 @@ docker-compose up --build
 
 - Follow `/docs/CONTRIBUTING.md` for guidelines.
 - Use feature branches and test with Docker Compose.
-- Ensure Azure F1 Free Tier compatibility.
+- Ensure Render free tier compatibility.
 
 ---
 *Building mythic interfaces for cosmic identity* ✨
@@ -117,7 +116,7 @@ docker-compose up --build
 │   ├── Socket.IO real-time constellation networking
 │   ├── Live streaming management with AgoraRTC
 │   ├── Real-time notifications system
-│   └── Azure Cosmos DB integration for social features
+│   └── Supabase integration for social features
 │
 ├── 🧪 Testing (Jest + PyTest + 85% Coverage)
 │   ├── Component testing with React Testing Library
@@ -126,13 +125,15 @@ docker-compose up --build
 │   ├── Real-time feature testing
 │   └── Accessibility and performance testing
 │
-└── ☁️ Production Deployment (Vercel + Azure App Service + Azure Cosmos DB)
-    ├── Global CDN with auto-scaling
-    ├── Zero-downtime CI/CD & automated deployments
-    ├── Real-time WebSocket connections
-    ├── Live streaming infrastructure
-    ├── Production monitoring & analytics
-    └── Enterprise-grade security (HTTPS, CORS, rate limiting)
+└── ☁️ Vercel + Render + Supabase Production Deployment
+    ├── Vercel (frontend hosting with global CDN)
+    ├── Render (backend hosting with auto-scaling)
+    ├── Supabase (global PostgreSQL database)
+    ├── Supabase Storage (global asset delivery)
+    ├── Zero-downtime CI/CD via GitHub Actions
+    ├── Real-time features with Socket.IO
+    ├── Vercel Analytics monitoring
+    └── Enterprise security (Supabase Auth, SSL, CORS)
 ```
 
 ## 🛠️ **Technology Stack**
@@ -150,21 +151,23 @@ docker-compose up --build
 
 ### **Backend**
 
-- **Runtime**: Python 3.10+
-- **Framework**: Flask with async support
-- **Database**: Azure Cosmos DB (NoSQL) with global distribution
-- **Caching**: TTLCache for performance optimization, Redis for sessions
+- **Runtime**: Python 3.14+
+- **Framework**: Flask with async support  
+- **Database**: Supabase PostgreSQL with real-time subscriptions
+- **Caching**: In-memory caching optimized for Render
 - **APIs**: Spotify Web API, IPGeolocation, AgoraRTC
-- **Real-time**: Socket.IO for WebSocket connections
+- **Real-time**: Socket.IO for live communication
 - **Testing**: pytest with comprehensive coverage
 
-### **Infrastructure**
+### **Vercel + Render + Supabase Infrastructure**
 
-- **Frontend Hosting**: Vercel (Global CDN, Serverless Functions)
-- **Backend Hosting**: Azure App Service (Auto-scaling, IaC with ARM templates)
-- **Database**: Azure Cosmos DB (NoSQL, Global distribution, Auth)
-- **Live Streaming**: AgoraRTC infrastructure
-- **CI/CD**: GitHub-connected auto-deployments
+- **Frontend**: Vercel (Global CDN, Serverless functions)
+- **Backend**: Render (Auto-scaling containers, Global distribution)
+- **Database**: Supabase PostgreSQL (Global distribution, Real-time)
+- **Storage**: Supabase Storage (File uploads, CDN)
+- **Monitoring**: Vercel Analytics + Supabase Dashboard
+- **Security**: Supabase Auth with JWT
+- **CI/CD**: GitHub Actions → Vercel + Render
 
 ## 🎮 **How to Use**
 
@@ -186,9 +189,11 @@ docker-compose up --build
 ### **Prerequisites**
 
 - Node.js 18+ and npm
-- Python 3.10+ and pip
+- Python 3.14+ and pip
 - GitHub account
-- Vercel and Render accounts
+- Supabase account (free tier available)
+- Render account (free tier available)
+- Vercel account (free tier available)
 
 ### **Local Development**
 
@@ -260,39 +265,46 @@ git commit -m "Ready for production launch! 🌌"
 git push origin main
 ```
 
-2. **Frontend Deployment**
+2. **Run Deployment Script**
 
-   - Deploy to any static hosting provider (Azure Static Web Apps, Netlify, etc.)
-   - Configure environment variables for backend URL
+```bash
+# Use the automated deployment script
+./deploy_new_stack.bat
+```
 
-3. **Azure App Service Deployment** (Backend)
-   - Deploy to Azure App Service for production
-   - Azure Cosmos DB for data persistence
-   - See `AZURE_DEPLOYMENT_GUIDE.md` for details
+3. **Manual Deployment**
+
+   - **Frontend**: Deploy to Vercel (`vercel --prod`)
+   - **Backend**: Deploy to Render (`render deploy`)
+   - **Database**: Schema auto-created in Supabase
 
 ### **Deployment Files**
 
-- **`azure.yaml`**: Azure App Service infrastructure configuration
-- **`AZURE_DEPLOYMENT_GUIDE.md`**: Complete Azure production setup
+- **`render.yaml`**: Render infrastructure configuration
+- **`vercel.json`**: Vercel deployment configuration
+- **`supabase/config.toml`**: Supabase project configuration
+- **`supabase_schema.sql`**: Database schema for Supabase
 
 ### **Environment Setup**
 
 ```bash
 # Frontend (.env.local)
-NEXT_PUBLIC_API_URL=https://star-backend.azurewebsites.net
+NEXT_PUBLIC_API_URL=https://your-render-app.onrender.com
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_AGORA_APP_ID=your-agora-app-id
 
-# Backend (Azure App Service Configuration)
-SECRET_KEY=your_secret_key
-JWT_SECRET_KEY=your_jwt_secret
-JWT_ALGORITHM=HS256
-COSMOS_DB_CONNECTION_STRING=your_cosmos_db_connection_string
-AGORA_APP_ID=your_agora_app_id
-AGORA_APP_CERTIFICATE=your_agora_certificate
-REDIS_URL=your_redis_url
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-IPGEOLOCATION_API_KEY=your_ipgeolocation_key
-ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+# Backend (.env in star-backend/)
+FLASK_ENV=production
+SECRET_KEY=your-very-secure-random-secret-key
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+AGORA_APP_ID=your-agora-app-id
+AGORA_APP_CERTIFICATE=your-agora-certificate
+SPOTIFY_CLIENT_ID=your-spotify-client-id
+SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
+IPGEOLOCATION_API_KEY=your-ipgeolocation-key
 ```
 
 ## 🎨 **Key Features**
@@ -513,14 +525,16 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **React Ecosystem**: Next.js, TypeScript, Tailwind CSS
 - **Animation**: React Spring, Konva.js, React Three Fiber
 - **Real-time**: Socket.IO, AgoraRTC for live streaming
-- **APIs**: Spotify Web API, IPGeolocation, Supabase
-- **Hosting**: Vercel, Render, Supabase
+- **APIs**: Spotify Web API, IPGeolocation
+- **Cloud**: Vercel + Fly.io + Supabase (Global CDN, PostgreSQL, Storage)
 - **Testing**: Jest, React Testing Library, PyTest
 
 **Special Thanks to:**
 
+- **Vercel**: For global CDN and serverless hosting
+- **Fly.io**: For auto-scaling container hosting
+- **Supabase**: For global PostgreSQL database and real-time features
 - **AgoraRTC**: For powering our live streaming infrastructure
-- **Supabase**: For real-time database and authentication
 - **React Three Fiber**: For bringing 3D cosmic experiences to life
 - **Socket.IO**: For enabling real-time cosmic connections
 

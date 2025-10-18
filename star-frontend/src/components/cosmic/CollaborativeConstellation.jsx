@@ -32,7 +32,7 @@ export const CollaborativeConstellation = () => {
       mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.current.setFromCamera(mouse.current, camera);
-      
+
       // Create a scene group to check intersections
       const sceneGroup = systemRef.current;
       if (sceneGroup) {
@@ -52,7 +52,7 @@ export const CollaborativeConstellation = () => {
           <torusGeometry args={[8, 0.2, 16, 100]} />
           <meshStandardMaterial color="#4a90e2" emissive="#4a90e2" emissiveIntensity={0.2} transparent opacity={0.6} />
         </mesh>
-        
+
         {/* Add some interactive stars */}
         <mesh position={[3, 1, 2]} userData={{ isStar: true, id: 'star1', name: 'Sirius' }}>
           <sphereGeometry args={[0.3, 16, 16]} />
@@ -66,7 +66,7 @@ export const CollaborativeConstellation = () => {
           <sphereGeometry args={[0.35, 16, 16]} />
           <meshStandardMaterial color="#ff6b6b" emissive="#ff6b6b" emissiveIntensity={0.6} />
         </mesh>
-        
+
         {currentUser && <CollaborativeAvatar user={currentUser} isCurrentUser={true} data-testid="collaborative-avatar" />}
         {users
           .filter((user) => user.id !== currentUser?.id)
@@ -92,7 +92,7 @@ export const CollaborativeConstellation = () => {
           Ursa Major
         </Text>
       </group>
-      
+
       {/* Selected star indicator */}
       {selectedStar && (
         <Text
@@ -105,7 +105,7 @@ export const CollaborativeConstellation = () => {
           Selected: {selectedStar.name}
         </Text>
       )}
-      
+
       <group position={[0, -3, 0]}>
         <mesh onClick={toggleMute}>
           <boxGeometry args={[1, 0.5, 0.2]} />

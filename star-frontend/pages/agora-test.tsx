@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 // Dynamically import to avoid SSR issues
 const AgoraUIKitLiveStream = dynamic(
@@ -31,7 +32,7 @@ export default function AgoraTestPage() {
             </p>
 
             <div className="bg-gray-800 p-4 rounded-lg">
-              <label className="block text-white mb-2">Enter Stream ID:</label>
+              <label htmlFor="streamId" className="block text-white mb-2">Enter Stream ID:</label>
               <input
                 type="text"
                 id="streamId"
@@ -42,7 +43,7 @@ export default function AgoraTestPage() {
                 onClick={() => {
                   const streamId = (document.getElementById('streamId') as HTMLInputElement)?.value;
                   if (streamId) {
-                    window.location.href = `/live-stream/${streamId}`;
+                    globalThis.location.href = `/live-stream/${streamId}`;
                   }
                 }}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
@@ -53,12 +54,12 @@ export default function AgoraTestPage() {
           </div>
 
           <div className="text-center">
-            <a
+            <Link
               href="/collaborative-cosmos"
               className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               Go to Collaborative Cosmos
-            </a>
+            </Link>
           </div>
         </div>
       </div>

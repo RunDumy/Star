@@ -26,6 +26,9 @@ from marshmallow import Schema, ValidationError, fields, validate
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import api
 from cosmos_db import get_cosmos_helper
+from database_utils import (check_username_exists, create_user,
+                            get_user_by_username, get_users_container,
+                            update_user_online_status)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s: %(message)s')
@@ -79,6 +82,7 @@ else:
 # -------------------- Cosmos DB Helper Functions --------------------
 def get_user_by_id(user_id):
     """Get user by ID from Cosmos DB"""
+    users_container = get_users_container()
     if not users_container:
         return None
     try:
@@ -89,36 +93,6 @@ def get_user_by_id(user_id):
     except Exception as e:
         logger.error(f"Error getting user by ID: {e}")
         return None
-
-def check_username_exists(username):
-    """Check if username already exists"""
-    if not cosmos_helper:
-        return False
-    return cosmos_helper.check_username_exists(username)
-
-def create_user(user_data):
-    """Create a new user in Cosmos DB"""
-    if not cosmos_helper:
-        raise ValueError("Cosmos DB not available")
-    result = cosmos_helper.create_user(user_data)
-    if result['error']:
-        raise Exception(f"Failed to create user: {result['error']}")
-    return result['data']
-
-def get_user_by_username(username):
-    """Get user by username"""
-    if not cosmos_helper:
-        return None
-    result = cosmos_helper.get_user_by_username(username)
-    return result['data']
-
-def update_user_online_status(username, is_online=True):
-    """Update user's online status and last seen"""
-    if not cosmos_helper:
-        return
-    result = cosmos_helper.update_user_online_status(username, is_online)
-    if result['error']:
-        logger.error(f"Error updating user online status: {result['error']}")
 
 def get_posts(limit=20):
     """Get recent posts"""
@@ -684,6 +658,235 @@ class HoroscopeResource(Resource):
             logger.error(f"Failed to fetch horoscopes: {str(e)}")
             return {'error': 'Failed to fetch horoscopes'}, 500
 
+
+class ZodiacArenaResource(Resource):
+    """API endpoint for Zodiac Arena battle results"""
+    
+    @limiter.limit("30/hour")
+    @token_required
+    def post(self, current_user):
+        """Share Zodiac Arena battle result to social feed"""
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            required_fields = ['winner', 'battle_duration', 'participant_signs']
+            for field in required_fields:
+                if field not in data:
+                    return {'error': f'Missing required field: {field}'}, 400
+            
+            winner = data['winner']
+            battle_duration = data['battle_duration'] 
+            participant_signs = data['participant_signs']
+            damage_dealt = data.get('damage_dealt', 0)
+            
+            # Validate zodiac signs
+            valid_signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
+                          'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+            
+            if winner not in valid_signs:
+                return {'error': 'Invalid winner zodiac sign'}, 400
+                
+            if not all(sign in valid_signs for sign in participant_signs):
+                return {'error': 'Invalid participant zodiac signs'}, 400
+            
+            # Create social feed post for the battle result
+            battle_post = {
+                'id': str(random.randint(1000000, 9999999)),
+                'content': f"🌟 Zodiac Arena Battle! 🌟\n\n"
+                          f"Winner: {winner} ⚔️\n"
+                          f"Battle Duration: {battle_duration}s\n" 
+                          f"Participants: {' vs '.join(participant_signs)}\n"
+                          f"Damage Dealt: {damage_dealt}\n\n"
+                          f"The cosmic forces have aligned! Who will challenge next? 🌌",
+                'user_id': current_user.id,
+                'zodiac_sign': current_user.zodiac_sign,
+                'post_type': 'zodiac_arena_battle',
+                'battle_data': {
+                    'winner': winner,
+                    'battle_duration': battle_duration,
+                    'participant_signs': participant_signs,
+                    'damage_dealt': damage_dealt
+                },
+                'spark_count': 0,
+                'echo_count': 0,
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Save to Cosmos DB posts container
+            created_post = create_post(battle_post)
+            
+            # Clear cache for post feeds
+            cache.delete_memoized(PostResource.get)
+            
+            logger.info(f"Zodiac Arena battle result shared by user {current_user.id}")
+            
+            return {
+                'message': 'Battle result shared successfully',
+                'post_id': created_post.get('id'),
+                'battle_summary': {
+                    'winner': winner,
+                    'duration': battle_duration,
+                    'participants': participant_signs
+                }
+            }, 201
+            
+        except Exception as e:
+            logger.error(f"Failed to share zodiac arena result: {str(e)}")
+            return {'error': 'Failed to share battle result'}, 500
+
+
+class ZodiacArenaStoreResource(Resource):
+    """API endpoint for Zodiac Arena store purchases - RPG monetization system"""
+    
+    @limiter.limit("10/hour")
+    @token_required
+    def post(self, current_user):
+        """Process store purchases for arena upgrades and cosmetics"""
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            required_fields = ['item_id', 'type', 'value']
+            for field in required_fields:
+                if field not in data:
+                    return {'error': f'Missing required field: {field}'}, 400
+            
+            item_id = data['item_id']
+            item_type = data['type']  # 'BOOST' or 'COSMETIC'
+            value = data['value']
+            
+            # Validate item type
+            if item_type not in ['BOOST', 'COSMETIC']:
+                return {'error': 'Invalid item type. Must be BOOST or COSMETIC'}, 400
+            
+            # Create purchase record
+            purchase = {
+                'id': f"purchase_{current_user.id}_{item_id}_{int(datetime.now(timezone.utc).timestamp())}",
+                'user_id': current_user.id,
+                'item_id': item_id,
+                'type': item_type,
+                'value': value,
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'status': 'completed'  # In production, this would go through payment processing
+            }
+            
+            # Store purchase in Cosmos DB (store container)
+            if cosmos_helper:
+                result = cosmos_helper.upsert_item('store', purchase)
+                if result['error']:
+                    logger.error(f"Failed to store purchase: {result['error']}")
+                    return {'error': 'Failed to process purchase'}, 500
+            
+            # Apply item effects based on type
+            if item_type == 'BOOST':
+                # Apply RP boost - this would integrate with user's resonance system
+                logger.info(f"Applied {value}x RP boost for user {current_user.id}")
+            elif item_type == 'COSMETIC':
+                # Unlock cosmetic item - this would be stored in user profile
+                logger.info(f"Unlocked cosmetic {item_id} for user {current_user.id}")
+            
+            logger.info(f"Store purchase completed: {item_id} by user {current_user.id}")
+            
+            return {
+                'status': 'success',
+                'purchase': {
+                    'id': purchase['id'],
+                    'item_id': item_id,
+                    'type': item_type,
+                    'timestamp': purchase['timestamp']
+                },
+                'message': f'Successfully purchased {item_id}!'
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Failed to process store purchase: {str(e)}")
+            return {'error': 'Failed to process purchase'}, 500
+    
+    @limiter.limit("60/hour")
+    @token_required 
+    def get(self, current_user):
+        """Get available store items and user's purchase history"""
+        try:
+            # Define available store items
+            store_items = {
+                'boosts': [
+                    {
+                        'id': 'rp_boost_50',
+                        'name': 'RP Boost (50%)',
+                        'description': 'Increase all RP gains by 50% for 1 hour',
+                        'price': 1.99,
+                        'currency': 'USD',
+                        'type': 'BOOST',
+                        'value': 1.5,
+                        'duration': 3600  # 1 hour in seconds
+                    },
+                    {
+                        'id': 'energy_regen_boost',
+                        'name': 'Energy Regeneration Boost',
+                        'description': 'Double energy regeneration rate for 30 minutes',
+                        'price': 0.99,
+                        'currency': 'USD', 
+                        'type': 'BOOST',
+                        'value': 2.0,
+                        'duration': 1800  # 30 minutes
+                    }
+                ],
+                'cosmetics': [
+                    {
+                        'id': 'mystic_aura_skin',
+                        'name': 'Mystic Aura Skin',
+                        'description': 'Exclusive purple cosmic aura effect for your zodiac unit',
+                        'price': 0.99,
+                        'currency': 'USD',
+                        'type': 'COSMETIC',
+                        'color': '#8b5cf6',
+                        'rarity': 'rare'
+                    },
+                    {
+                        'id': 'golden_champion_skin',
+                        'name': 'Golden Champion Skin',
+                        'description': 'Legendary golden skin for leaderboard dominance',
+                        'price': 2.99,
+                        'currency': 'USD',
+                        'type': 'COSMETIC',
+                        'color': '#f59e0b',
+                        'rarity': 'legendary'
+                    },
+                    {
+                        'id': 'constellation_trail',
+                        'name': 'Constellation Trail',
+                        'description': 'Leave a trail of stars with every ability cast',
+                        'price': 1.49,
+                        'currency': 'USD',
+                        'type': 'COSMETIC',
+                        'effect': 'particle_trail',
+                        'rarity': 'epic'
+                    }
+                ]
+            }
+            
+            # Get user's purchase history from Cosmos DB
+            user_purchases = []
+            if cosmos_helper:
+                query = "SELECT * FROM c WHERE c.user_id = @user_id ORDER BY c.timestamp DESC"
+                params = [{"name": "@user_id", "value": current_user.id}]
+                result = cosmos_helper.query_items('store', query, params)
+                if result['data']:
+                    user_purchases = result['data']
+            
+            return {
+                'store_items': store_items,
+                'user_purchases': user_purchases,
+                'user_id': current_user.id,
+                'fetched_at': datetime.now(timezone.utc).isoformat()
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch store data: {str(e)}")
+            return {'error': 'Failed to fetch store data'}, 500
+
+
 # ==================== API ROUTES ====================
 
 # Register API resources after all classes are defined
@@ -696,6 +899,8 @@ rest_api.add_resource(ProfileResource, '/api/v1/profile/<int:user_id>')
 rest_api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
 rest_api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')
 rest_api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
+rest_api.add_resource(ZodiacArenaResource, '/api/v1/zodiac-arena/result')
+rest_api.add_resource(ZodiacArenaStoreResource, '/api/v1/zodiac-arena/store')
 try:
     rest_api.add_resource(TrendDiscoveryResource, '/api/v1/trends/apify')
 except Exception:
@@ -722,6 +927,8 @@ def register_resources(api_obj=None):
     target_api.add_resource(TrendDiscoveryResource, '/api/v1/trends')
     target_api.add_resource(ZodiacNumberResource, '/api/v1/zodiac-numbers')
     target_api.add_resource(HoroscopeResource, '/api/v1/horoscopes')
+    target_api.add_resource(ZodiacArenaResource, '/api/v1/zodiac-arena/result')
+    target_api.add_resource(ZodiacArenaStoreResource, '/api/v1/zodiac-arena/store')
     # Apify-based trend discovery endpoint
     try:
         target_api.add_resource(TrendDiscoveryResource, '/api/v1/trends/apify')

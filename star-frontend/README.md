@@ -1,12 +1,12 @@
 # Star App Frontend
 
-A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Connects to the Flask backend on Azure App Service.
+A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Connects to the Flask backend on Fly.io.
 
 ## Quick Start
 
 1. npm install
 2. Create .env.local with:
-   NEXT_PUBLIC_API_URL=https://your-azure-app-service.azurewebsites.net
+   `NEXT_PUBLIC_API_URL=https://your-fly-app.fly.dev`
 3. npm run dev
 4. Open http://localhost:3000
 
@@ -19,7 +19,7 @@ A minimal, beginner-friendly Next.js frontend for the Star App with a starry bac
 
 ## Deployment
 
-Deploy the frontend to any static hosting provider that supports Next.js. Configure the environment variable NEXT_PUBLIC_API_URL to point to your Azure App Service backend.
+Deploy the frontend to Vercel. Configure the environment variable NEXT_PUBLIC_API_URL to point to your Fly.io backend.
 
 Tip: Compress public images and keep particles count low for best performance on free plans.
 

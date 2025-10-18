@@ -18,11 +18,10 @@ COPY star-backend/star_backend_flask/ .
 
 # Set environment variables
 ENV FLASK_ENV=production
-ENV PORT=8000
 ENV PYTHONPATH=/app
 
-# Expose the port
+# Expose the port (Render will set PORT environment variable)
 EXPOSE 8000
 
-# Command to run the application
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8000", "--timeout", "120", "app:app"]
+# Command to run the application (use PORT env var if available, fallback to 8000)
+CMD gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:${PORT:-8000} --timeout 120 app:app

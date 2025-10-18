@@ -8,7 +8,7 @@ import { AuthGuard } from './AuthGuard';
 
 const TarotCard3D = ({ cardName }: { cardName: string }) => {
   return (
-    <div style={{ width: '200px', height: '300px', background: '#4B0082', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+    <div className="w-[200px] h-[300px] bg-[#4B0082] flex items-center justify-center text-white">
       {cardName}
     </div>
   );

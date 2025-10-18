@@ -31,8 +31,8 @@ const GALACTIC_TONES = {
 };
 
 const DAY_SIGNS = [
-  'Crocodile', 'Wind', 'House', 'Lizard', 'Serpent', 'Death', 'Deer', 'Rabbit', 
-  'Water', 'Dog', 'Monkey', 'Grass', 'Reed', 'Jaguar', 'Eagle', 'Vulture', 
+  'Crocodile', 'Wind', 'House', 'Lizard', 'Serpent', 'Death', 'Deer', 'Rabbit',
+  'Water', 'Dog', 'Monkey', 'Grass', 'Reed', 'Jaguar', 'Eagle', 'Vulture',
   'Earthquake', 'Flint', 'Rain', 'Flower'
 ];
 
@@ -56,17 +56,17 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
   const calculateCosmicSignature = (birthDate: string) => {
     const date = new Date(birthDate);
     const dayNumber = Math.floor(date.getTime() / (1000 * 60 * 60 * 24)) + 2440587.5;
-    
+
     const tone = (Math.floor(dayNumber) % 13) + 1;
     const daySignIndex = Math.floor(dayNumber) % 20;
     const daySign = DAY_SIGNS[daySignIndex];
-    
+
     return { tone, daySign, signature: `${tone}-${daySign}` };
   };
 
   const handleBirthDateChange = (date: string) => {
     setFormData(prev => ({ ...prev, birthDate: date }));
-    
+
     if (date) {
       const { tone, daySign, signature } = calculateCosmicSignature(date);
       setCalculatedProfile({
@@ -88,7 +88,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
     setError('');
 
     try {
-      const response = await axios.post('https://star-app-backend.azurewebsites.net/api/v1/register', {
+      const response = await axios.post('http://localhost:5000/api/v1/register', {
         ...formData,
         ...calculatedProfile
       });
@@ -150,7 +150,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-purple-300 mb-2">
                       Email
@@ -214,7 +214,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
               className="text-center"
             >
               <h2 className="text-2xl font-bold mb-6">Your Cosmic Signature</h2>
-              
+
               <motion.div
                 className="mb-8 p-6 bg-gradient-to-br from-purple-800/50 to-pink-800/50 rounded-2xl border border-purple-400/30"
                 animate={getToneAnimation(calculatedProfile.tone)}
@@ -235,7 +235,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
 
               <div className="bg-indigo-900/30 p-4 rounded-lg mb-6">
                 <p className="text-sm text-indigo-200">
-                  This sacred signature connects you to the cosmic rhythms of the Tzolk'in, 
+                  This sacred signature connects you to the cosmic rhythms of the Tzolk'in,
                   the 260-day sacred calendar of the Maya and Aztec civilizations.
                 </p>
               </div>
@@ -274,7 +274,7 @@ const UserRegistration: React.FC<UserRegistrationProps> = ({ onProfileCreated })
               <div className="text-6xl mb-4">🌟</div>
               <h2 className="text-2xl font-bold mb-4">Welcome to the STAR Platform!</h2>
               <p className="text-purple-300 mb-6">
-                Your cosmic profile has been created. You can now explore tarot readings, 
+                Your cosmic profile has been created. You can now explore tarot readings,
                 connect with other cosmic beings, and discover your galactic destiny.
               </p>
               <button

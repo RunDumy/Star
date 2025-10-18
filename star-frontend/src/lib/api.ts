@@ -13,8 +13,10 @@ api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers = config.headers || {};
-      (config.headers as any).Authorization = `Bearer ${token}`;
+      if (!config.headers) {
+        config.headers = {} as any;
+      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
   }
   return config;
@@ -224,4 +226,137 @@ export const postsAPI = {
 
 export const zodiacAPI = {
   getNumbers: () => api.get('/api/v1/zodiac-numbers'),
+
+  // Zodiac Arena API
+  shareArenaResult: (battleData: {
+    winner: string;
+    battle_duration: number;
+    participant_signs: string[];
+    damage_dealt?: number;
+  }) => api.post('/api/v1/zodiac-arena/result', battleData),
+
+  // Zodiac Arena Store API
+  getStoreItems: () => api.get('/api/v1/zodiac-arena/store'),
+
+  purchaseItem: (purchaseData: {
+    item_id: string;
+    type: 'BOOST' | 'COSMETIC';
+    value: number;
+  }) => api.post('/api/v1/zodiac-arena/store', purchaseData),
+};
+
+// ========== COSMIC INTELLIGENCE API FUNCTIONS ==========
+
+export interface LunarGuidance {
+  moon_phase: string;
+  moon_mansion: string;
+  mansion_meaning: string;
+  void_of_course: boolean;
+  illumination: string;
+  lunar_day: number;
+  best_activities: string[];
+  meditation_focus: string;
+  mantras: string[];
+  element_emphasis: string;
+  cosmic_weather: string;
+}
+
+export interface MentorGuidance {
+  mentor: string;
+  archetype: string;
+  mood: string;
+  response: string;
+  lunar_influence: string;
+  symbolic_animal: string;
+  elemental_affirmation: string;
+  ritual_suggestion: string;
+  timestamp: string;
+}
+
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  type: 'lunar_cycle' | 'elemental_sequence' | 'mythological_archetype';
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'master';
+  duration_days: number;
+  lunar_phase_alignment: string[];
+  elemental_focus: string[];
+  success_criteria: string[];
+  rewards: {
+    cosmic_energy: number;
+    badges: string[];
+    mentor_sessions: number;
+  };
+  progress: {
+    current_step: number;
+    total_steps: number;
+    completed_at?: string;
+    success_probability: number;
+  };
+  created_at: string;
+  expires_at?: string;
+}
+
+export interface CosmicStats {
+  user_id: string;
+  total_quests_completed: number;
+  current_active_quests: number;
+  mentor_sessions: number;
+  lunar_cycles_tracked: number;
+  cosmic_energy_level: number;
+  elemental_balance: Record<string, number>;
+  zodiac_compatibility_score: number;
+  engagement_streak: number;
+  achievements_unlocked: string[];
+  last_activity: string;
+}
+
+export const cosmicAPI = {
+  // Lunar Intelligence
+  getLunarGuidance: (date?: string): Promise<LunarGuidance> =>
+    api.get('/api/v1/lunar/guidance', { params: date ? { date } : {} }),
+
+  getLunarAlchemy: (date?: string): Promise<any> =>
+    api.get('/api/v1/lunar/alchemy', { params: date ? { date } : {} }),
+
+  // Archetypal Mentors
+  getMentorGuidance: (question: string, userData?: any): Promise<MentorGuidance> =>
+    api.post('/api/v1/mentors/guidance', { question, user_data: userData }),
+
+  getMentorHistory: (limit: number = 10): Promise<MentorGuidance[]> =>
+    api.get('/api/v1/mentors/history', { params: { limit } }),
+
+  // Ritual Quests
+  getRecommendedQuests: (userData?: any): Promise<Quest[]> =>
+    api.post('/api/v1/quests/recommend', { user_data: userData }),
+
+  getActiveQuests: (): Promise<Quest[]> =>
+    api.get('/api/v1/quests/active'),
+
+  startQuest: (questId: string): Promise<Quest> =>
+    api.post(`/api/v1/quests/${questId}/start`),
+
+  updateQuestProgress: (questId: string, progress: any): Promise<Quest> =>
+    api.put(`/api/v1/quests/${questId}/progress`, progress),
+
+  completeQuest: (questId: string, results: any): Promise<any> =>
+    api.post(`/api/v1/quests/${questId}/complete`, results),
+
+  // Cosmic Statistics
+  getCosmicStats: (): Promise<CosmicStats> =>
+    api.get('/api/v1/cosmic/stats'),
+
+  getCosmicAchievements: (): Promise<any[]> =>
+    api.get('/api/v1/cosmic/achievements'),
+
+  // Social Feed Integration
+  shareQuestProgress: (questId: string, message?: string): Promise<any> =>
+    api.post('/api/v1/social/quest-share', { quest_id: questId, message }),
+
+  shareMentorInsight: (mentorName: string, insight: string): Promise<any> =>
+    api.post('/api/v1/social/mentor-share', { mentor: mentorName, insight }),
+
+  shareLunarEvent: (eventType: string, details: any): Promise<any> =>
+    api.post('/api/v1/social/lunar-share', { event_type: eventType, details }),
 };

@@ -240,14 +240,12 @@ export default function ZodiacChatRooms() {
                     <motion.button
                       key={room.id}
                       onClick={() => setSelectedRoom(room.id)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all ${
-                        selectedRoom === room.id
+                      className={`w-full p-4 rounded-lg border-2 transition-all ${selectedRoom === room.id
                           ? 'border-yellow-400 bg-yellow-900/30'
                           : 'border-gray-600 hover:border-yellow-300'
-                      } ${room.is_user_element ? 'ring-2 ring-purple-400/50' : ''}`}
+                        } ${room.is_user_element ? 'ring-2 ring-purple-400/50' : ''}`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      style={{ borderColor: selectedRoom === room.id ? room.color : undefined }}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <IconComponent className="w-6 h-6" style={{ color: room.color }} />

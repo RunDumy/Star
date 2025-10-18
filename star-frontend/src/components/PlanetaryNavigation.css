@@ -1,0 +1,221 @@
+/* PlanetaryNavigation.css */
+
+.planetary-navigation {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    background-color: black;
+    overflow: hidden;
+}
+
+.navigation-instructions {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+}
+
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.loading-spinner {
+    width: 4rem;
+    height: 4rem;
+    border: 4px solid #a855f7;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    color: white;
+    font-size: 1.25rem;
+}
+
+.loading-destination {
+    color: #c084fc;
+    margin-top: 0.5rem;
+}
+
+.planet-panel {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 20rem;
+    background: linear-gradient(to bottom right, rgba(88, 28, 135, 0.9), rgba(59, 7, 100, 0.9));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    padding: 1.5rem;
+    z-index: 40;
+}
+
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    color: white;
+}
+
+.planet-icon-container {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    border: 2px solid;
+}
+
+.planet-label {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: white;
+}
+
+.planet-key {
+    color: #c084fc;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.planet-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.875rem;
+    line-height: 1.625;
+    margin-bottom: 1.5rem;
+}
+
+.navigate-button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(to right, #9333ea, #ec4899);
+    color: white;
+    font-weight: bold;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    transform: scale(1);
+}
+
+.navigate-button:hover {
+    background: linear-gradient(to right, #7c3aed, #db2777);
+    transform: scale(1.05);
+}
+
+.system-overview {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: white;
+    max-width: 20rem;
+}
+
+.system-title {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.system-description {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.75rem;
+}
+
+.system-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Dynamic styles for planet icons - using CSS variables */
+.planet-icon-sun {
+    --planet-bg: rgba(255, 215, 0, 0.125);
+    --planet-border: #FFD700;
+}
+
+.planet-icon-mercury {
+    --planet-bg: rgba(140, 120, 83, 0.125);
+    --planet-border: #8C7853;
+}
+
+.planet-icon-venus {
+    --planet-bg: rgba(255, 105, 180, 0.125);
+    --planet-border: #FF69B4;
+}
+
+.planet-icon-earth {
+    --planet-bg: rgba(79, 148, 205, 0.125);
+    --planet-border: #4F94CD;
+}
+
+.planet-icon-mars {
+    --planet-bg: rgba(205, 92, 92, 0.125);
+    --planet-border: #CD5C5C;
+}
+
+.planet-icon-jupiter {
+    --planet-bg: rgba(218, 165, 32, 0.125);
+    --planet-border: #DAA520;
+}
+
+.planet-icon-saturn {
+    --planet-bg: rgba(105, 105, 105, 0.125);
+    --planet-border: #696969;
+}
+
+.planet-icon-uranus {
+    --planet-bg: rgba(64, 224, 208, 0.125);
+    --planet-border: #40E0D0;
+}
+
+.planet-icon-neptune {
+    --planet-bg: rgba(65, 105, 225, 0.125);
+    --planet-border: #4169E1;
+}
+
+.planet-icon-pluto {
+    --planet-bg: rgba(128, 0, 128, 0.125);
+    --planet-border: #800080;
+}

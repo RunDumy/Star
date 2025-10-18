@@ -84,6 +84,17 @@ Object.defineProperty(navigator, 'mediaDevices', {
   },
 });
 
+// Mock fetch globally for Jest environment
+globalThis.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+    blob: () => Promise.resolve(new Blob()),
+  })
+) as jest.Mock;
+
 // Mock Supabase
 jest.mock('@/lib/supabase', () => ({
   supabase: {

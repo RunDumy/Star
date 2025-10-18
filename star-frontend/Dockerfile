@@ -14,9 +14,10 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Create non-root user
+# Create non-root user and set up directories
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
+    mkdir -p /app/.next && \
     chown -R nextjs:nodejs /app
 
 USER nextjs

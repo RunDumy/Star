@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "dev": "cd star-frontend && npm run dev",
+    "dev:backend": "cd star-backend && python app.py",
+    "test": "cd star-frontend && npm test"
+  },
+  "dependencies": {
+    "axios": "^1.12.2"
+  }
+}

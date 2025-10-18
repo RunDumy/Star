@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Award, Crown, Shield, Sparkles, Star, Trophy } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import styles from './ZodiacSigilShrine.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -75,17 +76,65 @@ export const ZodiacSigilShrine: React.FC<ZodiacSigilShrineProps> = ({
     showEquippedOnly = false,
     onBadgeSelect
 }) => {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
+    const token = globalThis.window ? localStorage.getItem('token') : null;
     const [badges, setBadges] = useState<Badge[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-    const [view, setView] = useState<'grid' | 'shrine'>('shrine');
+    const [view, setView] = useState<'shrine' | 'grid' | 'constellation' | 'orbital' | 'spiral'>('shrine');
     const [filterCategory, setFilterCategory] = useState<string>('all');
     const [filterRarity, setFilterRarity] = useState<string>('all');
+    const [showUnlockAnimation, setShowUnlockAnimation] = useState<string | null>(null);
+    const [zodiacMilestones, setZodiacMilestones] = useState<Record<string, number>>({});
 
     useEffect(() => {
         fetchUserBadges();
+        checkZodiacMilestones();
     }, [userId, showEquippedOnly]);
+
+    const checkZodiacMilestones = async () => {
+        try {
+            const targetUserId = userId || user?.id;
+            const response = await axios.get(`${API_URL}/api/v1/zodiac/milestones/${targetUserId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                setZodiacMilestones(response.data.milestones || {});
+
+                // Check for new badge unlocks based on milestones
+                const newUnlocks = await checkBadgeUnlocks(response.data.milestones);
+                if (newUnlocks.length > 0) {
+                    // Trigger unlock animations
+                    for (let i = 0; i < newUnlocks.length; i++) {
+                        const badgeId = newUnlocks[i];
+                        setTimeout(() => {
+                            setShowUnlockAnimation(badgeId);
+                            setTimeout(() => setShowUnlockAnimation(null), 3000);
+                        }, i * 1000);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking zodiac milestones:', error);
+        }
+    };
+
+    const checkBadgeUnlocks = async (milestones: Record<string, number>) => {
+        try {
+            const response = await axios.post(`${API_URL}/api/v1/badges/check-unlocks`, {
+                milestones,
+                userId: userId || user?.id
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            return response.data.newUnlocks || [];
+        } catch (error) {
+            console.error('Error checking badge unlocks:', error);
+            return [];
+        }
+    };
 
     const fetchUserBadges = async () => {
         try {
@@ -175,24 +224,51 @@ export const ZodiacSigilShrine: React.FC<ZodiacSigilShrineProps> = ({
 
             {/* Controls */}
             <div className="flex flex-wrap gap-4 mb-8 justify-center">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => setView('shrine')}
-                        className={`px-4 py-2 rounded-lg transition-all ${view === 'shrine'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
+                        className={`px-3 py-2 rounded-lg transition-all text-sm ${view === 'shrine'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
                             }`}
                     >
-                        🏛️ Shrine View
+                        🏛️ Classic
+                    </button>
+                    <button
+                        onClick={() => setView('constellation')}
+                        className={`px-3 py-2 rounded-lg transition-all text-sm ${view === 'constellation'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
+                            }`}
+                    >
+                        ⭐ Constellation
+                    </button>
+                    <button
+                        onClick={() => setView('orbital')}
+                        className={`px-3 py-2 rounded-lg transition-all text-sm ${view === 'orbital'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
+                            }`}
+                    >
+                        🪐 Orbital
+                    </button>
+                    <button
+                        onClick={() => setView('spiral')}
+                        className={`px-3 py-2 rounded-lg transition-all text-sm ${view === 'spiral'
+                            ? 'bg-cyan-600 text-white'
+                            : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
+                            }`}
+                    >
+                        🌀 Spiral
                     </button>
                     <button
                         onClick={() => setView('grid')}
-                        className={`px-4 py-2 rounded-lg transition-all ${view === 'grid'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
+                        className={`px-3 py-2 rounded-lg transition-all text-sm ${view === 'grid'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-purple-800/50 text-purple-300 hover:bg-purple-700/50'
                             }`}
                     >
-                        📊 Grid View
+                        📊 Grid
                     </button>
                 </div>
 
@@ -201,11 +277,15 @@ export const ZodiacSigilShrine: React.FC<ZodiacSigilShrineProps> = ({
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
                     className="px-3 py-2 bg-purple-800/50 border border-purple-600 rounded-lg text-white"
+                    title="Filter sigils by category"
+                    aria-label="Sigil category filter"
                 >
                     <option value="all">All Categories</option>
                     {categories.map(category => (
                         <option key={category} value={category}>
-                            {category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {category.replaceAll('_', ' ').split(' ').map(word =>
+                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                            ).join(' ')}
                         </option>
                     ))}
                 </select>
@@ -214,30 +294,77 @@ export const ZodiacSigilShrine: React.FC<ZodiacSigilShrineProps> = ({
                     value={filterRarity}
                     onChange={(e) => setFilterRarity(e.target.value)}
                     className="px-3 py-2 bg-purple-800/50 border border-purple-600 rounded-lg text-white"
+                    title="Filter sigils by rarity level"
+                    aria-label="Sigil rarity filter"
                 >
                     <option value="all">All Rarities</option>
                     {rarities.map(rarity => (
                         <option key={rarity} value={rarity}>
-                            {RARITY_CONFIG[rarity as keyof typeof RARITY_CONFIG]?.name || rarity}
+                            {RARITY_CONFIG[rarity]?.name || rarity}
                         </option>
                     ))}
                 </select>
             </div>
 
             {/* Badge Display */}
-            {view === 'shrine' ? (
+            {view === 'shrine' && (
                 <ShrineView
                     badges={filteredBadges}
                     onBadgeClick={handleBadgeClick}
                     onToggleEquip={toggleBadgeEquip}
                 />
-            ) : (
+            )}
+            {view === 'constellation' && (
+                <ConstellationView
+                    badges={filteredBadges}
+                    onBadgeClick={handleBadgeClick}
+                    onToggleEquip={toggleBadgeEquip}
+                />
+            )}
+            {view === 'orbital' && (
+                <OrbitalView
+                    badges={filteredBadges}
+                    onBadgeClick={handleBadgeClick}
+                    onToggleEquip={toggleBadgeEquip}
+                />
+            )}
+            {view === 'spiral' && (
+                <SpiralView
+                    badges={filteredBadges}
+                    onBadgeClick={handleBadgeClick}
+                    onToggleEquip={toggleBadgeEquip}
+                />
+            )}
+            {view === 'grid' && (
                 <GridView
                     badges={filteredBadges}
                     onBadgeClick={handleBadgeClick}
                     onToggleEquip={toggleBadgeEquip}
                 />
             )}
+
+            {/* Unlock Animation */}
+            <AnimatePresence>
+                {showUnlockAnimation && (
+                    <motion.div
+                        className={styles.unlockAnimation}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <div className="text-center">
+                            <div className="text-6xl mb-4">✨</div>
+                            <h3 className="text-2xl font-bold text-yellow-400 mb-2">
+                                New Sigil Unlocked!
+                            </h3>
+                            <p className="text-purple-300">
+                                Your cosmic journey has earned you a new badge
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Badge Detail Modal */}
             <AnimatePresence>
@@ -335,11 +462,8 @@ const ShrineQualityBadge: React.FC<{
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
-            className={`shrine-badge-card relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${config.glow}`}
-            style={{
-                background: `linear-gradient(135deg, ${config.color}20, ${config.color}10)`,
-                borderColor: config.color
-            }}
+            className={`shrine-badge-card shrine-badge-background relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${config.glow}`}
+            style={{ '--badge-color': config.color } as React.CSSProperties}
             onClick={onClick}
         >
             {/* Equipped Indicator */}
@@ -352,12 +476,12 @@ const ShrineQualityBadge: React.FC<{
             {/* Badge Icon */}
             <div className="text-center mb-4">
                 <div
-                    className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-3"
-                    style={{ backgroundColor: `${config.color}30` }}
+                    className={`${styles.badgeIcon}`}
+                    data-badge-color={config.color}
                 >
                     <IconComponent
                         className="w-8 h-8"
-                        style={{ color: config.color }}
+                        data-icon-color={config.color}
                     />
                 </div>
                 <span className="text-xs px-2 py-1 rounded-full bg-black/30 text-white">
@@ -381,8 +505,8 @@ const ShrineQualityBadge: React.FC<{
                         onToggleEquip();
                     }}
                     className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${badge.equipped
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-green-600 hover:bg-green-700 text-white'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
                         }`}
                 >
                     {badge.equipped ? 'Unequip' : 'Equip'}
@@ -406,11 +530,8 @@ const CompactBadge: React.FC<{
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
-            className={`compact-badge relative p-4 rounded-lg border cursor-pointer transition-all duration-300 hover:scale-105 ${config.glow}`}
-            style={{
-                background: `linear-gradient(135deg, ${config.color}20, ${config.color}10)`,
-                borderColor: config.color
-            }}
+            className={`shrine-badge-background compact-badge relative p-4 rounded-lg border cursor-pointer transition-all duration-300 hover:scale-105 ${config.glow}`}
+            style={{ '--badge-color': config.color } as React.CSSProperties}
             onClick={onClick}
         >
             {badge.equipped && (
@@ -419,11 +540,10 @@ const CompactBadge: React.FC<{
 
             <div className="text-center">
                 <IconComponent
-                    className="w-6 h-6 mx-auto mb-2"
-                    style={{ color: config.color }}
+                    className="shrine-badge-icon w-6 h-6 mx-auto mb-2"
                 />
                 <p className="text-xs text-white font-medium truncate">
-                    {badge.manifest.metadata.name.replace(/[🏛️🔥🌟🎴👥🌙]/g, '')}
+                    {badge.manifest.metadata.name.replaceAll(/[^\w\s-]/g, '').trim()}
                 </p>
             </div>
         </motion.div>
@@ -450,19 +570,19 @@ const BadgeDetailModal: React.FC<{
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                className={`bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl p-8 max-w-md w-full border-2 ${config.glow}`}
-                style={{ borderColor: config.color }}
+                className={`bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl p-8 max-w-md w-full border-2 ${config.glow} ${styles.modalContent}`}
+                data-border-color={config.color}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="text-center mb-6">
                     <div
-                        className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
-                        style={{ backgroundColor: `${config.color}30` }}
+                        className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 ${styles.badgeIcon}`}
+                        data-badge-color={config.color}
                     >
                         <IconComponent
                             className="w-10 h-10"
-                            style={{ color: config.color }}
+                            data-icon-color={config.color}
                         />
                     </div>
 
@@ -471,12 +591,8 @@ const BadgeDetailModal: React.FC<{
                     </h2>
 
                     <span
-                        className="px-3 py-1 rounded-full text-sm font-medium"
-                        style={{
-                            backgroundColor: `${config.color}20`,
-                            color: config.color,
-                            border: `1px solid ${config.color}`
-                        }}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${styles.badgeRarity}`}
+                        data-rarity-color={config.color}
                     >
                         {config.name}
                     </span>
@@ -501,7 +617,7 @@ const BadgeDetailModal: React.FC<{
                                     <ul className="text-sm text-gray-300 ml-4">
                                         {Object.entries(badge.manifest.effects.cosmic_influence).map(([key, value]) => (
                                             <li key={key}>
-                                                {key.replace(/_/g, ' ')}: +{((value - 1) * 100).toFixed(0)}%
+                                                {key.replaceAll('_', ' ')}: +{((value - 1) * 100).toFixed(0)}%
                                             </li>
                                         ))}
                                     </ul>
@@ -525,8 +641,8 @@ const BadgeDetailModal: React.FC<{
                     <button
                         onClick={onToggleEquip}
                         className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${badge.equipped
-                                ? 'bg-red-600 hover:bg-red-700 text-white'
-                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-green-600 hover:bg-green-700 text-white'
                             }`}
                     >
                         {badge.equipped ? '👑 Unequip' : '⚡ Equip'}
@@ -540,6 +656,232 @@ const BadgeDetailModal: React.FC<{
                 </div>
             </motion.div>
         </motion.div>
+    );
+};
+
+// Enhanced Shrine Layout Components
+const ConstellationView: React.FC<{
+    badges: Badge[];
+    onBadgeClick: (badge: Badge) => void;
+    onToggleEquip: (badge: Badge) => void;
+}> = ({ badges, onBadgeClick }) => {
+    // Group badges by rarity and position them like stars in constellations
+    const rarityGroups = badges.reduce((acc, badge) => {
+        const rarity = badge.manifest.rarity;
+        if (!acc[rarity]) acc[rarity] = [];
+        acc[rarity].push(badge);
+        return acc;
+    }, {} as Record<string, Badge[]>);
+
+    const getConstellationPosition = (index: number, total: number) => {
+        const angle = (index / total) * 2 * Math.PI;
+        const radius = 100 + (total * 15);
+        return {
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius
+        };
+    };
+
+    return (
+        <div className="constellation-view relative min-h-[800px] flex items-center justify-center overflow-hidden">
+            <div className="relative w-full max-w-6xl h-[700px]">
+                {Object.entries(rarityGroups).map(([rarity, rarityBadges], groupIndex) => {
+                    const config = RARITY_CONFIG[rarity as keyof typeof RARITY_CONFIG];
+                    const centerX = (groupIndex % 3) * 250 + 200;
+                    const centerY = Math.floor(groupIndex / 3) * 250 + 200;
+
+                    return (
+                        <div key={rarity} className="absolute">
+                            {/* Constellation Center */}
+                            <div
+                                className="constellation-center absolute w-3 h-3 rounded-full animate-pulse"
+                                style={{
+                                    left: centerX - 6,
+                                    top: centerY - 6,
+                                    '--constellation-color': config.color
+                                } as React.CSSProperties}
+                            />
+
+                            {/* Constellation Name */}
+                            <div
+                                className="constellation-name absolute text-xs font-bold whitespace-nowrap"
+                                style={{
+                                    left: centerX - 50,
+                                    top: centerY - 35,
+                                    '--constellation-color': config.color
+                                } as React.CSSProperties}
+                            >
+                                {config.name} Constellation
+                            </div>
+
+                            {/* Badge Stars */}
+                            {rarityBadges.map((badge, index) => {
+                                const pos = getConstellationPosition(index, rarityBadges.length);
+                                return (
+                                    <motion.div
+                                        key={badge.badge_id}
+                                        className="absolute cursor-pointer"
+                                        style={{
+                                            left: centerX + pos.x - 16,
+                                            top: centerY + pos.y - 16
+                                        }}
+                                        whileHover={{ scale: 1.3 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => onBadgeClick(badge)}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <div
+                                            className={`badge-ring-item w-8 h-8 rounded-full border ${config.glow} flex items-center justify-center`}
+                                            style={{ '--ring-color': config.color } as React.CSSProperties}
+                                        >
+                                            <config.icon className="badge-ring-icon w-4 h-4" />
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const OrbitalView: React.FC<{
+    badges: Badge[];
+    onBadgeClick: (badge: Badge) => void;
+    onToggleEquip: (badge: Badge) => void;
+}> = ({ badges, onBadgeClick }) => {
+    return (
+        <div className="orbital-view flex items-center justify-center min-h-[800px]">
+            <div className="relative w-[600px] h-[600px]">
+                {/* Central Star */}
+                <div className="absolute top-1/2 left-1/2 w-12 h-12 -mt-6 -ml-6">
+                    <div className="w-full h-full rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 animate-pulse shadow-lg shadow-yellow-400/50" />
+                    <Sparkles className="absolute top-1/2 left-1/2 w-6 h-6 -mt-3 -ml-3 text-white" />
+                </div>
+
+                {/* Orbital Rings */}
+                {[80, 140, 200, 260].map((radius, ringIndex) => (
+                    <div key={ringIndex}>
+                        <div
+                            className="orbital-ring absolute top-1/2 left-1/2 border border-purple-400/20 rounded-full"
+                            style={{ '--ring-size': `${radius * 2}px` } as React.CSSProperties}
+                        />
+
+                        {/* Badges on this ring */}
+                        {badges
+                            .filter((_, index) => Math.floor(index / 6) === ringIndex)
+                            .map((badge, badgeIndex) => {
+                                const angle = (badgeIndex / 6) * 2 * Math.PI;
+                                const x = Math.cos(angle) * radius;
+                                const y = Math.sin(angle) * radius;
+                                const config = RARITY_CONFIG[badge.manifest.rarity];
+
+                                return (
+                                    <motion.div
+                                        key={badge.badge_id}
+                                        className="absolute cursor-pointer"
+                                        style={{
+                                            left: '50%',
+                                            top: '50%',
+                                            transform: `translate(${x - 16}px, ${y - 16}px)`
+                                        }}
+                                        animate={{
+                                            rotate: [0, 360]
+                                        }}
+                                        transition={{
+                                            duration: 20 + ringIndex * 10,
+                                            repeat: Infinity,
+                                            ease: "linear"
+                                        }}
+                                        whileHover={{ scale: 1.3 }}
+                                        onClick={() => onBadgeClick(badge)}
+                                    >
+                                        <div
+                                            className={`badge-ring-item w-8 h-8 rounded-full ${config.glow} flex items-center justify-center border`}
+                                            style={{ '--ring-color': config.color } as React.CSSProperties}
+                                        >
+                                            <config.icon className="badge-ring-icon w-4 h-4" />
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const SpiralView: React.FC<{
+    badges: Badge[];
+    onBadgeClick: (badge: Badge) => void;
+    onToggleEquip: (badge: Badge) => void;
+}> = ({ badges, onBadgeClick }) => {
+    return (
+        <div className="spiral-view flex items-center justify-center min-h-[800px]">
+            <div className="relative w-[500px] h-[500px]">
+                {badges.map((badge, index) => {
+                    const spiralTurn = index * 0.6;
+                    const radius = 15 + (spiralTurn * 12);
+                    const angle = spiralTurn * 2 * Math.PI;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    const config = RARITY_CONFIG[badge.manifest.rarity];
+
+                    return (
+                        <motion.div
+                            key={badge.badge_id}
+                            className="absolute cursor-pointer"
+                            style={{
+                                left: '50%',
+                                top: '50%',
+                                transform: `translate(${x - 20}px, ${y - 20}px)`
+                            }}
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                                delay: index * 0.05,
+                                type: "spring",
+                                stiffness: 200
+                            }}
+                            whileHover={{
+                                scale: 1.4,
+                                rotate: 180,
+                                transition: { duration: 0.3 }
+                            }}
+                            onClick={() => onBadgeClick(badge)}
+                        >
+                            <div
+                                className={`badge-detail-container w-10 h-10 rounded-full ${config.glow} flex items-center justify-center border-2 relative`}
+                                style={{ '--detail-color': config.color } as React.CSSProperties}
+                            >
+                                <config.icon className="badge-detail-icon w-5 h-5" />
+
+                                {/* Spiral Trail Effect */}
+                                <div
+                                    className="spiral-trail absolute w-1 h-1 rounded-full animate-pulse"
+                                    style={{
+                                        '--trail-color': config.color,
+                                        left: -3,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)'
+                                    } as React.CSSProperties}
+                                />
+                            </div>
+                        </motion.div>
+                    );
+                })}
+
+                {/* Central Galaxy Core */}
+                <div className="absolute top-1/2 left-1/2 w-6 h-6 -mt-3 -ml-3">
+                    <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-700 animate-spin shadow-lg shadow-purple-500/50" />
+                </div>
+            </div>
+        </div>
     );
 };
 

@@ -123,6 +123,7 @@ form,
 
 .cosmic-tooltip {
   font-family: "Courier New", monospace;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
@@ -387,6 +388,7 @@ form,
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -437,6 +439,7 @@ form,
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -1854,4 +1857,79 @@ form,
   overflow: hidden;
   background: radial-gradient(circle at center, #0a0a2a 0%, #000010 70%, #000000 100%);
   box-shadow: 0 0 30px rgba(74, 144, 226, 0.3);
+}
+
+/* Animation delay classes for cosmic elements */
+.animate-pulse-delay-1s {
+  animation-delay: 1s;
+}
+
+.animate-pulse-delay-2s {
+  animation-delay: 2s;
+}
+
+/* Zodiac background image utility */
+.zodiac-background {
+  background-image: var(--zodiac-bg);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Performance optimization for animations */
+.will-change-transform-opacity {
+  will-change: transform, opacity;
+}
+
+/* Progress bar width utility */
+.progress-bar-fill {
+  width: var(--progress-width, 0%);
+}
+
+/* Zodiac sigil shrine dynamic styles */
+.shrine-badge-background {
+  background: linear-gradient(135deg, var(--badge-color)20, var(--badge-color)10);
+  border-color: var(--badge-color);
+}
+
+.shrine-badge-icon {
+  color: var(--badge-color);
+}
+
+.constellation-center {
+  background: var(--constellation-color);
+  box-shadow: 0 0 15px var(--constellation-color);
+}
+
+.constellation-name {
+  color: var(--constellation-color);
+}
+
+.badge-ring-item {
+  border-color: var(--ring-color);
+  background: linear-gradient(135deg, var(--ring-color)30, var(--ring-color)50);
+}
+
+.badge-ring-icon {
+  color: var(--ring-color);
+}
+
+.orbital-ring {
+  width: var(--ring-size);
+  height: var(--ring-size);
+  margin-top: calc(var(--ring-size) / -2);
+  margin-left: calc(var(--ring-size) / -2);
+}
+
+.badge-detail-container {
+  border-color: var(--detail-color);
+  background: radial-gradient(circle, var(--detail-color)50, var(--detail-color)20);
+}
+
+.badge-detail-icon {
+  color: var(--detail-color);
+}
+
+.spiral-trail {
+  background: var(--trail-color);
+  box-shadow: 0 0 8px var(--trail-color);
 }

@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { Html, OrbitControls, PointMaterial, Points } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Points, PointMaterial, Html } from '@react-three/drei';
-import * as THREE from 'three';
-import { motion } from 'framer-motion-3d';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import { motion } from 'framer-motion-3d';
+import React, { useEffect, useState } from 'react';
 
 const Starfield = () => {
   const starCount = 1000;
   const positions = new Float32Array(starCount * 3);
   const velocities = new Float32Array(starCount * 3);
-  
+
   for (let i = 0; i < starCount * 3; i += 3) {
     positions[i] = (Math.random() - 0.5) * 100;
     positions[i + 1] = (Math.random() - 0.5) * 100;
@@ -20,7 +19,7 @@ const Starfield = () => {
   }
 
   const ref = React.useRef();
-  
+
   useFrame(() => {
     const positions = ref.current.array;
     for (let i = 0; i < starCount * 3; i += 3) {
@@ -75,7 +74,7 @@ const EnhancedStarCosmos = () => {
 
   useEffect(() => {
     const fetchToken = async () => {
-      const response = await fetch(${process.env.NEXT_PUBLIC_API_URL}/api/v1/agora-token, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/agora-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel }),

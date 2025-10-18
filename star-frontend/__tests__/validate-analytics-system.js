@@ -11,12 +11,12 @@ const path = require('path');
 
 // Test configuration
 const TEST_CONFIG = {
-    BACKEND_PATH: 'C:/Users/fudos/PycharmProjects/Star/star-backend',
+    BACKEND_PATH: 'C:/Users/fudos/PycharmProjects/Star/star-backend/star_backend_flask',
     FRONTEND_PATH: 'C:/Users/fudos/PycharmProjects/Star/star-frontend/src',
     REQUIRED_FILES: [
         // Backend files
         'analytics_engine.py',
-        'analytics_api.py',
+        'api/analytics_api.py',
 
         // Frontend files
         'components/cosmic/AnalyticsDashboard.tsx',
@@ -282,7 +282,7 @@ function analyzeBackendEngine(enginePath) {
     });
 
     // Advanced features
-    if (content.includes('CosmosDBHelper')) {
+    if (content.includes('CosmosDBHelper') || (content.includes('cosmos_helper') && content.includes('get_container'))) {
         score += 10;
         features.push('Cosmos DB integration');
     } else {

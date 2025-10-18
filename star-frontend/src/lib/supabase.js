@@ -1,78 +1,46 @@
-// Supabase stub - migrated to Azure Cosmos DB
-// This is a compatibility layer for the migration process
+import { createClient } from '@supabase/supabase-js'
 
-export const supabase = {
-    auth: {
-        async getUser() {
-            // Return mock user data or implement Azure authentication
-            return {
-                data: {
-                    user: null
-                }
-            };
-        },
-        async signOut() {
-            // Implement Azure logout or redirect
-            return Promise.resolve();
-        },
-        onAuthStateChange(callback) {
-            // Mock auth state change listener
-            return {
-                data: { subscription: null },
-                unsubscribe: () => { }
-            };
-        }
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Auth helpers
+export const auth = {
+    async getUser() {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) throw error
+        return { data: { user }, error: null }
     },
+
+    async signOut() {
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+        return { error: null }
+    },
+
+    onAuthStateChange(callback) {
+        return supabase.auth.onAuthStateChange(callback)
+    }
+}
+
+// Database helpers
+export const db = {
     from(table) {
-        // Mock database operations - replace with Azure API calls
-        return {
-            select(columns) {
-                return {
-                    eq(column, value) {
-                        return {
-                            single() {
-                                return Promise.resolve({ data: null, error: null });
-                            }
-                        };
-                    }
-                };
-            },
-            insert(data) {
-                return Promise.resolve({ data: null, error: null });
-            },
-            update(data) {
-                return {
-                    eq(column, value) {
-                        return Promise.resolve({ data: null, error: null });
-                    }
-                };
-            },
-            delete() {
-                return {
-                    eq(column, value) {
-                        return Promise.resolve({ data: null, error: null });
-                    }
-                };
-            }
-        };
-    },
+        return supabase.from(table)
+    }
+}
+
+// Real-time helpers (using Supabase Realtime)
+export const realtime = {
     channel(channelName) {
-        // Mock real-time channel - replace with SignalR or Socket.IO
-        return {
-            on(event, callback) {
-                return this;
-            },
-            subscribe(callback) {
-                if (callback) callback();
-                return this;
-            },
-            unsubscribe() {
-                return Promise.resolve();
-            }
-        };
+        return supabase.channel(channelName)
     },
     removeChannel(channel) {
-        // Mock channel removal
-        return Promise.resolve();
+        return supabase.removeChannel(channel)
     }
-};
+}

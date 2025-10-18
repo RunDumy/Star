@@ -498,8 +498,425 @@
 .cosmic-content-overlay {
     position: relative;
     z-index: 10;
-    padding: 20px;
-    min-height: 100vh;
+}
+
+/* ===== ZODIAC ARENA ENHANCED STYLES ===== */
+/* Arena UI Panels */
+.cosmic-ui-panel {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    border-radius: 8px;
+    padding: 0.75rem;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cosmic-ui-panel.mobile-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cosmic-ui-panel.quests {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    min-width: 220px;
+    max-width: 90vw;
+}
+
+.cosmic-ui-panel.leaderboard {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    min-width: 200px;
+}
+
+.cosmic-ui-panel.skills {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    min-width: 180px;
+}
+
+/* Panel Headers */
+.panel-header {
+    color: #fef3c7;
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Quest Styles */
+.quest-item {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
+}
+
+.quest-name {
+    color: #fef3c7;
+    margin: 0 0 0.25rem 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.quest-progress-bar {
+    background: #1e293b;
+    border-radius: 4px;
+    padding: 2px;
+    margin: 0.25rem 0;
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    height: 6px;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.quest-progress-fill.completed {
+    background: linear-gradient(90deg, #10b981, #34d399);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.quest-reward {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Leaderboard Styles */
+.leaderboard-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+}
+
+.leaderboard-entry.gold {
+    border-left-color: #f59e0b;
+}
+
+.leaderboard-entry.silver {
+    border-left-color: #94a3b8;
+}
+
+.leaderboard-entry.bronze {
+    border-left-color: #d4d4d4;
+}
+
+.leaderboard-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.leaderboard-name.current-player {
+    font-weight: 700;
+    text-shadow: 0 0 4px rgba(245, 158, 11, 0.6);
+}
+
+.leaderboard-rp {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+/* Skill Panel Styles */
+.skill-item {
+    margin-bottom: 0.6rem;
+    padding: 0.5rem;
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 6px;
+}
+
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.skill-name {
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.skill-level {
+    color: #f59e0b;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.skill-upgrade-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.skill-upgrade-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+}
+
+.skill-upgrade-btn:disabled {
+    background: #374151;
+    color: #6b7280;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Store Modal Styles */
+.store-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 1.5rem;
+    min-width: 320px;
+    max-width: 90vw;
+    max-height: 80vh;
+    z-index: 1000;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.store-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.store-title {
+    color: #f59e0b;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(245, 158, 11, 0.4);
+}
+
+.store-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.store-close:hover {
+    color: #ffffff;
+}
+
+.store-items {
+    display: grid;
+    gap: 1rem;
+}
+
+.store-item {
+    padding: 1rem;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.store-item:hover {
+    transform: translateY(-2px);
+}
+
+.store-item.boost {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.store-item.cosmetic {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.store-item-title {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.store-item.boost .store-item-title {
+    color: #60a5fa;
+}
+
+.store-item.cosmetic .store-item-title {
+    color: #a855f7;
+}
+
+.store-item-description {
+    color: #94a3b8;
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.store-buy-btn {
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.store-buy-btn.boost {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.store-buy-btn.cosmetic {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.store-buy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Combat Streak Indicator */
+.combat-streak {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    animation: pulse-glow 1s infinite;
+    z-index: 100;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.05);
+        box-shadow: 0 6px 24px rgba(239, 68, 68, 0.6);
+    }
+}
+
+/* Touch Instructions */
+.touch-instructions {
+    position: absolute;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-align: center;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .cosmic-ui-panel {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .cosmic-ui-panel.quests,
+    .cosmic-ui-panel.leaderboard {
+        max-width: 85vw;
+        font-size: 0.8rem;
+    }
+
+    .cosmic-ui-panel.skills {
+        bottom: 8rem;
+        max-width: 85vw;
+    }
+
+    .quest-item {
+        padding: 0.4rem;
+    }
+
+    .store-modal {
+        min-width: 280px;
+        padding: 1rem;
+    }
+
+    .touch-instructions {
+        bottom: 10rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .quest-progress-fill,
+    .skill-upgrade-btn,
+    .store-item,
+    .combat-streak {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .cosmic-ui-panel {
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid #ffffff;
+    }
+
+    .panel-header {
+        color: #ffffff;
+    }
+
+    .quest-progress-fill {
+        background: #ffffff;
+    }
 }
 
 .universal-space-ui {

@@ -38,7 +38,9 @@ body {
 }
 
 .touch-enabled:active {
+    -webkit-transform: scale(0.98);
     transform: scale(0.98);
+    -webkit-transition: transform 0.1s ease;
     transition: transform 0.1s ease;
 }
 
@@ -244,9 +246,33 @@ body {
 
 /* iOS specific styles */
 .ios .mobile-app {
+    /* Safari smooth scrolling - deprecated but still works */
     -webkit-overflow-scrolling: touch;
+    /* Modern replacement for Safari 13+ */
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(env(safe-area-inset-bottom) + 8rem);
+    /* Fix iOS Safari address bar height issues */
+    height: -webkit-fill-available;
+}
+
+/* Safari-specific WebKit appearance fixes */
+.ios input,
+.ios textarea,
+.ios button {
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-border-radius: 0;
+    border-radius: 0;
+}
+
+/* Fix iOS Safari gradient rendering */
+.ios .cosmic-gradient {
+    /* Add explicit fallback for older Safari */
+    background: #1a1a2e;
+    background: -webkit-linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
 }
 
 /* Android specific styles */

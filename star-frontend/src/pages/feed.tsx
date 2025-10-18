@@ -172,10 +172,10 @@ export default function FeedPage() {
       <div className="space-y-4">
         {posts.map((post) => (
           <div key={post.id} className="p-4 bg-gray-800 rounded-lg relative">
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
-              backgroundImage: `url(/constellations/${post.zodiac_sign.toLowerCase()}.png)`,
-              backgroundSize: 'cover',
-            }} />
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none zodiac-background"
+              style={{ '--zodiac-bg': `url(/constellations/${post.zodiac_sign.toLowerCase()}.png)` } as React.CSSProperties}
+            />
             <p className="font-semibold">{post.profiles.display_name} ({post.zodiac_sign})</p>
             <p className="mt-1">{post.content}</p>
             {(() => {

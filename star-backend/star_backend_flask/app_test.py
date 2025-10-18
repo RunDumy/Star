@@ -27,7 +27,7 @@ allowed_origins = [
     'http://localhost:3000',
     'https://star-frontend.vercel.app',
     'https://*.vercel.app',
-    'https://star-app-backend.azurewebsites.net'
+    'https://your-star-backend.onrender.com'  # Replace with your Render backend URL
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
 

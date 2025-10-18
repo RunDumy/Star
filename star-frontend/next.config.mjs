@@ -7,18 +7,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
 
+  // Experimental features for ES modules
+  experimental: {
+    esmExternals: 'loose',
+  },
+
+  // Transpile packages that use ES modules
+  transpilePackages: ['konva', 'react-konva'],
+
   // Image optimization for static export
   images: {
     unoptimized: true,
   },
 
-  // Static Export Configuration for Azure deployment - disabled for local dev
+  // Static Export Configuration for Vercel deployment - disabled for local dev
   // output: 'export',
   // distDir: 'out',
   trailingSlash: true,
 
-  // Repository root for lockfile resolution
-  outputFileTracingRoot: path.join(__dirname, '..'),
+  // Repository root for lockfile resolution - disabled for local dev
+  // outputFileTracingRoot: path.join(__dirname, '..'),
 
   // Allow builds with errors for initial deployment
   eslint: {

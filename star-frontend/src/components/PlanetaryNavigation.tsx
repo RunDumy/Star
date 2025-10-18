@@ -1,10 +1,10 @@
 import { OrbitControls, Ring, Text } from '@react-three/drei';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Vector3 } from 'three';
+import './PlanetaryNavigation.css';
 
 // Planetary navigation routes configuration
 const PLANETARY_ROUTES = {
@@ -56,7 +56,7 @@ const PLANETARY_ROUTES = {
         description: 'Your cosmic identity and earthly manifestation',
         glow: '#00BFFF',
         orbitRadius: 6,
-        orbitSpeed: 1.0,
+        orbitSpeed: 1,
         icon: '⊕'
     },
 
@@ -89,7 +89,7 @@ const PLANETARY_ROUTES = {
 
     SATURN: {
         position: [16, 0, 0],
-        size: 1.0,
+        size: 1,
         color: '#696969',
         route: '/badges',
         label: 'Achievement Rings',
@@ -260,27 +260,16 @@ const PlanetObject: React.FC<{
 }> = ({ planetKey, config, onClick, isSelected, isCurrent }) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
-    const { camera } = useThree();
 
-    // Orbital animation
-    useFrame((state) => {
-        if (groupRef.current && config.orbitSpeed) {
-            const elapsed = state.clock.getElapsedTime();
-            const angle = elapsed * config.orbitSpeed * 0.1;
-
-            groupRef.current.position.x = Math.cos(angle) * config.orbitRadius;
-            groupRef.current.position.z = Math.sin(angle) * config.orbitRadius;
-        }
-
-        // Planet rotation
-        if (meshRef.current) {
-            meshRef.current.rotation.y += 0.01;
-
-            // Scale effect for selection
-            const targetScale = isSelected ? 1.2 : (isCurrent ? 1.1 : 1);
-            meshRef.current.scale.lerp(new Vector3(targetScale, targetScale, targetScale), 0.1);
-        }
-    });
+    // Extract nested ternary for readability
+    let targetScale;
+    if (isSelected) {
+        targetScale = 1.2;
+    } else if (isCurrent) {
+        targetScale = 1.1;
+    } else {
+        targetScale = 1;
+    }
 
     // Calculate initial position for non-orbiting bodies (Sun)
     const initialPosition = config.orbitRadius === 0 ? config.position : [0, 0, 0];
@@ -337,7 +326,7 @@ const PlanetObject: React.FC<{
             {/* Selection indicator */}
             {isSelected && (
                 <mesh rotation={[0, 0, 0]}>
-                    <ringGeometry args={[config.size * 1.8, config.size * 2.0, 32]} />
+                    <ringGeometry args={[config.size * 1.8, config.size * 2, 32]} />
                     <meshBasicMaterial
                         color="#00FFFF"
                         transparent
@@ -448,20 +437,20 @@ const PlanetaryUI: React.FC<{
                     >
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 text-white/70 hover:text-white text-xl"
+                            type="button"
+                            className="close-button"
                         >
                             ✕
                         </button>
 
                         <div className="text-center mb-4">
                             <div
-                                className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-2xl mb-3"
-                                style={{ backgroundColor: `${planet.color}20`, border: `2px solid ${planet.color}` }}
+                                className={`planet-icon-container planet-icon-${selectedPlanet.toLowerCase()}`}
                             >
                                 {planet.icon}
                             </div>
-                            <h3 className="text-xl font-bold text-white">{planet.label}</h3>
-                            <p className="text-purple-300 text-sm mt-1">{selectedPlanet}</p>
+                            <h3 className="planet-label">{planet.label}</h3>
+                            <p className="planet-key">{selectedPlanet}</p>
                         </div>
 
                         <div className="mb-6">
@@ -471,8 +460,9 @@ const PlanetaryUI: React.FC<{
                         </div>
 
                         <button
-                            onClick={() => window.location.href = planet.route}
-                            className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
+                            onClick={() => globalThis.location.href = planet.route}
+                            type="button"
+                            className="navigate-button"
                         >
                             🚀 Navigate to {planet.label}
                         </button>

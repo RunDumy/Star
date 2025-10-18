@@ -36,15 +36,12 @@ Place in `/tarot/` subdirectory:
 ## Notes
 - All images should be optimized for web (WebP format recommended)
 - Avatars: 256x256px recommended
-- Backgrounds: 1920x1080px recommended  
+- Backgrounds: 1920x1080px recommended
 - Tarot cards: 400x700px recommended (standard tarot proportions)
 - Use consistent naming convention (lowercase, underscores)
 
-## Upload to Azure Blob Storage
-After adding assets locally, they need to be uploaded to:
-`starfrontendstorage/$web/assets/`
+## Upload to Supabase Storage
+After adding assets locally, they need to be uploaded to Supabase Storage bucket:
+`assets/`
 
-Command:
-```powershell
-az storage blob upload-batch --account-name starfrontendstorage --destination '$web/assets' --source star-frontend/public/assets
-```
+You can upload files through the Supabase Dashboard or programmatically using the Supabase client.

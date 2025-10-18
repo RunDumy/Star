@@ -1,0 +1,437 @@
+/* ===================================
+ * ANIMATIONS MODULE CSS
+ * Animation utilities and timing
+ * =================================== */
+
+/* Animation Base Classes */
+.fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.fadeOut {
+    animation: fadeOut 0.3s ease-in-out;
+}
+
+.slideUp {
+    animation: slideUp 0.4s ease-out;
+}
+
+.slideDown {
+    animation: slideDown 0.4s ease-out;
+}
+
+.scaleIn {
+    animation: scaleIn 0.2s ease-out;
+}
+
+.bounce {
+    animation: bounce 0.6s ease-out;
+}
+
+/* Emotion Reactive Animations */
+.emotionPulse {
+    animation: emotionPulse 2s ease-in-out infinite;
+}
+
+.emotionGlow {
+    animation: emotionGlow 3s ease-in-out infinite alternate;
+}
+
+.emotionFloat {
+    animation: emotionFloat 4s ease-in-out infinite;
+}
+
+.emotionShimmer {
+    animation: emotionShimmer 2.5s linear infinite;
+}
+
+/* Poetic Scroll Animations */
+.poeticReveal {
+    animation: poeticReveal 1s ease-out;
+}
+
+.textGlow {
+    animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+.typewriter {
+    animation: typewriter 2s steps(40, end);
+}
+
+/* Loading Animations */
+.loadingSpinner {
+    animation: spin 1s linear infinite;
+}
+
+.loadingPulse {
+    animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+.loadingWave {
+    animation: loadingWave 1.8s ease-in-out infinite;
+}
+
+/* Cosmic Animations */
+.cosmicRotate {
+    animation: cosmicRotate 20s linear infinite;
+}
+
+.starTwinkle {
+    animation: starTwinkle 2s ease-in-out infinite alternate;
+}
+
+.planetOrbit {
+    animation: planetOrbit 30s linear infinite;
+}
+
+/* Interactive Animations */
+.hoverLift {
+    transition: transform 0.2s ease;
+}
+
+.hoverLift:hover {
+    transform: translateY(-4px);
+}
+
+.clickScale {
+    transition: transform 0.1s ease;
+}
+
+.clickScale:active {
+    transform: scale(0.95);
+}
+
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Animation Delay Utilities */
+.delay-100 {
+    animation-delay: 0.1s;
+}
+
+.delay-200 {
+    animation-delay: 0.2s;
+}
+
+.delay-300 {
+    animation-delay: 0.3s;
+}
+
+.delay-500 {
+    animation-delay: 0.5s;
+}
+
+.delay-700 {
+    animation-delay: 0.7s;
+}
+
+.delay-1000 {
+    animation-delay: 1s;
+}
+
+/* Animation Duration Utilities */
+.duration-fast {
+    animation-duration: 0.2s;
+}
+
+.duration-normal {
+    animation-duration: 0.3s;
+}
+
+.duration-slow {
+    animation-duration: 0.5s;
+}
+
+.duration-slower {
+    animation-duration: 1s;
+}
+
+/* Animation Timing Functions */
+.ease-bounce {
+    animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.ease-smooth {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ease-sharp {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Keyframe Definitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    20%,
+    53%,
+    80%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    40%,
+    43% {
+        transform: translate3d(0, -30px, 0);
+    }
+
+    70% {
+        transform: translate3d(0, -15px, 0);
+    }
+
+    90% {
+        transform: translate3d(0, -4px, 0);
+    }
+}
+
+@keyframes emotionPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+@keyframes emotionGlow {
+    from {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    to {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+    }
+}
+
+@keyframes emotionFloat {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes emotionShimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes poeticReveal {
+    from {
+        opacity: 0;
+        transform: translateY(30px) rotateX(20deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0);
+    }
+}
+
+@keyframes textGlow {
+    from {
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    to {
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+}
+
+@keyframes typewriter {
+    from {
+        width: 0;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes loadingPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes loadingWave {
+
+    0%,
+    60%,
+    100% {
+        transform: initial;
+    }
+
+    30% {
+        transform: translateY(-15px);
+    }
+}
+
+@keyframes cosmicRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes starTwinkle {
+    from {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes planetOrbit {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Performance Optimizations */
+.animate {
+    will-change: transform, opacity;
+}
+
+.animate-gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+    .fadeIn,
+    .slideUp,
+    .scaleIn,
+    .bounce,
+    .emotionPulse,
+    .emotionFloat,
+    .cosmicRotate {
+        animation: none;
+    }
+
+    .hoverLift:hover {
+        transform: none;
+    }
+}

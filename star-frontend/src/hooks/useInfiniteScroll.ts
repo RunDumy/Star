@@ -53,7 +53,18 @@ export const useInfiniteScroll = ({
                 }
             });
 
-            const newData = response.data;
+            // Handle different response structures
+            let newData: any[];
+            if (response.data.posts) {
+                // For /api/v1/posts endpoint
+                newData = response.data.posts;
+            } else if (Array.isArray(response.data)) {
+                // For direct array responses
+                newData = response.data;
+            } else {
+                // Fallback for other structures
+                newData = response.data.data || [];
+            }
 
             if (reset) {
                 setData(newData);

@@ -1,0 +1,228 @@
+/* Zodiac Arena Universal Space Styles */
+
+.cosmic-ui-panel {
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    max-width: 300px;
+}
+
+.cosmic-ui-panel:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+}
+
+.cosmic-ui-panel h3 {
+    color: #fef3c7;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(254, 243, 199, 0.3);
+}
+
+.cosmic-ui-panel p {
+    color: #fef3c7;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin: 0.2rem 0;
+}
+
+.cosmic-button {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    margin: 0.25rem 0;
+}
+
+.cosmic-button:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(59, 130, 246, 1));
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    transform: translateY(-2px);
+}
+
+.cosmic-button:active {
+    transform: translateY(0);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+
+.cosmic-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, rgba(100, 100, 100, 0.6), rgba(60, 60, 60, 0.6));
+}
+
+.cosmic-button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Arena Specific Styles */
+.zodiac-arena-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f23 100%);
+}
+
+/* Loading and Error States */
+.arena-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: #000;
+    color: #fef3c7;
+    font-size: 1.5rem;
+}
+
+.arena-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: #000;
+    color: #ef4444;
+    text-align: center;
+    padding: 2rem;
+}
+
+.arena-error h2 {
+    color: #fef3c7;
+    margin-bottom: 1rem;
+}
+
+/* Combat Log Animations */
+.combat-log-entry {
+    animation: fadeInUp 0.5s ease-out;
+    border-left: 3px solid rgba(254, 243, 199, 0.5);
+    padding-left: 0.5rem;
+    margin: 0.25rem 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .cosmic-ui-panel {
+        max-width: 250px;
+        font-size: 0.8rem;
+    }
+
+    .cosmic-ui-panel h3 {
+        font-size: 1rem;
+    }
+
+    .cosmic-button {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cosmic-ui-panel {
+        max-width: 200px;
+        padding: 0.75rem;
+    }
+
+    .cosmic-ui-panel h3 {
+        font-size: 0.9rem;
+    }
+
+    .cosmic-ui-panel p {
+        font-size: 0.75rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .cosmic-button {
+        transition: none;
+    }
+
+    .combat-log-entry {
+        animation: none;
+    }
+
+    .cosmic-button:hover {
+        transform: none;
+    }
+}
+
+/* Arena UI Position Styles */
+.zodiac-arena-main {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.arena-ui-left {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 1rem;
+}
+
+.arena-ui-right {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 1rem;
+}
+
+.unit-selector {
+    margin-top: 0.5rem;
+}
+
+.unit-stats {
+    color: #fef3c7;
+    margin: 0.2rem 0;
+}
+
+.arena-title {
+    color: #fef3c7;
+    margin: 0;
+}
+
+.victory-button {
+    margin-top: 0.5rem;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .cosmic-ui-panel {
+        background: rgba(0, 0, 0, 0.95);
+        border-color: #ffffff;
+    }
+
+    .cosmic-button {
+        background: #000000;
+        border-color: #ffffff;
+        color: #ffffff;
+    }
+}

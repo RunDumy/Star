@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Starfield from '../../components/Starfield';
-import CosmicButton from '../../components/CosmicButton';
-import CosmicCard from '../../components/CosmicCard';
 import { calculateBirthChart } from '../../lib/api';
 import { BirthChartResponse } from '../../types/birth-chart';
 
@@ -93,8 +91,8 @@ export default function BirthChartCalculate() {
           <div className="space-y-4">
             <div className="w-full bg-cosmic-purple/30 rounded-full h-2 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cosmic-accent to-cosmic-glow transition-all duration-500 ease-out rounded-full"
-                style={{ width: `${progress}%` }}
+                className="progress-bar-fill h-full bg-gradient-to-r from-cosmic-accent to-cosmic-glow transition-all duration-500 ease-out rounded-full"
+                style={{ '--progress-width': `${progress}%` } as React.CSSProperties}
               />
             </div>
             <p className="text-star-dim">{progress}% complete</p>

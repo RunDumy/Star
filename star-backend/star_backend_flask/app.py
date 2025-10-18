@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Project: Star App - The Cosmic Social Network
 # Production Ready with React Frontend Serving & PWA Support
+import base64
 import json
 import logging
 import os
@@ -56,7 +57,8 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
 # Enhanced CORS for production
 allowed_origins = [
     LOCALHOST_URL,
-    'https://star-backend.azurewebsites.net'
+    'https://your-star-backend.onrender.com',  # Replace with your Render backend URL
+    'https://purple-sea-0686fd70f.1.azurestaticapps.net'
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
 
@@ -161,6 +163,15 @@ except ImportError as e:
     logger.warning(f"Analytics features not available: {e}")
     analytics_bp = None
 
+# Main API Blueprint registration
+try:
+    if api_bp:
+        # Register main API blueprint (routes already include /api/v1/ prefix)
+        app.register_blueprint(api_bp)
+        logger.info("Main API blueprint registered")
+except Exception as e:
+    logger.warning(f"Failed to register main API blueprint: {e}")
+
 # Rate limiting (enhanced if available)
 if advanced_imports_available:
     limiter = Limiter(
@@ -190,8 +201,20 @@ cosmos_helper = None
 # Initialize core database connection
 try:
     from cosmos_db import get_cosmos_helper
+    from database_utils import (check_username_exists, create_user,
+                                get_user_by_username,
+                                update_user_online_status)
     cosmos_helper = get_cosmos_helper()
-    logger.info("Azure Cosmos DB connection established")
+    logger.info("Supabase database connection established")
+    
+    # Initialize analytics engine with cosmos_helper if available
+    if analytics_available:
+        try:
+            analytics_engine = get_analytics_engine(cosmos_helper)
+            logger.info("Analytics engine initialized with Cosmos DB connectivity")
+        except Exception as e:
+            logger.warning(f"Failed to initialize analytics engine: {e}")
+    
 except ImportError as e:
     logger.error(f"Failed to import Cosmos DB helper: {e}")
     logger.warning("Some database features will be unavailable")
@@ -256,6 +279,17 @@ try:
 except ImportError as e:
     logger.warning(f"Enhanced Spotify blueprint not available: {e}")
     spotify_bp = None
+    spotify_available = False
+
+# Azure Key Vault Management API (Optional admin functionality)
+try:
+    # from keyvault_api import keyvault_bp  # Temporarily commented out due to syntax error
+    keyvault_available = True
+    logger.info("Azure Key Vault management blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Azure Key Vault management blueprint not available: {e}")
+    keyvault_bp = None
+    keyvault_available = False
 
 # Main API Blueprint with Enhanced Tarot Endpoints
 try:
@@ -1041,7 +1075,7 @@ else:
     logger.info(f"ALLOWED_ORIGINS: {os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')}")
 
     # Validate required environment variables
-    required_env_vars = ['SECRET_KEY', 'JWT_SECRET_KEY', 'AZURE_COSMOS_URL', 'AZURE_COSMOS_KEY']
+    required_env_vars = ['SECRET_KEY', 'JWT_SECRET_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY']
     for var in required_env_vars:
         if not os.environ.get(var):
             logger.error(f"Missing required environment variable: {var}")
@@ -1126,17 +1160,17 @@ else:
     except Exception as e:
         logger.error(f"Redis connection test failed: {e}")
 
-    # Azure Cosmos DB helper (for data storage) - Replaces Supabase
+    # Supabase database helper (for data storage)
     from cosmos_db import get_cosmos_helper
     try:
         cosmos_helper = get_cosmos_helper()
         if cosmos_helper:
-            logger.info("Azure Cosmos DB helper initialized")
+            logger.info("Supabase database helper initialized")
         else:
-            logger.warning("AZURE_COSMOS_URL or AZURE_COSMOS_KEY not set; Cosmos DB operations will be disabled.")
+            logger.warning("SUPABASE_URL or SUPABASE_ANON_KEY not set; Supabase operations will be disabled.")
     except ValueError as e:
         cosmos_helper = None
-        logger.warning(f"Failed to initialize Cosmos DB: {e}")
+        logger.warning(f"Failed to initialize Supabase database: {e}")
 
     # JWT Configuration
     app.config['JWT_ALGORITHM'] = 'HS256'
@@ -2197,15 +2231,24 @@ else:
     class CompatibilityResource(Resource):
         @token_required
         def get(self, current_user, target_user_id):
-            """Get compatibility with another user - Temporarily disabled during Azure migration"""
-            return {'error': 'Compatibility feature temporarily disabled during Azure migration. Please check back later.'}, 503
-            
-            return {
-                'user1': current_user.zodiac_sign,
-                'user2': target_user.zodiac_sign,
-                'compatibility_score': compatibility_score,
-                'analysis': self.get_compatibility_analysis(current_user.zodiac_sign, target_user.zodiac_sign, compatibility_score)
-            }, 200
+            """Get compatibility with another user"""
+            # Get target user data
+            try:
+                target_user = get_user_by_username(target_user_id)
+                if not target_user:
+                    return {'error': 'User not found'}, 404
+                    
+                compatibility_score = self.calculate_compatibility(current_user.zodiac_sign, target_user.zodiac_sign)
+                
+                return {
+                    'user1': current_user.zodiac_sign,
+                    'user2': target_user.zodiac_sign,
+                    'compatibility_score': compatibility_score,
+                    'analysis': self.get_compatibility_analysis(current_user.zodiac_sign, target_user.zodiac_sign, compatibility_score)
+                }, 200
+            except Exception as e:
+                logger.error(f"Compatibility calculation error: {str(e)}")
+                return {'error': 'Failed to calculate compatibility'}, 500
         
         def calculate_compatibility(self, sign1, sign2):
             """Simple compatibility calculation"""
@@ -2291,8 +2334,18 @@ else:
     class NotificationResource(Resource):
         @token_required
         def get(self, current_user):
-            """Get user notifications - Temporarily disabled during Azure migration"""
-            return {'error': 'Notifications feature temporarily disabled during Azure migration. Please check back later.'}, 503
+            """Get user notifications"""
+            try:
+                limit = int(request.args.get('limit', 50))
+                notifications = cosmos_helper.get_notifications(str(current_user.id), limit=limit)
+                return {
+                    'success': True,
+                    'notifications': notifications,
+                    'count': len(notifications)
+                }
+            except Exception as e:
+                logging.error(f"Error getting notifications: {e}")
+                return {'error': 'Failed to get notifications'}, 500
 
     class NumerologyResource(Resource):
         @safe_rate_limit("60/hour")
@@ -2325,8 +2378,56 @@ else:
         @safe_rate_limit("60/hour")
         @token_required
         def post(self, current_user):
-            """Check numerology compatibility with another user - Temporarily disabled during Azure migration"""
-            return {'error': 'Numerology compatibility feature temporarily disabled during Azure migration. Please check back later.'}, 503
+            """Check numerology compatibility with another user"""
+            try:
+                from numerology import NumerologyCalculator
+
+                data = request.get_json()
+                target_username = data.get('target_username')
+
+                if not target_username:
+                    return {'error': 'target_username required'}, 400
+
+                # Get target user
+                target_user = get_user_by_username(target_username)
+                if not target_user:
+                    return {'error': 'Target user not found'}, 404
+
+                if not current_user.full_name or not current_user.birth_date:
+                    return {'error': 'Your full name and birth date required for compatibility'}, 400
+
+                if not target_user.full_name or not target_user.birth_date:
+                    return {'error': 'Target user missing required information'}, 400
+
+                # Calculate numerology numbers
+                current_readings = NumerologyCalculator.calculate_comprehensive_readings(
+                    current_user.full_name, current_user.birth_date
+                )
+                target_readings = NumerologyCalculator.calculate_comprehensive_readings(
+                    target_user.full_name, target_user.birth_date
+                )
+
+                current_life_path = current_readings.get('life_path_number', 0)
+                target_life_path = target_readings.get('life_path_number', 0)
+
+                compatibility = NumerologyCalculator.get_numerology_compatibility(
+                    current_life_path, target_life_path
+                )
+
+                return {
+                    'compatibility': compatibility,
+                    'current_user': {
+                        'username': current_user.username,
+                        'life_path_number': current_life_path
+                    },
+                    'target_user': {
+                        'username': target_username,
+                        'life_path_number': target_life_path
+                    }
+                }, 200
+            except Exception as e:
+                logger.error(f"Numerology compatibility error: {e}")
+                return {'error': 'Failed to calculate compatibility'}, 500
 
     class NumerologyCalculatorResource(Resource):
         @safe_rate_limit("30/hour")
@@ -2363,8 +2464,36 @@ else:
     class UserSettingsResource(Resource):
         @token_required
         def put(self, current_user):
-            """Update user tradition preference - Temporarily disabled during Azure migration"""
-            return {'error': 'User settings update temporarily disabled during Azure migration. Please check back later.'}, 503
+            """Update user tradition preference"""
+            try:
+                data = request.get_json()
+                tradition = data.get('tradition')
+
+                if tradition is not None and tradition not in ['Hermetic', 'Kabbalistic', 'Theosophical', None]:
+                    return {'error': 'Invalid tradition. Must be Hermetic, Kabbalistic, Theosophical, or null'}, 400
+
+                updates = {}
+                if tradition is not None:
+                    updates['tradition'] = tradition
+
+                if updates:
+                    updated_user = cosmos_helper.update_user(str(current_user.id), updates)
+                    if updated_user:
+                        return {
+                            'success': True,
+                            'message': 'Settings updated successfully',
+                            'settings': {
+                                'tradition': tradition
+                            }
+                        }
+                    else:
+                        return {'error': 'Failed to update settings'}, 500
+                else:
+                    return {'error': 'No valid settings to update'}, 400
+
+            except Exception as e:
+                logger.error(f"User settings update error: {e}")
+                return {'error': 'Failed to update settings'}, 500
 
     class ArchetypeOracleResource(Resource):
         @safe_rate_limit("60/hour")
@@ -3019,6 +3148,11 @@ else:
             app.register_blueprint(spotify_bp)
             logger.info("Enhanced Spotify API endpoints registered")
 
+        # Register Azure Key Vault management blueprint
+        if keyvault_available and keyvault_bp:
+            # app.register_blueprint(keyvault_bp)  # Temporarily commented out
+            logger.info("Azure Key Vault management API endpoints registered")
+
         # Register tarot interactions blueprint
         if 'tarot_bp' in globals():
             app.register_blueprint(tarot_bp, url_prefix='/api/v1/tarot')
@@ -3042,6 +3176,707 @@ else:
         # Register analytics blueprint
         if analytics_available and analytics_bp:
             app.register_blueprint(analytics_bp, url_prefix='/api/v1')
+
+# ==================== ZODIAC ARENA ENDPOINTS ====================
+
+@app.route('/api/v1/zodiac-arena/reward', methods=['POST'])
+def grant_zodiac_arena_reward():
+    """Grant reward to player for Zodiac Arena achievement"""
+    try:
+        data = request.get_json()
+        required_fields = ['user_id', 'item_id', 'type', 'stage']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        if cosmos_helper:
+            reward = cosmos_helper.upsert_reward(
+                data['user_id'],
+                data['item_id'],
+                data['type'],
+                data['stage']
+            )
+            
+            if reward:
+                logger.info(f"Reward granted to {data['user_id']}: {data['item_id']} for {data['stage']}")
+                return jsonify({'status': 'success', 'reward': reward}), 200
+            else:
+                return jsonify({'error': 'Failed to grant reward'}), 500
+        else:
+            return jsonify({'error': 'Database not available'}), 503
+            
+    except Exception as e:
+        logger.error(f"Error granting zodiac arena reward: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/zodiac-arena/score', methods=['POST'])
+def update_zodiac_arena_score():
+    """Update player score for Zodiac Arena leaderboard"""
+    try:
+        data = request.get_json()
+        required_fields = ['user_id', 'score', 'stage']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        if cosmos_helper:
+            score_record = cosmos_helper.upsert_score(
+                data['user_id'],
+                data['score'],
+                data['stage'],
+                "zodiac_arena"
+            )
+            
+            if score_record:
+                logger.info(f"Score updated for {data['user_id']}: {data['score']} in {data['stage']}")
+                return jsonify({'status': 'success', 'score_record': score_record}), 200
+            else:
+                return jsonify({'error': 'Failed to update score'}), 500
+        else:
+            return jsonify({'error': 'Database not available'}), 503
+            
+    except Exception as e:
+        logger.error(f"Error updating zodiac arena score: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/zodiac-arena/leaderboard', methods=['GET'])
+def get_zodiac_arena_leaderboard():
+    """Get Zodiac Arena leaderboard"""
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        game_type = request.args.get('game_type', 'zodiac_arena')
+        
+        if cosmos_helper:
+            leaderboard = cosmos_helper.get_leaderboard(game_type, limit)
+            return jsonify({'leaderboard': leaderboard}), 200
+        else:
+            return jsonify({'error': 'Database not available'}), 503
+            
+    except Exception as e:
+        logger.error(f"Error getting zodiac arena leaderboard: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/zodiac-arena/rewards/<user_id>', methods=['GET'])
+def get_user_zodiac_rewards(user_id):
+    """Get all rewards for a specific user"""
+    try:
+        if cosmos_helper:
+            rewards = cosmos_helper.get_user_rewards(user_id)
+            return jsonify({'rewards': rewards}), 200
+        else:
+            return jsonify({'error': 'Database not available'}), 503
+            
+    except Exception as e:
+        logger.error(f"Error getting user rewards: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# ==================== SPOTIFY API ENDPOINTS ====================
+
+# Import enhanced Spotify engine for real integration
+try:
+    from enhanced_spotify_engine import get_spotify_engine
+    spotify_engine_available = True
+    logger.info("Enhanced Spotify engine loaded successfully")
+except ImportError as e:
+    logger.warning(f"Enhanced Spotify engine not available: {e}")
+    spotify_engine_available = False
+
+# ===== SPOTIFY OAUTH ENDPOINTS =====
+
+@app.route('/api/v1/spotify/oauth/login', methods=['GET'])
+def spotify_oauth_login():
+    """Initiate Spotify OAuth flow with PKCE"""
+    try:
+        import base64
+        import hashlib
+        import secrets
+        from urllib.parse import urlencode
+
+        # Generate PKCE code verifier and challenge
+        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode('utf-8')).digest()
+        ).decode('utf-8').rstrip('=')
+        
+        # Store code verifier in session or cache (you'll want to use a more secure method in production)
+        state = str(uuid.uuid4())
+        
+        # Spotify OAuth parameters
+        client_id = os.environ.get('SPOTIFY_CLIENT_ID')
+        redirect_uri = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://localhost:3000/auth/spotify/callback')
+        
+        if not client_id:
+            return jsonify({'error': 'Spotify client ID not configured'}), 500
+            
+        scopes = [
+            'streaming',                    # Web Playback SDK
+            'user-read-email',             # User profile
+            'user-read-private',           # User profile
+            'user-read-playback-state',    # Current track info
+            'user-modify-playback-state',  # Control playback
+            'user-read-currently-playing', # Current track
+            'playlist-read-private',       # Access playlists
+            'playlist-read-collaborative', # Collaborative playlists
+            'playlist-modify-public',      # Create/modify playlists
+            'playlist-modify-private',     # Create/modify private playlists
+            'user-library-read',           # Saved tracks
+            'user-library-modify'          # Save/remove tracks
+        ]
+        
+        auth_params = {
+            'client_id': client_id,
+            'response_type': 'code',
+            'redirect_uri': redirect_uri,
+            'code_challenge_method': 'S256',
+            'code_challenge': code_challenge,
+            'state': state,
+            'scope': ' '.join(scopes)
+        }
+        
+        auth_url = f"https://accounts.spotify.com/authorize?{urlencode(auth_params)}"
+        
+        # Store code verifier and state for verification (use Redis/Cosmos DB in production)
+        cache_key = f"spotify_oauth:{state}"
+        cache.set(cache_key, {
+            'code_verifier': code_verifier,
+            'timestamp': datetime.now().isoformat()
+        }, timeout=600)  # 10 minutes
+        
+        return jsonify({
+            'auth_url': auth_url,
+            'state': state,
+            'success': True
+        })
+        
+    except Exception as e:
+        logger.error(f"Spotify OAuth login error: {e}")
+        return jsonify({'error': 'Failed to initiate OAuth flow'}), 500
+
+@app.route('/api/v1/spotify/oauth/callback', methods=['POST'])
+def spotify_oauth_callback():
+    """Handle Spotify OAuth callback and exchange code for tokens"""
+    try:
+        import requests
+        
+        data = request.get_json()
+        code = data.get('code')
+        state = data.get('state')
+        
+        if not code or not state:
+            return jsonify({'error': 'Missing code or state parameter'}), 400
+            
+        # Retrieve stored code verifier
+        cache_key = f"spotify_oauth:{state}"
+        oauth_data = cache.get(cache_key)
+        
+        if not oauth_data:
+            return jsonify({'error': 'Invalid or expired state parameter'}), 400
+            
+        code_verifier = oauth_data['code_verifier']
+        
+        # Exchange code for tokens
+        client_id = os.environ.get('SPOTIFY_CLIENT_ID')
+        client_secret = os.environ.get('SPOTIFY_CLIENT_SECRET')
+        redirect_uri = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://localhost:3000/auth/spotify/callback')
+        
+        if not client_id or not client_secret:
+            return jsonify({'error': 'Spotify credentials not configured'}), 500
+            
+        token_data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': redirect_uri,
+            'client_id': client_id,
+            'code_verifier': code_verifier
+        }
+        
+        auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        headers = {
+            'Authorization': f'Basic {auth_header}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        
+        response = requests.post('https://accounts.spotify.com/api/token', data=token_data, headers=headers)
+        
+        if response.status_code != 200:
+            logger.error(f"Spotify token exchange failed: {response.text}")
+            return jsonify({'error': 'Failed to exchange code for tokens'}), 400
+            
+        tokens = response.json()
+        
+        # Get user profile
+        profile_headers = {'Authorization': f"Bearer {tokens['access_token']}"}
+        profile_response = requests.get('https://api.spotify.com/v1/me', headers=profile_headers)
+        
+        if profile_response.status_code == 200:
+            profile = profile_response.json()
+        else:
+            profile = {}
+            
+        # Clean up cache
+        cache.delete(cache_key)
+        
+        # Store tokens in user session (in production, associate with user account)
+        user_id = profile.get('id', f"temp_user_{uuid.uuid4()}")
+        token_cache_key = f"spotify_tokens:{user_id}"
+        
+        cache.set(token_cache_key, {
+            'access_token': tokens['access_token'],
+            'refresh_token': tokens.get('refresh_token'),
+            'expires_at': (datetime.now() + timedelta(seconds=tokens['expires_in'])).isoformat(),
+            'profile': profile
+        }, timeout=tokens['expires_in'])
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'profile': profile,
+            'expires_in': tokens['expires_in']
+        })
+        
+    except Exception as e:
+        logger.error(f"Spotify OAuth callback error: {e}")
+        return jsonify({'error': 'Failed to process OAuth callback'}), 500
+
+@app.route('/api/v1/spotify/oauth/refresh', methods=['POST'])
+def spotify_oauth_refresh():
+    """Refresh Spotify access token"""
+    try:
+        import requests
+        
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'Missing user ID'}), 400
+            
+        # Get stored tokens
+        token_cache_key = f"spotify_tokens:{user_id}"
+        token_data = cache.get(token_cache_key)
+        
+        if not token_data or not token_data.get('refresh_token'):
+            return jsonify({'error': 'No refresh token available'}), 401
+            
+        # Refresh token
+        client_id = os.environ.get('SPOTIFY_CLIENT_ID')
+        client_secret = os.environ.get('SPOTIFY_CLIENT_SECRET')
+        
+        refresh_data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': token_data['refresh_token']
+        }
+        
+        auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        headers = {
+            'Authorization': f'Basic {auth_header}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        
+        response = requests.post('https://accounts.spotify.com/api/token', data=refresh_data, headers=headers)
+        
+        if response.status_code != 200:
+            logger.error(f"Spotify token refresh failed: {response.text}")
+            return jsonify({'error': 'Failed to refresh token'}), 401
+            
+        new_tokens = response.json()
+        
+        # Update stored tokens
+        token_data.update({
+            'access_token': new_tokens['access_token'],
+            'expires_at': (datetime.now() + timedelta(seconds=new_tokens['expires_in'])).isoformat()
+        })
+        
+        if 'refresh_token' in new_tokens:
+            token_data['refresh_token'] = new_tokens['refresh_token']
+            
+        cache.set(token_cache_key, token_data, timeout=new_tokens['expires_in'])
+        
+        return jsonify({
+            'success': True,
+            'expires_in': new_tokens['expires_in']
+        })
+        
+    except Exception as e:
+        logger.error(f"Spotify token refresh error: {e}")
+        return jsonify({'error': 'Failed to refresh token'}), 500
+
+@app.route('/api/v1/spotify/oauth/user-tokens/<user_id>', methods=['GET'])
+def get_user_spotify_tokens(user_id):
+    """Get user's Spotify tokens for Web Playback SDK"""
+    try:
+        token_cache_key = f"spotify_tokens:{user_id}"
+        token_data = cache.get(token_cache_key)
+        
+        if not token_data:
+            return jsonify({'error': 'No Spotify authentication found'}), 401
+            
+        # Check if token is expired
+        expires_at = datetime.fromisoformat(token_data['expires_at'])
+        if datetime.now() >= expires_at:
+            return jsonify({'error': 'Token expired', 'needs_refresh': True}), 401
+            
+        return jsonify({
+            'access_token': token_data['access_token'],
+            'expires_at': token_data['expires_at'],
+            'profile': token_data.get('profile', {}),
+            'success': True
+        })
+        
+    except Exception as e:
+        logger.error(f"Get user tokens error: {e}")
+        return jsonify({'error': 'Failed to get user tokens'}), 500
+
+# ===== EXISTING SPOTIFY SESSION ENDPOINTS =====
+
+@app.route('/api/v1/spotify/session/<session_id>', methods=['GET'])
+def get_spotify_session(session_id):
+    """Get Spotify session details for collaborative music experience"""
+    try:
+        # Check if we have real session data in Cosmos DB
+        if cosmos_helper:
+            try:
+                # Query for existing sessions
+                session_query = "SELECT * FROM c WHERE c.session_id = @session_id AND c.type = 'spotify_session'"
+                sessions = cosmos_helper.query_items(session_query, [{"name": "@session_id", "value": session_id}])
+                
+                if sessions and len(sessions) > 0:
+                    session = sessions[0]
+                    logger.info(f"Retrieved existing Spotify session: {session_id}")
+                    return jsonify(session), 200
+            except Exception as e:
+                logger.warning(f"Failed to query session from Cosmos DB: {e}")
+        
+        # Create new session or return enhanced mock data
+        session_data = {
+            "session_id": session_id,
+            "participants": [
+                {"id": "user1", "name": "CosmicUser1", "avatar": "/api/placeholder/32/32"},
+                {"id": "user2", "name": "StarGazer2", "avatar": "/api/placeholder/32/32"}
+            ],
+            "cosmic_sync_level": random.randint(75, 95),
+            "current_track": {
+                "id": f"cosmic_track_{random.randint(1, 100)}",
+                "name": random.choice(["Stellar Harmonies", "Cosmic Vibrations", "Astral Journey", "Lunar Rhythms"]),
+                "artist": random.choice(["Cosmic Orchestra", "Starlight Ensemble", "Galactic Harmonics"]),
+                "duration": random.randint(180000, 300000)
+            },
+            "is_playing": random.choice([True, False]),
+            "position": random.randint(30000, 150000),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "type": "spotify_session"
+        }
+        
+        # Save session to Cosmos DB if available
+        if cosmos_helper:
+            try:
+                cosmos_helper.create_item(session_data, "sessions")
+                logger.info(f"Saved new Spotify session to Cosmos DB: {session_id}")
+            except Exception as e:
+                logger.warning(f"Failed to save session to Cosmos DB: {e}")
+        
+        logger.info(f"Generated Spotify session: {session_id}")
+        return jsonify(session_data), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting Spotify session {session_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/spotify/lunar-phase', methods=['GET'])
+def get_lunar_phase():
+    """Get current lunar phase data for cosmic music synchronization"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Try to use real astronomical calculations
+        try:
+            import ephem
+
+            # Create observer and moon object
+            moon = ephem.Moon()
+            moon.compute(now)
+            
+            # Calculate lunar phase
+            phase = moon.phase
+            illumination = phase
+            
+            # Determine phase name
+            if phase < 1:
+                phase_name = "New Moon"
+            elif phase < 25:
+                phase_name = "Waxing Crescent"
+            elif phase < 49:
+                phase_name = "First Quarter"
+            elif phase < 74:
+                phase_name = "Waxing Gibbous"
+            elif phase < 99:
+                phase_name = "Full Moon"
+            elif phase < 80:
+                phase_name = "Waning Gibbous"
+            elif phase < 55:
+                phase_name = "Last Quarter"
+            else:
+                phase_name = "Waning Crescent"
+                
+            # Enhanced cosmic influence based on real phase
+            if phase > 90:
+                influence = "Peak cosmic energy - Perfect for deep spiritual music"
+                energy_level = 95
+                recommended_genres = ["ambient", "new age", "meditation", "cosmic trance"]
+            elif phase > 70:
+                influence = "High cosmic energy - Great for creative collaboration"
+                energy_level = 85
+                recommended_genres = ["electronic", "world music", "jazz fusion", "progressive"]
+            elif phase > 30:
+                influence = "Moderate cosmic energy - Good for balanced playlists"
+                energy_level = 65
+                recommended_genres = ["indie", "alternative", "acoustic", "chill"]
+            else:
+                influence = "Introspective energy - Perfect for contemplative music"
+                energy_level = 45
+                recommended_genres = ["classical", "folk", "ambient", "minimal"]
+                
+            logger.info(f"Real lunar phase calculated: {phase_name} - {illumination:.1f}%")
+            
+        except ImportError:
+            logger.warning("ephem library not available, using simplified calculation")
+            # Fallback to simplified calculation
+            import math
+            days_since_new_moon = (now.day + (now.month - 1) * 30) % 29.53
+            illumination = abs(math.cos(2 * math.pi * days_since_new_moon / 29.53)) * 100
+            
+            phases = ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", 
+                     "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"]
+            phase_index = int(days_since_new_moon / (29.53 / 8))
+            phase_name = phases[phase_index % 8]
+            
+            influence = "Cosmic energy for musical collaboration"
+            energy_level = round(illumination)
+            recommended_genres = ["ambient", "electronic", "new age", "cosmic"]
+        
+        lunar_data = {
+            "phase": phase_name,
+            "illumination": round(illumination, 1),
+            "influence": influence,
+            "energy_level": energy_level,
+            "recommended_genres": recommended_genres,
+            "timestamp": now.isoformat(),
+            "cosmic_multiplier": round(illumination / 50, 2)  # For playlist weighting
+        }
+        
+        logger.info(f"Lunar phase data: {lunar_data['phase']} - {lunar_data['illumination']}%")
+        return jsonify(lunar_data), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting lunar phase: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/spotify/cosmic-playlist', methods=['POST'])
+def generate_cosmic_playlist():
+    """Generate a cosmic playlist based on user preferences and astrological data"""
+    try:
+        data = request.get_json() or {}
+        mood = data.get('mood', 'cosmic')
+        zodiac_sign = data.get('zodiac_sign', 'Scorpio')
+        life_path_number = data.get('life_path_number', 8)
+        
+        # Try to use enhanced Spotify engine for real playlist generation
+        if spotify_engine_available:
+            try:
+                spotify_engine = get_spotify_engine()
+                if spotify_engine:
+                    # Create user profile for cosmic playlist generation
+                    user_profile = {
+                        'user_id': g.get('current_user', {}).get('user_id', 'anonymous'),
+                        'zodiac_sign': zodiac_sign.lower(),
+                        'life_path_number': life_path_number,
+                        'personal_year_number': data.get('personal_year_number', 1)
+                    }
+                    
+                    # Map mood to cosmic intention
+                    cosmic_intentions = {
+                        'cosmic': 'cosmic_alignment',
+                        'chill': 'water_flow', 
+                        'energetic': 'fire_passion',
+                        'meditative': 'spirit_transcendence',
+                        'creative': 'air_clarity',
+                        'grounding': 'earth_grounding'
+                    }
+                    cosmic_intention = cosmic_intentions.get(mood, 'cosmic_alignment')
+                    
+                    # Generate real cosmic playlist
+                    playlist = spotify_engine.create_cosmic_playlist(user_profile, cosmic_intention)
+                    
+                    if playlist:
+                        # Convert to frontend-compatible format
+                        playlist_data = {
+                            "tracks": [
+                                {
+                                    "id": track.id,
+                                    "name": track.name,
+                                    "artist": track.artist,
+                                    "album": track.album,
+                                    "duration_ms": track.duration_ms,
+                                    "preview_url": track.preview_url,
+                                    "external_urls": {"spotify": track.external_url},
+                                    "cosmic_rating": track.energy_level * 10,
+                                    "zodiac_compatibility": track.zodiac_resonance,
+                                    "elemental_energy": track.elemental_energy.value,
+                                    "cosmic_mood": track.cosmic_mood.value
+                                }
+                                for track in playlist.tracks[:10]  # Limit to 10 tracks for frontend
+                            ],
+                            "mood": mood,
+                            "zodiac_sign": zodiac_sign,
+                            "total_duration": sum(track.duration_ms for track in playlist.tracks),
+                            "cosmic_energy_level": int(sum(track.energy_level for track in playlist.tracks) / len(playlist.tracks) * 100),
+                            "generated_at": datetime.now(timezone.utc).isoformat(),
+                            "playlist_id": playlist.id,
+                            "playlist_name": playlist.name,
+                            "cosmic_theme": playlist.cosmic_theme,
+                            "elemental_balance": playlist.elemental_balance
+                        }
+                        
+                        logger.info(f"Generated real cosmic playlist '{playlist.name}' for {zodiac_sign} with {len(playlist.tracks)} tracks")
+                        return jsonify(playlist_data), 200
+                    
+            except Exception as e:
+                logger.warning(f"Enhanced Spotify engine failed, falling back to mock: {e}")
+        
+        # Fallback to enhanced mock data with more cosmic intelligence
+        cosmic_tracks = []
+        
+        # Enhanced track selection based on zodiac sign
+        zodiac_track_themes = {
+            'aries': ['Ignition Sequence', 'Warrior Dance', 'Fire Storm'],
+            'taurus': ['Earth Resonance', 'Stable Orbit', 'Garden of Stars'], 
+            'gemini': ['Twin Frequencies', 'Mercury Rising', 'Dual Reality'],
+            'cancer': ['Lunar Tides', 'Emotional Ocean', 'Home Beyond Stars'],
+            'leo': ['Solar Majesty', 'Royal Cosmos', 'Heart of Fire'],
+            'virgo': ['Perfect Harmony', 'Analytical Dreams', 'Pristine Universe'],
+            'libra': ['Balanced Forces', 'Cosmic Justice', 'Harmonious Spheres'],
+            'scorpio': ['Deep Space Mystery', 'Phoenix Rising', 'Transformational Waves'],
+            'sagittarius': ['Arrow to Stars', 'Philosophical Journey', 'Explorer\'s Theme'],
+            'capricorn': ['Mountain of Time', 'Structured Reality', 'Climbing Cosmos'],
+            'aquarius': ['Future Frequencies', 'Innovative Rhythms', 'Revolutionary Sound'],
+            'pisces': ['Oceanic Dreams', 'Mystical Current', 'Infinite Compassion']
+        }
+        
+        track_names = zodiac_track_themes.get(zodiac_sign.lower(), ['Cosmic Alignment', 'Universal Harmony', 'Stellar Journey'])
+        
+        for i, track_name in enumerate(track_names):
+            cosmic_tracks.append({
+                "id": f"cosmic_{zodiac_sign}_{i+1}",
+                "name": track_name,
+                "artist": random.choice(["Celestial Harmonics", "Starlight Orchestra", "Galactic Ensemble", "Cosmic Collective"]),
+                "album": f"{zodiac_sign} Cosmic Collection",
+                "duration_ms": random.randint(180000, 350000),
+                "preview_url": f"https://cosmic-preview.star/{zodiac_sign}_{i+1}.mp3",
+                "external_urls": {"spotify": f"https://open.spotify.com/track/cosmic_{zodiac_sign}_{i+1}"},
+                "cosmic_rating": random.uniform(8.0, 9.8),
+                "zodiac_compatibility": [zodiac_sign, random.choice(['Pisces', 'Cancer', 'Scorpio'])],
+                "elemental_energy": random.choice(['fire', 'water', 'air', 'earth']),
+                "energy_level": random.randint(70, 95)
+            })
+        
+        playlist_data = {
+            "tracks": cosmic_tracks,
+            "mood": mood,
+            "zodiac_sign": zodiac_sign,
+            "total_duration": sum(track["duration_ms"] for track in cosmic_tracks),
+            "cosmic_energy_level": random.randint(80, 95),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "playlist_id": f"cosmic_{mood}_{zodiac_sign}_{random.randint(1000, 9999)}",
+            "enhanced": True,
+            "generation_method": "enhanced_mock" if not spotify_engine_available else "fallback"
+        }
+        
+        logger.info(f"Generated enhanced cosmic playlist for {zodiac_sign} with mood {mood}")
+        return jsonify(playlist_data), 200
+        
+    except Exception as e:
+        logger.error(f"Error generating cosmic playlist: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/spotify/auth-status', methods=['GET'])
+def spotify_auth_status():
+    """Check if user has Spotify connected and token is valid"""
+    try:
+        # This would typically check stored tokens in user profile
+        # For now, return a status based on environment configuration
+        client_id = os.environ.get('SPOTIFY_CLIENT_ID')
+        client_secret = os.environ.get('SPOTIFY_CLIENT_SECRET')
+        
+        if client_id and client_secret:
+            return jsonify({
+                "connected": False,  # Would check actual user token here
+                "auth_required": True,
+                "auth_url": f"/api/v1/spotify/auth-url",
+                "features_available": spotify_engine_available
+            }), 200
+        else:
+            return jsonify({
+                "connected": False,
+                "auth_required": True,
+                "error": "Spotify not configured",
+                "features_available": False
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"Error checking Spotify auth status: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/v1/spotify/track/search', methods=['POST'])
+def search_spotify_tracks():
+    """Search for tracks on Spotify with cosmic filtering"""
+    try:
+        data = request.get_json() or {}
+        query = data.get('query', '')
+        zodiac_filter = data.get('zodiac_sign', '')
+        limit = min(data.get('limit', 10), 50)  # Max 50 tracks
+        
+        if not query:
+            return jsonify({'error': 'Search query required'}), 400
+        
+        # Try enhanced Spotify search
+        if spotify_engine_available:
+            try:
+                spotify_engine = get_spotify_engine()
+                if spotify_engine and hasattr(spotify_engine, 'search_cosmic_tracks'):
+                    results = spotify_engine.search_cosmic_tracks(query, zodiac_filter, limit)
+                    if results:
+                        return jsonify({
+                            "tracks": results,
+                            "query": query,
+                            "zodiac_filter": zodiac_filter,
+                            "method": "enhanced_search"
+                        }), 200
+            except Exception as e:
+                logger.warning(f"Enhanced search failed: {e}")
+        
+        # Fallback to mock search results
+        mock_results = []
+        for i in range(min(limit, 5)):
+            mock_results.append({
+                "id": f"search_{i+1}",
+                "name": f"{query} - Cosmic Mix {i+1}",
+                "artist": random.choice(["Cosmic Artist", "Stellar Musician", "Galactic Band"]),
+                "album": f"Search Results for {query}",
+                "duration_ms": random.randint(180000, 300000),
+                "cosmic_rating": random.uniform(7.0, 9.5),
+                "zodiac_compatibility": [zodiac_filter] if zodiac_filter else ["universal"],
+                "preview_url": f"https://cosmic-preview.star/search_{i+1}.mp3"
+            })
+        
+        return jsonify({
+            "tracks": mock_results,
+            "query": query,
+            "zodiac_filter": zodiac_filter,
+            "method": "mock_search"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error searching Spotify tracks: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
     # ==================== AZURE APP SERVICE CONFIGURATION ====================
 

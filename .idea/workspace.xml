@@ -5,18 +5,191 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1e25606-5b67-4241-a5bc-8d6e38cf8090" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.mcp.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/migrate_transit_expansion.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/api/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/api/posts.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-backend/star_backend/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/star-frontend/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_archetype_oracle.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_import.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_main_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.dev" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/app_minimal.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/app_production.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/app_resilient.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/app_test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/application.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_core.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_deploy.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_minimal.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_minimal_test.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_production.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_simple.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/requirements_test.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/.env" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/cosmos_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/cosmos_db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/star_backend_flask/star_auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/star-backend/star_backend_flask/star_auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/404.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/404/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/8sqmvL-s-yYOZX0XVfhQy/_buildManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/8sqmvL-s-yYOZX0XVfhQy/_ssgManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/Pjr4DOqgfBWyNNzdh_yjY/_buildManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/Pjr4DOqgfBWyNNzdh_yjY/_ssgManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/Y3fWIneGNKuDrsNtkIw-N/_buildManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/Y3fWIneGNKuDrsNtkIw-N/_ssgManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/1040-b54a157b3719e1f4.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/1319-5842ee55de922771.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/1927-f02a1d706f575a72.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/2227-da8ffd8dfd30efbe.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/2498-5e3dcc8644b25d2f.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/2738-827aca433b5ec8f7.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/2909-66a8160fa765c3df.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3106.8b159f47424003ed.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3106.de8779302a677f88.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3287-634355ddad1f3d83.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3287-6ec61c4630c02725.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3287-f8d7ca3ebc73b0a9.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/3609-77a1ea8cdf8c0e1a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/386.3864cb7437bf859d.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/4141.87edcee63cd48289.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/4210-92cda9b48a8fb6b0.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/43-a5e00d61cf0d4111.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/436aceac-650fc172b319d12a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/467.5f3b67a2f488e731.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/4916-ba7db015cdc23932.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5095-394aa092445ae77f.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5095-9abf966d8c459817.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/521.93eae623b143fad2.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5464-32a9595c64c5fbbe.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5487.255933abc9ada7bb.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5487.5ce4c496b609c39c.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/549-2bfacae7cd49455b.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/549-39e224d2d70557f3.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/549-b6d574d6181d148a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/55-07a6d64ad81ef97d.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5629-eabd8b39468e850a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/5c1a8122.ed9625126a6bb131.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6350-02434abe12e6bb4d.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6377-76a1fe6f715fbf66.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6403d3d0-e6950fdfc1946a7b.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6698.57de733b90c70364.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6848-d671e5c45e4a8592.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6958-c60a60c2d04ac782.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6958-d3d2b19e5609d3b8.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6991-452a0b15821fc405.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/69b51223-fdf7fe29bb032caa.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/6d2b60a9-f95cce1cfc5f6362.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/708.10edd42d39b09d92.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/725.fba61ee7e69e791f.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/7268-cb991576e7d3b893.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/7572.c28c77800500eb33.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/789b6097.26f447ebb1c0c658.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/80.c7c91bcca2be6298.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/8166-25d0c2119faf456e.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/8230-df046b377999cf47.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/8964.2d76a017fe365650.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/9924-1a1a222485ef1dd0.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/framework-f31701c9d93f12a4.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/main-db62969ad3a3e83c.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/_app-987f16524968c9e9.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/_error-35de64aeebf5187d.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/agora-test-2fef683ccdae33f5.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/archetype-oracle-cc296514c804aba3.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/chat-c4fc6d572aa63de0.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/chat-e6e525ec157f70b2.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/collaborative-cosmos-4c4cf64336b1702e.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/collaborative-cosmos-d9164fc1fcd81fa0.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/community-bb05a2e7a2550281.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/cosmic-f6ede60f5728fa39.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/cosmic-navigation-f727610b3264026d.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/cosmic-test-4cef3aa752995e20.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/feed-0fae879f4fb1068f.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/feed-825f69e9a2950226.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/home-a78a2d8c825bc3f5.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/home-a7c2469e4bdcfad1.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/index-9c8f129f081f8eb6.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/live-stream/[streamId/]-89bcbe7b5fcb9f7e.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/login-aa260d661c1b0d76.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/matchmaking-7c7a3a07d21550a6.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/matchmaking-ef7942c861b89f3c.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/matchmaking-f624cb5f54173e06.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/music-edcde5790ffe4b94.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/occult-oracle-ai-35fbac73a7c84f05.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/post-74c4fa4fbb9ecc77.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/public-archetype-oracle-3ccd1b1ffa614d81.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/redis-test-fba8d0ab7010cda5.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/register-c6a33da13cbadcf8.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/register-d8d2e827b67ce28a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/register-effaeaefec96acb2.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/tarot-reading-3b6cfc6197ed4216.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/zodiac-52291cdd1bd808d7.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/zodiac-85f40352b907bb08.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/zodiac-compatibility-8c58e124fea737bc.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/zodiac-compatibility-a207b30145a1355e.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/pages/zodiac-eb094b2c16f8fcb9.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/polyfills-42372ed130431b0a.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/webpack-5a94aed6491c62fa.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/webpack-5dd6681f85b684c1.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/chunks/webpack-af301b84c84b5aef.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/css/60ad4fdcef500cb1.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/css/690cc65dbb4503f8.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/css/715be398208dca58.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/v7JtsOUpXZEdr9Ip6for-/_buildManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/_next/static/v7JtsOUpXZEdr9Ip6for-/_ssgManifest.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/about.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/agora-test/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/android-chrome-192x192.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/android-chrome-512x512.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/apple-touch-icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/archetype-oracle/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/chat/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/collaborative-cosmos/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/community/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/cosmic-navigation/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/cosmic-test/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/cosmic/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/favicon-16x16.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/favicon-32x32.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/favicon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/feed/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/home/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/live-stream/[streamId/]/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/login/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/matchmaking/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/music/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/occult-oracle-ai/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/offline.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/post/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/public-archetype-oracle/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/redis-test/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/register/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/site.webmanifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/sw.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/tarot-reading/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/zodiac-compatibility/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-backend/static/zodiac/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/.env.local" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/.env.local" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/.eslintrc.json" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/.eslintrc.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/Settings)" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/__tests__/validate-analytics-system.js" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/__tests__/validate-analytics-system.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/jest.setup.ts.backup" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/next.config.js.backup" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/package-lock.json.root" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/EnhancedStarCosmos.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/EnhancedStarCosmos.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/components/ZodiacSigilShrine.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/components/ZodiacSigilShrine.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/components/cosmic/CollaborativeConstellation.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/components/cosmic/CollaborativeConstellation.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/components/cosmic/ConstellationRenderer.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/components/cosmic/ConstellationRenderer.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/components/cosmic/ElementalNexus.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/components/cosmic/ElementalNexus.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/components/game/ZodiacArenaPrototype.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/components/game/ZodiacArenaPrototype.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/lib/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/lib/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/styles/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/styles/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/styles/mobile.css" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/styles/mobile.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/src/styles/universal-space.css" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/src/styles/universal-space.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/styles/3d-cosmic.css" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/styles/3d-cosmic.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/star-frontend/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/star-frontend/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -137,13 +310,6 @@
       <method v="2" />
     </configuration>
   </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.25557.131" />
-      </set>
-    </attachedChunks>
-  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="f1e25606-5b67-4241-a5bc-8d6e38cf8090" name="Changes" comment="" />
@@ -156,6 +322,7 @@
       <workItem from="1759036343989" duration="1732000" />
       <workItem from="1759040451846" duration="360000" />
       <workItem from="1759375831144" duration="48000" />
+      <workItem from="1760627356281" duration="63000" />
     </task>
     <servers />
   </component>

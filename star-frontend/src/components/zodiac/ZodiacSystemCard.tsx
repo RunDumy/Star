@@ -8,217 +8,217 @@
 import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 import {
-    ZodiacSystemCardProps,
-    ZodiacSystemType
+  ZodiacSystemCardProps,
+  ZodiacSystemType
 } from '../../lib/zodiac.types';
 
 export const ZodiacSystemCard: React.FC<ZodiacSystemCardProps> = ({
-    system,
-    userSign,
-    isExpanded = true,
-    onToggle,
-    showAnimation = true,
+  system,
+  userSign,
+  isExpanded = true,
+  onToggle,
+  showAnimation = true,
 }) => {
-    const [isOpen, setIsOpen] = useState(isExpanded);
+  const [isOpen, setIsOpen] = useState(isExpanded);
 
-    const handleToggle = () => {
-        setIsOpen(!isOpen);
-        onToggle?.();
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+    onToggle?.();
+  };
+
+  const getSystemIcon = (type: ZodiacSystemType): string => {
+    const icons = {
+      western: '♈',
+      chinese: '🐉',
+      vedic: '🕉️',
+      mayan: '🌽',
+      aztec: '🗿'
     };
+    return icons[type] || '⭐';
+  };
 
-    const getSystemIcon = (type: ZodiacSystemType): string => {
-        const icons = {
-            western: '♈',
-            chinese: '🐉',
-            vedic: '🕉️',
-            mayan: '🌽',
-            aztec: '🗿'
-        };
-        return icons[type] || '⭐';
+  const getSystemGradient = (type: ZodiacSystemType): string => {
+    const gradients = {
+      western: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+      chinese: 'linear-gradient(135deg, #feca57, #ff9ff3)',
+      vedic: 'linear-gradient(135deg, #48dbfb, #0abde3)',
+      mayan: 'linear-gradient(135deg, #1dd1a1, #10ac84)',
+      aztec: 'linear-gradient(135deg, #a55eea, #8854d0)'
     };
+    return gradients[type] || 'linear-gradient(135deg, #667eea, #764ba2)';
+  };
 
-    const getSystemGradient = (type: ZodiacSystemType): string => {
-        const gradients = {
-            western: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-            chinese: 'linear-gradient(135deg, #feca57, #ff9ff3)',
-            vedic: 'linear-gradient(135deg, #48dbfb, #0abde3)',
-            mayan: 'linear-gradient(135deg, #1dd1a1, #10ac84)',
-            aztec: 'linear-gradient(135deg, #a55eea, #8854d0)'
-        };
-        return gradients[type] || 'linear-gradient(135deg, #667eea, #764ba2)';
-    };
+  return (
+    <div className={`zodiac-system-card ${system.type} ${isOpen ? 'expanded' : 'collapsed'}`}>
+      {/* Header */}
+      <div className="card-header" onClick={handleToggle}>
+        <div className="system-info">
+          <div className="system-icon" style={{ background: getSystemGradient(system.type) }}>
+            {getSystemIcon(system.type)}
+          </div>
+          <div className="system-details">
+            <h3 className="system-name">{system.name}</h3>
+            <p className="system-origin">{system.cultural_origin}</p>
+            <span className="sign-count">{system.sign_count} signs</span>
+          </div>
+        </div>
 
-    return (
-        <div className={`zodiac-system-card ${system.type} ${isOpen ? 'expanded' : 'collapsed'}`}>
-            {/* Header */}
-            <div className="card-header" onClick={handleToggle}>
-                <div className="system-info">
-                    <div className="system-icon" style={{ background: getSystemGradient(system.type) }}>
-                        {getSystemIcon(system.type)}
-                    </div>
-                    <div className="system-details">
-                        <h3 className="system-name">{system.name}</h3>
-                        <p className="system-origin">{system.cultural_origin}</p>
-                        <span className="sign-count">{system.sign_count} signs</span>
-                    </div>
+        {userSign && (
+          <div className="user-sign-preview">
+            <span className="your-sign-label">Your Sign:</span>
+            <span className="sign-name">{userSign.name}</span>
+            <span className="sign-symbol">{userSign.symbol}</span>
+          </div>
+        )}
+
+        <motion.div
+          className="expand-icon"
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          ▼
+        </motion.div>
+      </div>
+
+      {/* Expandable Content */}
+      <motion.div
+        initial={false}
+        animate={{
+          height: isOpen ? 'auto' : 0,
+          opacity: isOpen ? 1 : 0
+        }}
+        transition={{ duration: 0.3 }}
+        className="overflow-hidden"
+      >
+        <div className="card-content">
+          {/* System Description */}
+          <div className="system-description">
+            <p>{system.description}</p>
+          </div>
+
+          {/* User Sign Details */}
+          {userSign && (
+            <div className="user-sign-details">
+              <h4>Your {system.name} Profile</h4>
+
+              <div className="sign-properties">
+                <div className="sign-header">
+                  <span className="sign-symbol-large">{userSign.symbol}</span>
+                  <div>
+                    <h5 className="sign-name-large">{userSign.name}</h5>
+                    {userSign.date_range && (
+                      <p className="date-range">{userSign.date_range}</p>
+                    )}
+                  </div>
                 </div>
 
-                {userSign && (
-                    <div className="user-sign-preview">
-                        <span className="your-sign-label">Your Sign:</span>
-                        <span className="sign-name">{userSign.name}</span>
-                        <span className="sign-symbol">{userSign.symbol}</span>
+                <div className="properties-grid">
+                  {userSign.element && (
+                    <div className="property-item">
+                      <span className="property-label">Element:</span>
+                      <span className="property-value element">{userSign.element}</span>
                     </div>
+                  )}
+
+                  {userSign.quality && (
+                    <div className="property-item">
+                      <span className="property-label">Quality:</span>
+                      <span className="property-value">{userSign.quality}</span>
+                    </div>
+                  )}
+
+                  {userSign.ruling_planet && (
+                    <div className="property-item">
+                      <span className="property-label">Ruling Planet:</span>
+                      <span className="property-value">{userSign.ruling_planet}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Traits */}
+                <div className="traits-section">
+                  {userSign.personality_traits.length > 0 && (
+                    <div className="trait-category">
+                      <h6>Personality Traits</h6>
+                      <div className="trait-tags">
+                        {userSign.personality_traits.slice(0, 3).map((trait, index) => (
+                          <span key={index} className="trait-tag personality">{trait}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {userSign.strengths.length > 0 && (
+                    <div className="trait-category">
+                      <h6>Strengths</h6>
+                      <div className="trait-tags">
+                        {userSign.strengths.slice(0, 3).map((strength, index) => (
+                          <span key={index} className="trait-tag strength">{strength}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {userSign.challenges.length > 0 && (
+                    <div className="trait-category">
+                      <h6>Growth Areas</h6>
+                      <div className="trait-tags">
+                        {userSign.challenges.slice(0, 2).map((challenge, index) => (
+                          <span key={index} className="trait-tag challenge">{challenge}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Colors and Gems */}
+                {(userSign.colors.length > 0 || userSign.gems.length > 0) && (
+                  <div className="mystic-properties">
+                    {userSign.colors.length > 0 && (
+                      <div className="color-palette">
+                        <h6>Lucky Colors</h6>
+                        <div className="color-swatches">
+                          {userSign.colors.slice(0, 4).map((color, index) => (
+                            <div
+                              key={index}
+                              className="color-swatch"
+                              style={{ backgroundColor: color.toLowerCase() }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {userSign.gems.length > 0 && (
+                      <div className="gems-section">
+                        <h6>Power Stones</h6>
+                        <div className="gem-list">
+                          {userSign.gems.slice(0, 3).map((gem, index) => (
+                            <span key={index} className="gem-item">💎 {gem}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-
-                <motion.div
-                    className="expand-icon"
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    ▼
-                </motion.div>
+              </div>
             </div>
+          )}
 
-            {/* Expandable Content */}
-            <motion.div
-                initial={false}
-                animate={{
-                    height: isOpen ? 'auto' : 0,
-                    opacity: isOpen ? 1 : 0
-                }}
-                transition={{ duration: 0.3 }}
-                style={{ overflow: 'hidden' }}
-            >
-                <div className="card-content">
-                    {/* System Description */}
-                    <div className="system-description">
-                        <p>{system.description}</p>
-                    </div>
+          {/* Animation Trigger (if enabled) */}
+          {showAnimation && userSign && (
+            <div className="animation-section">
+              <button className="animation-trigger">
+                ✨ Activate {userSign.name} Energy
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
 
-                    {/* User Sign Details */}
-                    {userSign && (
-                        <div className="user-sign-details">
-                            <h4>Your {system.name} Profile</h4>
-
-                            <div className="sign-properties">
-                                <div className="sign-header">
-                                    <span className="sign-symbol-large">{userSign.symbol}</span>
-                                    <div>
-                                        <h5 className="sign-name-large">{userSign.name}</h5>
-                                        {userSign.date_range && (
-                                            <p className="date-range">{userSign.date_range}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="properties-grid">
-                                    {userSign.element && (
-                                        <div className="property-item">
-                                            <span className="property-label">Element:</span>
-                                            <span className="property-value element">{userSign.element}</span>
-                                        </div>
-                                    )}
-
-                                    {userSign.quality && (
-                                        <div className="property-item">
-                                            <span className="property-label">Quality:</span>
-                                            <span className="property-value">{userSign.quality}</span>
-                                        </div>
-                                    )}
-
-                                    {userSign.ruling_planet && (
-                                        <div className="property-item">
-                                            <span className="property-label">Ruling Planet:</span>
-                                            <span className="property-value">{userSign.ruling_planet}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Traits */}
-                                <div className="traits-section">
-                                    {userSign.personality_traits.length > 0 && (
-                                        <div className="trait-category">
-                                            <h6>Personality Traits</h6>
-                                            <div className="trait-tags">
-                                                {userSign.personality_traits.slice(0, 3).map((trait, index) => (
-                                                    <span key={index} className="trait-tag personality">{trait}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {userSign.strengths.length > 0 && (
-                                        <div className="trait-category">
-                                            <h6>Strengths</h6>
-                                            <div className="trait-tags">
-                                                {userSign.strengths.slice(0, 3).map((strength, index) => (
-                                                    <span key={index} className="trait-tag strength">{strength}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {userSign.challenges.length > 0 && (
-                                        <div className="trait-category">
-                                            <h6>Growth Areas</h6>
-                                            <div className="trait-tags">
-                                                {userSign.challenges.slice(0, 2).map((challenge, index) => (
-                                                    <span key={index} className="trait-tag challenge">{challenge}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Colors and Gems */}
-                                {(userSign.colors.length > 0 || userSign.gems.length > 0) && (
-                                    <div className="mystic-properties">
-                                        {userSign.colors.length > 0 && (
-                                            <div className="color-palette">
-                                                <h6>Lucky Colors</h6>
-                                                <div className="color-swatches">
-                                                    {userSign.colors.slice(0, 4).map((color, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="color-swatch"
-                                                            style={{ backgroundColor: color.toLowerCase() }}
-                                                            title={color}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {userSign.gems.length > 0 && (
-                                            <div className="gems-section">
-                                                <h6>Power Stones</h6>
-                                                <div className="gem-list">
-                                                    {userSign.gems.slice(0, 3).map((gem, index) => (
-                                                        <span key={index} className="gem-item">💎 {gem}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Animation Trigger (if enabled) */}
-                    {showAnimation && userSign && (
-                        <div className="animation-section">
-                            <button className="animation-trigger">
-                                ✨ Activate {userSign.name} Energy
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-
-            {/* CSS Styles */}
-            <style jsx>{`
+      {/* CSS Styles */}
+      <style jsx>{`
         .zodiac-system-card {
           background: white;
           border-radius: 15px;
@@ -541,8 +541,8 @@ export const ZodiacSystemCard: React.FC<ZodiacSystemCardProps> = ({
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default ZodiacSystemCard;

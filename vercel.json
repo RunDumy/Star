@@ -1,0 +1,22 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "star-frontend/package.json",
+            "use": "@vercel/next"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "https://star-backend.fly.dev/api/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/star-frontend/$1"
+        }
+    ],
+    "env": {
+        "NEXT_PUBLIC_API_URL": "https://star-backend.fly.dev"
+    }
+}

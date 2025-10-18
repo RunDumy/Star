@@ -1,10 +1,9 @@
 'use client';
 
-import { ReactNode } from 'react';
 import { DndContext, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
-import { TarotSpread, DraggedCard, EnergyFlow } from '../types/tarot-interactions';
-import TarotCard from './TarotCard';
+import { DraggedCard, EnergyFlow, TarotSpread } from '../types/tarot-interactions';
 import EnergyFlowVisualizer from './EnergyFlowVisualizer';
+import TarotCard from './TarotCard';
 
 interface SpreadCanvasProps {
   spread: TarotSpread;
@@ -30,15 +29,11 @@ export default function SpreadCanvas({
   const canvasStyle = {
     width: `${canvasSize.width}px`,
     height: `${canvasSize.height}px`,
-    background: 'linear-gradient(135deg, rgba(23, 12, 61, 0.8) 0%, rgba(46, 24, 98, 0.6) 100%)',
-    borderRadius: '12px',
-    position: 'relative' as const,
-    border: '1px solid rgba(139, 92, 246, 0.3)',
   };
 
   return (
     <DndContext onDragEnd={onDragEnd} onDragOver={onDragOver}>
-      <div style={canvasStyle} className="spread-canvas mx-auto my-4 overflow-hidden">
+      <div style={canvasStyle} className="spread-canvas mx-auto my-4 overflow-hidden relative rounded-xl border border-purple-400/30 bg-gradient-to-br from-purple-900/80 to-indigo-800/60">
         {/* Render spread position guidelines with prediction zones */}
         {spread.positions.map((position) => (
           <div

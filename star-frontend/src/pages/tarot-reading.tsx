@@ -45,8 +45,8 @@ const TarotReadingPage: NextPage = () => {
       {/* Background cosmic elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cosmic-gold rounded-full opacity-60 animate-pulse"></div>
-        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-cosmic-light rounded-full opacity-40 animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 right-1/2 w-3 h-3 bg-cosmic-gold rounded-full opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-cosmic-light rounded-full opacity-40 animate-pulse animate-pulse-delay-1s"></div>
+        <div className="absolute top-1/2 right-1/2 w-3 h-3 bg-cosmic-gold rounded-full opacity-20 animate-pulse animate-pulse-delay-2s"></div>
       </div>
     </div>
   );

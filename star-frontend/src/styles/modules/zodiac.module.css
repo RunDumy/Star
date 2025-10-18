@@ -1,0 +1,168 @@
+/* ===================================
+ * ZODIAC MODULE CSS
+ * Dynamic zodiac colors and theming
+ * =================================== */
+
+/* CSS Custom Properties for zodiac colors */
+:root {
+    --zodiac-primary: #FFD700;
+    --zodiac-secondary: #B19CD9;
+    --zodiac-accent: #FF6B6B;
+    --zodiac-background: rgba(255, 215, 0, 0.1);
+}
+
+/* Zodiac Card Base Styles */
+.zodiacCard {
+    background-color: rgb(from var(--zodiac-color) r g b / 0.3);
+    border: 2px solid var(--zodiac-color);
+    color: var(--zodiac-color);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.zodiacCard:hover {
+    background-color: rgb(from var(--zodiac-color) r g b / 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgb(from var(--zodiac-color) r g b / 0.3);
+}
+
+/* Zodiac Sigil Shrine Styles */
+.sigilShrine {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: radial-gradient(circle at center,
+            rgb(from var(--zodiac-color) r g b / 0.2) 0%,
+            transparent 70%);
+    border-radius: 20px;
+    padding: 2rem;
+}
+
+.sigilContainer {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: linear-gradient(45deg,
+            var(--zodiac-color),
+            rgb(from var(--zodiac-color) r g b / 0.7));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 0 20px rgb(from var(--zodiac-color) r g b / 0.5),
+        inset 0 0 20px rgb(from var(--zodiac-color) r g b / 0.3);
+}
+
+.sigilSymbol {
+    font-size: 3rem;
+    color: white;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.sigilGlow {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+            var(--zodiac-color) 0%,
+            transparent 70%);
+    opacity: 0.6;
+    animation: rotate 20s linear infinite;
+}
+
+/* Zodiac System Card Styles */
+.systemCard {
+    background: linear-gradient(135deg,
+            rgb(from var(--zodiac-color) r g b / 0.1) 0%,
+            rgb(from var(--zodiac-color) r g b / 0.05) 100%);
+    border: 1px solid rgb(from var(--zodiac-color) r g b / 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.systemCard:hover {
+    border-color: var(--zodiac-color);
+    box-shadow: 0 4px 12px rgb(from var(--zodiac-color) r g b / 0.2);
+}
+
+.systemTitle {
+    color: var(--zodiac-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.systemValue {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
+/* Chat Room Zodiac Styling */
+.zodiacChatRoom {
+    background: linear-gradient(to bottom,
+            rgb(from var(--zodiac-color) r g b / 0.1) 0%,
+            rgb(from var(--zodiac-color) r g b / 0.05) 50%,
+            transparent 100%);
+    border-left: 3px solid var(--zodiac-color);
+}
+
+.chatMessage {
+    border-left: 2px solid rgb(from var(--zodiac-color) r g b / 0.5);
+    padding-left: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.chatMessage.own {
+    border-left-color: var(--zodiac-color);
+    background-color: rgb(from var(--zodiac-color) r g b / 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sigilContainer {
+        width: 120px;
+        height: 120px;
+    }
+
+    .sigilSymbol {
+        font-size: 2.5rem;
+    }
+
+    .zodiacCard {
+        padding: 0.75rem;
+    }
+}
+
+/* Animations */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

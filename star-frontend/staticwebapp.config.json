@@ -1,12 +1,6 @@
 {
     "routes": [
         {
-            "route": "/api/*",
-            "allowedRoles": [
-                "anonymous"
-            ]
-        },
-        {
             "route": "/*",
             "rewrite": "/index.html"
         }
@@ -18,7 +12,7 @@
             "/css/*",
             "/js/*",
             "/_next/*",
-            "/api/*"
+            "/favicon.ico"
         ]
     },
     "mimeTypes": {

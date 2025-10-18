@@ -20,16 +20,17 @@ export const ConstellationRenderer = ({
 
   // Get the constellation data
   const constellation = constellations.get(constellationId);
-  if (!constellation) return null;
 
-  // Animation loop
+  // Animation loop - must be called unconditionally before any early returns
   useFrame((state) => {
-    if (groupRef.current) {
+    if (groupRef.current && constellation) {
       // Gentle pulsing animation for the entire constellation
       const pulse = Math.sin(state.clock.elapsedTime * 0.5) * 0.02 + 1;
       groupRef.current.scale.setScalar(pulse);
     }
   });
+
+  if (!constellation) return null;
 
   const handleStarClick = (star, starIndex, event) => {
     event.stopPropagation();

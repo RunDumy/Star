@@ -51,7 +51,7 @@ app.config.update({
 # Enhanced CORS for production
 allowed_origins = [
     'http://localhost:3000',
-    'https://star-backend.azurewebsites.net'
+    'https://your-star-backend.onrender.com'  # Replace with your Render backend URL
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
 
@@ -86,9 +86,9 @@ cosmos_helper = None
 try:
     from cosmos_db import get_cosmos_helper
     cosmos_helper = get_cosmos_helper()
-    logger.info("Azure Cosmos DB connection established")
+    logger.info("Supabase database connection established")
 except ImportError as e:
-    logger.warning(f"Cosmos DB not available: {e}")
+    logger.warning(f"Supabase database not available: {e}")
 
 try:
     from oracle_engine import OccultOracleEngine

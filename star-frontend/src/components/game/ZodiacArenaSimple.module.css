@@ -1,0 +1,101 @@
+/* Zodiac Arena Simple CSS Module */
+
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.controlPanel {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    max-width: 300px;
+}
+
+.panelTitle {
+    color: #fef3c7;
+    margin: 0;
+    text-align: center;
+}
+
+.unitContainer {
+    margin-top: 0.5rem;
+}
+
+.unitButton {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    margin: 0.25rem 0;
+    transition: all 0.2s ease;
+}
+
+.unitButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.unitButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(59, 130, 246, 1));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.unitStats {
+    color: #fef3c7;
+    margin: 0.2rem 0;
+    font-size: 0.875rem;
+}
+
+.actionButton {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    margin-top: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(59, 130, 246, 1));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.logPanel {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    max-width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.logEntry {
+    color: #fef3c7;
+    margin: 0.2rem 0;
+    font-size: 0.875rem;
+    line-height: 1.2;
+}

@@ -74,11 +74,10 @@ export default function CosmicDashboard() {
                       }, 400);
                     }
                   }}
-                  className={`px-4 py-2 rounded-md transition-all ${
-                    activeRealm === realm.id
-                      ? "bg-cyan-500 text-white shadow-lg"
-                      : "text-cyan-200 hover:bg-cyan-500/20"
-                  }`}
+                  className={`px-4 py-2 rounded-md transition-all ${activeRealm === realm.id
+                    ? "bg-cyan-500 text-white shadow-lg"
+                    : "text-cyan-200 hover:bg-cyan-500/20"
+                    }`}
                 >
                   <span className="mr-2">{realm.icon}</span>
                   {realm.label}
@@ -124,7 +123,7 @@ export default function CosmicDashboard() {
                   />
                 ))}
               </div>
-              
+
               <motion.div
                 animate={{
                   scale: [1, 1.2, 1],
@@ -178,7 +177,7 @@ export default function CosmicDashboard() {
                 ease: [0.25, 0.46, 0.45, 0.94],
                 scale: { type: "spring", damping: 20, stiffness: 100 }
               }}
-              style={{ willChange: 'transform, opacity' }}
+              className="will-change-transform-opacity"
             >
               <FloatingPostIslands posts={posts} />
             </motion.div>
@@ -194,7 +193,7 @@ export default function CosmicDashboard() {
                 ease: [0.25, 0.46, 0.45, 0.94],
                 scale: { type: "spring", damping: 20, stiffness: 100 }
               }}
-              style={{ willChange: 'transform, opacity' }}
+              className="will-change-transform-opacity"
             >
               <ThoughtOrbSystem orbs={orbs} onOrbCreate={(orb) => setOrbs([...orbs, { ...orb, id: Date.now().toString(), timestamp: new Date().toISOString(), responses: [] }])} />
             </motion.div>
@@ -210,7 +209,7 @@ export default function CosmicDashboard() {
                 ease: [0.25, 0.46, 0.45, 0.94],
                 scale: { type: "spring", damping: 20, stiffness: 100 }
               }}
-              style={{ willChange: 'transform, opacity' }}
+              className="will-change-transform-opacity"
             >
               <MirrorChamber />
             </motion.div>
@@ -226,7 +225,7 @@ export default function CosmicDashboard() {
                 ease: [0.25, 0.46, 0.45, 0.94],
                 scale: { type: "spring", damping: 20, stiffness: 100 }
               }}
-              style={{ willChange: 'transform, opacity' }}
+              className="will-change-transform-opacity"
             >
               <SocialConstellation connections={connections} />
             </motion.div>

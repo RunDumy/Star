@@ -1,0 +1,471 @@
+/* Zodiac Arena Mobile CSS Module */
+
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.canvas {
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+/* Mobile UI Toggle */
+.uiToggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    color: #fef3c7;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.uiToggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Touch Instructions */
+.touchInstructions {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    color: #fef3c7;
+    font-size: 0.9rem;
+    text-align: center;
+    z-index: 500;
+    animation: fadeInOut 4s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes fadeInOut {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    20%,
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Mobile Control Panel */
+.controlPanel {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    background: rgba(0, 0, 0, 0.85);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.controlPanel.collapsed {
+    transform: translateY(calc(100% - 60px));
+    max-height: 60px;
+    overflow: hidden;
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.panelTitle {
+    color: #fef3c7;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Units Grid for Mobile */
+.unitsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.unitCard {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.unitButton {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.6), rgba(59, 130, 246, 0.6));
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 50px;
+    touch-action: manipulation;
+}
+
+.unitButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    background: rgba(100, 100, 100, 0.3);
+}
+
+.unitButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.8));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.unitButton.selected {
+    border-color: #00ff88;
+    box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(59, 130, 246, 0.6));
+}
+
+.unitIcon {
+    font-size: 1.2rem;
+}
+
+.unitName {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Mobile Health Bar */
+.healthBar {
+    position: relative;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.healthFill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444 0%, #ffaa00 50%, #00ff44 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.healthFill[data-health="100"] {
+    width: 100%;
+}
+
+.healthFill[data-health="99"] {
+    width: 99%;
+}
+
+.healthFill[data-health="98"] {
+    width: 98%;
+}
+
+.healthFill[data-health="97"] {
+    width: 97%;
+}
+
+.healthFill[data-health="96"] {
+    width: 96%;
+}
+
+.healthFill[data-health="95"] {
+    width: 95%;
+}
+
+.healthFill[data-health="94"] {
+    width: 94%;
+}
+
+.healthFill[data-health="93"] {
+    width: 93%;
+}
+
+.healthFill[data-health="92"] {
+    width: 92%;
+}
+
+.healthFill[data-health="91"] {
+    width: 91%;
+}
+
+.healthFill[data-health="90"] {
+    width: 90%;
+}
+
+.healthFill[data-health^="8"] {
+    width: 80%;
+}
+
+.healthFill[data-health^="7"] {
+    width: 70%;
+}
+
+.healthFill[data-health^="6"] {
+    width: 60%;
+}
+
+.healthFill[data-health^="5"] {
+    width: 50%;
+}
+
+.healthFill[data-health^="4"] {
+    width: 40%;
+}
+
+.healthFill[data-health^="3"] {
+    width: 30%;
+}
+
+.healthFill[data-health^="2"] {
+    width: 20%;
+}
+
+.healthFill[data-health^="1"] {
+    width: 10%;
+}
+
+.healthFill[data-health="0"] {
+    width: 0%;
+}
+
+.healthText {
+    position: absolute;
+    top: -20px;
+    right: 0;
+    color: #fef3c7;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* Game End Actions */
+.gameEndActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.actionButton {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.8));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+    min-height: 50px;
+    touch-action: manipulation;
+}
+
+.actionButton:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(59, 130, 246, 1));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Combat Log */
+.logPanel {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    right: 70px;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 0.75rem;
+    max-height: 150px;
+    z-index: 50;
+}
+
+.logTitle {
+    color: #fef3c7;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.logEntries {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.logEntry {
+    color: #fef3c7;
+    margin: 0.25rem 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    opacity: 0.9;
+}
+
+.logEntry:last-child {
+    opacity: 1;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .controlPanel {
+        left: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .logPanel {
+        left: 0.5rem;
+        right: 60px;
+        padding: 0.5rem;
+    }
+
+    .uiToggle {
+        width: 45px;
+        height: 45px;
+        font-size: 1rem;
+    }
+
+    .unitsGrid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .gameEndActions {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .controlPanel {
+        max-height: 120px;
+    }
+
+    .logPanel {
+        max-height: 80px;
+    }
+
+    .logEntries {
+        max-height: 50px;
+    }
+}
+
+/* Landscape Orientation */
+@media (orientation: landscape) and (max-height: 600px) {
+    .controlPanel {
+        bottom: 0.5rem;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 500px;
+        max-height: 100px;
+    }
+
+    .logPanel {
+        top: 0.5rem;
+        max-height: 60px;
+    }
+
+    .unitsGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gameEndActions {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* High DPI Displays */
+@media (min-resolution: 2dppx) {
+    .canvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .unitButton,
+    .actionButton,
+    .uiToggle,
+    .controlPanel {
+        transition: none;
+    }
+
+    .touchInstructions {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: light) {
+
+    .controlPanel,
+    .logPanel {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .panelTitle,
+    .logTitle,
+    .logEntry {
+        color: #1a1a1a;
+    }
+
+    .touchInstructions {
+        background: rgba(255, 255, 255, 0.95);
+        color: #1a1a1a;
+    }
+}

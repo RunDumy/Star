@@ -1,11 +1,11 @@
 // platforms/star-app/src/components/cosmic/ElementalNexus.jsx
 import { animated, config, useSpring } from '@react-spring/three';
 import {
-    Float,
-    QuadraticBezierLine,
-    Sparkles,
-    Text,
-    Trail
+  Float,
+  QuadraticBezierLine,
+  Sparkles,
+  Text,
+  Trail
 } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
@@ -23,6 +23,13 @@ export const ElementalNexus = ({ position = [0, 0, 0], scale = 1, interactive = 
   const [selectedElement, setSelectedElement] = useState(null);
   const [energyLevel, setEnergyLevel] = useState(1);
 
+  // Spring animations - must be called unconditionally before any early returns
+  const { nexusScale, ringRotation } = useSpring({
+    nexusScale: hovered ? 1.2 : 1,
+    ringRotation: hovered ? Math.PI / 4 : 0,
+    config: config.gentle
+  });
+
   // Element positions in a pentagonal arrangement (5 elements)
   const elementPositions = useMemo(() => {
     const elements = Object.keys(ELEMENT_COLORS);
@@ -38,13 +45,6 @@ export const ElementalNexus = ({ position = [0, 0, 0], scale = 1, interactive = 
 
     return positions;
   }, [scale]);
-
-  // Spring animations
-  const { nexusScale, ringRotation } = useSpring({
-    nexusScale: hovered ? 1.2 : 1,
-    ringRotation: hovered ? Math.PI / 4 : 0,
-    config: config.gentle
-  });
 
   // Energy pulsing animation
   useFrame((state) => {
@@ -191,9 +191,8 @@ const ElementNode = ({
   const [hovered, setHovered] = useState(false);
 
   const elementColor = ELEMENT_COLORS[element];
-  if (!elementColor) return null;
 
-  // Spring animation for selection
+  // Spring animation for selection - must be called before any early returns
   const { nodeScale, emissiveIntensity } = useSpring({
     nodeScale: selected ? 1.3 : hovered ? 1.1 : 1,
     emissiveIntensity: selected ? 0.8 : hovered ? 0.5 : 0.3,
@@ -215,6 +214,8 @@ const ElementNode = ({
       nodeRef.current.scale.setScalar(pulse * energyLevel * scale);
     }
   });
+
+  if (!elementColor) return null;
 
   return (
     <animated.group scale={nodeScale}>

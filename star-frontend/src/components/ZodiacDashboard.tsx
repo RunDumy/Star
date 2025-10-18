@@ -42,7 +42,7 @@ const ZodiacDashboard: React.FC<Props> = ({
         const shareText = signature ?
             `🌟 My Cosmic Signature: ${signature} ✨\n${content}` :
             `🌌 ${content}`;
-        const url = 'https://star-app-backend.azurewebsites.net';
+        const url = 'http://localhost:5000';
         const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${url}`;
 
         window.open(twitterUrl, '_blank');

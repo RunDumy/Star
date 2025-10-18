@@ -1,7 +1,8 @@
 'use client';
 
-import { DraggedCard } from '../types/tarot-interactions';
 import { useDraggable } from '@dnd-kit/core';
+import { getAssetUrl } from '../lib/storage';
+import { DraggedCard } from '../types/tarot-interactions';
 import CosmicCard from './CosmicCard';
 
 interface TarotCardProps {
@@ -21,9 +22,16 @@ export default function TarotCard({ card, size = 'md' }: TarotCardProps) {
   };
 
   const cardContent = card.isFaceDown ? (
-    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cosmic-deep to-cosmic-purple rounded-lg border-2 border-cosmic-glow/50">
-      <div className="text-cosmic-gold text-xs font-mystical tracking-wider rotate-90">
-        ✨🌙✨
+    <div className="w-full h-full relative">
+      <img
+        src={getAssetUrl('blank_tarot.png')}
+        alt="Blank Tarot Card"
+        className="w-full h-full object-cover rounded-lg"
+      />
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-cosmic-deep/20 to-cosmic-purple/20 rounded-lg">
+        <div className="text-cosmic-gold text-xs font-mystical tracking-wider rotate-90">
+          ✨🌙✨
+        </div>
       </div>
     </div>
   ) : (
