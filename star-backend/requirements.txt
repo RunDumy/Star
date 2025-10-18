@@ -18,7 +18,7 @@ agora-token-builder==1.0.0
 supabase==2.3.0
 python-engineio==4.7.1
 python-socketio==5.8.0
-httpx==0.23.0
+httpx>=0.24.0
 psycopg2-binary==2.9.7
 cryptography==41.0.7
 requests==2.31.0
