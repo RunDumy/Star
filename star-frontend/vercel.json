@@ -1,6 +1,5 @@
 {
     "framework": "nextjs",
-    "rootDirectory": "star-frontend",
     "buildCommand": "npm run build",
     "outputDirectory": ".next",
     "regions": [
