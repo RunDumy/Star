@@ -1,8 +1,7 @@
 {
     "version": 2,
     "framework": "nextjs",
-    "buildCommand": "cd star-frontend && npm run build",
-    "installCommand": "cd star-frontend && npm install",
+    "rootDirectory": "star-frontend",
     "env": {
         "NEXT_PUBLIC_API_URL": "https://star-backend-l7u1.onrender.com"
     }
