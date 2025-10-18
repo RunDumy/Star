@@ -1,3 +1,5 @@
+# STAR Backend Flask Application
+# Force rebuild: 2025-01-16
 FROM python:3.10-slim
 
 # Install system dependencies
