@@ -1,741 +1,609 @@
 import logging
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from azure.cosmos import CosmosClient, exceptions
+from supabase import Client, create_client
 
-try:
-    from azure.storage.blob import (BlobClient, BlobServiceClient,
-                                    ContainerClient)
-    azure_storage_available = True
-except ImportError:
-    azure_storage_available = False
-    BlobServiceClient = None
-    BlobClient = None
-    ContainerClient = None
 
-class CosmosDBHelper:
-    """Helper class for Azure Cosmos DB operations"""
+# Mock Supabase client for development/testing
+class MockSupabaseClient:
+    """Mock Supabase client for development when real Supabase is not available"""
+
+    def table(self, name: str):
+        return MockTable(name)
+
+class MockTable:
+    """Mock table for development"""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def select(self, *args, **kwargs):
+        return MockQuery(self.name, "select")
+
+    def insert(self, *args, **kwargs):
+        return MockQuery(self.name, "insert")
+
+    def update(self, *args, **kwargs):
+        return MockQuery(self.name, "update")
+
+    def delete(self, *args, **kwargs):
+        return MockQuery(self.name, "delete")
+
+    def upsert(self, *args, **kwargs):
+        return MockQuery(self.name, "upsert")
+
+class MockQuery:
+    """Mock query for development"""
+
+    def __init__(self, table_name: str, operation: str):
+        self.table_name = table_name
+        self.operation = operation
+
+    def eq(self, *args, **kwargs):
+        return self
+
+    def neq(self, *args, **kwargs):
+        return self
+
+    def gt(self, *args, **kwargs):
+        return self
+
+    def gte(self, *args, **kwargs):
+        return self
+
+    def lt(self, *args, **kwargs):
+        return self
+
+    def lte(self, *args, **kwargs):
+        return self
+
+    def like(self, *args, **kwargs):
+        return self
+
+    def ilike(self, *args, **kwargs):
+        return self
+
+    def is_(self, *args, **kwargs):
+        return self
+
+    def in_(self, *args, **kwargs):
+        return self
+
+    def contains(self, *args, **kwargs):
+        return self
+
+    def contained_by(self, *args, **kwargs):
+        return self
+
+    def range(self, *args, **kwargs):
+        return self
+
+    def order(self, *args, **kwargs):
+        return self
+
+    def limit(self, *args, **kwargs):
+        return self
+
+    def single(self, *args, **kwargs):
+        return self
+
+    def execute(self):
+        # Return mock data based on operation
+        if self.operation == "select":
+            return {"data": [], "error": None}
+        elif self.operation == "insert":
+            return {"data": [{"id": str(uuid.uuid4())}], "error": None}
+        elif self.operation == "update":
+            return {"data": [], "error": None}
+        elif self.operation == "delete":
+            return {"data": [], "error": None}
+        elif self.operation == "upsert":
+            return {"data": [{"id": str(uuid.uuid4())}], "error": None}
+        return {"data": [], "error": None}
+
+# Constants
+BLOB_STORAGE_NOT_INITIALIZED = "Blob storage not initialized"
+
+# Query parameter constants (keeping for compatibility)
+PARAM_USER_ID = "@user_id"
+PARAM_USERNAME = "@username"
+PARAM_ID = "@id"
+PARAM_POST_ID = "@post_id"
+PARAM_OFFSET = "@offset"
+PARAM_LIMIT = "@limit"
+PARAM_MENTOR_NAME = "@mentor_name"
+PARAM_STATUS = "@status"
+PARAM_QUEST_PROGRESS_ID = "@quest_progress_id"
+PARAM_INTERACTION_ID = "@interaction_id"
+PARAM_START_DATE = "@start_date"
+PARAM_END_DATE = "@end_date"
+PARAM_DATA_TYPE = "@data_type"
+PARAM_TODAY = "@today"
+
+class SupabaseDBHelper:
+    """Helper class for Supabase database operations - replaces CosmosDBHelper"""
 
     def __init__(self):
-        connection_string = os.getenv('COSMOS_DB_CONNECTION_STRING')
-        if not connection_string:
-            raise ValueError("COSMOS_DB_CONNECTION_STRING environment variable not set")
+        use_mock = os.getenv('USE_MOCK_SUPABASE', 'false').lower() == 'true'
 
-        self.client = CosmosClient.from_connection_string(connection_string)
-        self.database_name = os.getenv('COSMOS_DB_DATABASE_NAME', 'star-db')
-        self.database = None
-        self.containers = {}
+        if use_mock:
+            # Create a mock Supabase client for development/testing
+            self.supabase = MockSupabaseClient()
+            logging.info("Using mock Supabase client for development")
+        else:
+            supabase_url = os.getenv('SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_ANON_KEY')
 
-        # Initialize Azure Blob Storage
-        self.blob_service_client = None
-        self.blob_container_name = 'posts'  # Default container for media
+            if not supabase_url or not supabase_key:
+                raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY environment variables must be set")
 
-        if self.client:
             try:
-                self.database = self.client.get_database_client(self.database_name)
-                # Initialize container clients
-                self._init_containers()
-                # Initialize blob storage
-                self._init_blob_storage()
-            except exceptions.CosmosResourceNotFoundError:
-                logging.warning(f"Database {self.database_name} not found. Please ensure it exists.")
+                self.supabase: Client = create_client(supabase_url, supabase_key)
+                logging.info("Successfully connected to Supabase")
             except Exception as e:
-                logging.error(f"Failed to initialize Cosmos DB: {e}")
+                logging.error(f"Failed to connect to Supabase: {e}")
+                # Fallback to mock client if connection fails
+                self.supabase = MockSupabaseClient()
+                logging.warning("Falling back to mock Supabase client")
 
-    def _init_containers(self):
-        """Initialize container clients"""
-        container_names = ['users', 'posts', 'chats', 'follows', 'likes', 'comments', 'profiles', 'notifications', 'stream_chat', 'streams', 'zodiac_dna', 'user_interactions']
-        for container_name in container_names:
-            try:
-                self.containers[container_name] = self.database.get_container_client(container_name)
-            except exceptions.CosmosResourceNotFoundError:
-                logging.warning(f"Container {container_name} not found. It will be created when needed.")
-                self.containers[container_name] = None
+    def _get_container(self, table_name: str):
+        """Get table reference (for compatibility with Cosmos DB interface)"""
+        return self.supabase.table(table_name)
 
-    def _init_blob_storage(self):
-        """Initialize Azure Blob Storage client"""
-        try:
-            blob_connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-            if blob_connection_string:
-                self.blob_service_client = BlobServiceClient.from_connection_string(blob_connection_string)
-                # Create container if it doesn't exist
-                try:
-                    self.blob_service_client.create_container(self.blob_container_name)
-                    logging.info(f"Created blob container: {self.blob_container_name}")
-                except Exception as e:
-                    if "ContainerAlreadyExists" not in str(e):
-                        logging.warning(f"Could not create blob container: {e}")
-            else:
-                logging.warning("AZURE_STORAGE_CONNECTION_STRING not found. Blob storage disabled.")
-        except Exception as e:
-            logging.error(f"Failed to initialize blob storage: {e}")
+    def get_container(self, table_name: str):
+        """Get table reference (for compatibility)"""
+        return self.supabase.table(table_name)
 
-    def _get_container(self, container_name: str):
-        """Get container client, create if doesn't exist"""
-        if self.containers.get(container_name) is None:
-            try:
-                self.containers[container_name] = self.database.get_container_client(container_name)
-            except exceptions.CosmosResourceNotFoundError:
-                logging.error(f"Container {container_name} does not exist")
-                return None
-        return self.containers[container_name]
-
-    # User operations
     def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new user"""
-        container = self._get_container('users')
-        if container:
-            try:
-                return container.create_item(body=user_data)
-            except exceptions.CosmosResourceExistsError:
-                raise ValueError("User already exists")
-        return {}
+        try:
+            user_data['id'] = str(uuid.uuid4())
+            user_data['created_at'] = datetime.now(timezone.utc).isoformat()
+            user_data['updated_at'] = user_data['created_at']
+
+            response = self.supabase.table('users').insert(user_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating user: {e}")
+            raise
 
     def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
         """Get user by username"""
-        container = self._get_container('users')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.username = @username"
-                parameters = [{"name": "@username", "value": username}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting user {username}: {e}")
-        return None
+        try:
+            response = self.supabase.table('users').select('*').eq('username', username).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error getting user by username: {e}")
+            return None
 
     def update_user(self, user_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Update user data"""
-        container = self._get_container('users')
-        if container:
-            try:
-                # First get the current item
-                query = "SELECT * FROM c WHERE c.id = @id"
-                parameters = [{"name": "@id", "value": user_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                if items:
-                    current_item = items[0]
-                    current_item.update(updates)
-                    return container.replace_item(item=current_item, body=current_item)
-            except Exception as e:
-                logging.error(f"Error updating user {user_id}: {e}")
-        return None
+        try:
+            updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+            response = self.supabase.table('users').update(updates).eq('id', user_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error updating user: {e}")
+            return None
 
-    # Post operations
     def create_post(self, post_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new post"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                return container.create_item(body=post_data)
-            except Exception as e:
-                logging.error(f"Error creating post: {e}")
-        return {}
+        try:
+            post_data['id'] = str(uuid.uuid4())
+            post_data['created_at'] = datetime.now(timezone.utc).isoformat()
+            post_data['updated_at'] = post_data['created_at']
+
+            response = self.supabase.table('posts').insert(post_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating post: {e}")
+            raise
 
     def get_posts(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Get posts with pagination"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET @offset LIMIT @limit"
-                parameters = [
-                    {"name": "@offset", "value": offset},
-                    {"name": "@limit", "value": limit}
-                ]
-                return list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-            except Exception as e:
-                logging.error(f"Error getting posts: {e}")
-        return []
+        try:
+            response = self.supabase.table('posts').select('*').order('created_at', desc=True).range(offset, offset + limit - 1).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting posts: {e}")
+            return []
 
     def get_user_posts(self, username: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """Get posts by a specific user"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.username = @username ORDER BY c.created_at DESC"
-                parameters = [{"name": "@username", "value": username}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items[:limit]
-            except Exception as e:
-                logging.error(f"Error getting posts for user {username}: {e}")
-        return []
+        """Get posts by username"""
+        try:
+            response = self.supabase.table('posts').select('*').eq('username', username).order('created_at', desc=True).limit(limit).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting user posts: {e}")
+            return []
 
     def get_posts_by_user_id(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get posts by user ID (for SQLAlchemy migration compatibility)"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.user_id = @user_id ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
-                parameters = [
-                    {"name": "@user_id", "value": user_id},
-                    {"name": "@limit", "value": limit}
-                ]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting posts for user {user_id}: {e}")
-        return []
+        """Get posts by user ID"""
+        try:
+            response = self.supabase.table('posts').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(limit).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting posts by user ID: {e}")
+            return []
 
     def get_post_by_id(self, post_id: str) -> Optional[Dict[str, Any]]:
-        """Get a specific post by ID"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.id = @post_id"
-                parameters = [{"name": "@post_id", "value": post_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting post {post_id}: {e}")
-        return None
+        """Get post by ID"""
+        try:
+            response = self.supabase.table('posts').select('*').eq('id', post_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error getting post by ID: {e}")
+            return None
 
     def update_post(self, post_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Update a post"""
-        container = self._get_container('posts')
-        if container:
-            try:
-                # Get existing post
-                existing_post = self.get_post_by_id(post_id)
-                if not existing_post:
-                    return None
-                
-                # Update fields
-                existing_post.update(updates)
-                
-                # Save updated post
-                return container.replace_item(item=post_id, body=existing_post)
-            except Exception as e:
-                logging.error(f"Error updating post {post_id}: {e}")
-        return None
+        """Update post"""
+        try:
+            updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+            response = self.supabase.table('posts').update(updates).eq('id', post_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error updating post: {e}")
+            return None
 
-    # Follow operations
     def create_follow(self, follow_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a follow relationship"""
-        container = self._get_container('follows')
-        if container:
-            try:
-                return container.create_item(body=follow_data)
-            except exceptions.CosmosResourceExistsError:
-                raise ValueError("Follow relationship already exists")
-        return {}
+        try:
+            follow_data['id'] = str(uuid.uuid4())
+            follow_data['created_at'] = datetime.now(timezone.utc).isoformat()
+
+            response = self.supabase.table('follows').insert(follow_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating follow: {e}")
+            raise
 
     def check_follow_exists(self, follower_username: str, followed_username: str) -> bool:
-        """Check if a follow relationship exists"""
-        container = self._get_container('follows')
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.follower_username = @follower AND c.followed_username = @followed"
-                parameters = [
-                    {"name": "@follower", "value": follower_username},
-                    {"name": "@followed", "value": followed_username}
-                ]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] > 0 if result else False
-            except Exception as e:
-                logging.error(f"Error checking follow relationship: {e}")
-        return False
+        """Check if follow relationship exists"""
+        try:
+            response = self.supabase.table('follows').select('*').eq('follower_username', follower_username).eq('followed_username', followed_username).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logging.error(f"Error checking follow exists: {e}")
+            return False
 
     def get_followers(self, user_id: str) -> List[Dict[str, Any]]:
         """Get followers for a user"""
-        container = self._get_container('follows')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.followed_id = @user_id"
-                parameters = [{"name": "@user_id", "value": user_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting followers for user {user_id}: {e}")
-        return []
+        try:
+            response = self.supabase.table('follows').select('*').eq('followed_id', user_id).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting followers: {e}")
+            return []
 
     def get_following(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get users that a user follows"""
-        container = self._get_container('follows')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.follower_id = @user_id"
-                parameters = [{"name": "@user_id", "value": user_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting following for user {user_id}: {e}")
-        return []
+        """Get users that a user is following"""
+        try:
+            response = self.supabase.table('follows').select('*').eq('follower_id', user_id).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting following: {e}")
+            return []
 
-    # Profile operations
     def update_profile(self, user_id: str, profile_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Update user profile"""
-        container = self._get_container('profiles')
-        if container:
-            try:
-                # First get the current profile
-                query = "SELECT * FROM c WHERE c.id = @id"
-                parameters = [{"name": "@id", "value": user_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                if items:
-                    current_item = items[0]
-                    current_item.update(profile_data)
-                    return container.replace_item(item=current_item, body=current_item)
-                else:
-                    # Create new profile if doesn't exist
-                    profile_data['id'] = user_id
-                    return container.create_item(body=profile_data)
-            except Exception as e:
-                logging.error(f"Error updating profile for user {user_id}: {e}")
-        return None
+        try:
+            profile_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+            response = self.supabase.table('profiles').update(profile_data).eq('user_id', user_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error updating profile: {e}")
+            return None
 
     def get_profile_by_user_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get profile by user ID"""
-        container = self._get_container('profiles')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.id = @id"
-                parameters = [{"name": "@id", "value": user_id}]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting profile for user {user_id}: {e}")
-        return None
+        try:
+            response = self.supabase.table('profiles').select('*').eq('user_id', user_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error getting profile: {e}")
+            return None
 
-    # Like operations
     def create_like(self, like_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a like"""
-        container = self._get_container('likes')
-        if container:
-            try:
-                return container.create_item(body=like_data)
-            except exceptions.CosmosResourceExistsError:
-                raise ValueError("Like already exists")
-        return {}
+        try:
+            like_data['id'] = str(uuid.uuid4())
+            like_data['created_at'] = datetime.now(timezone.utc).isoformat()
+
+            response = self.supabase.table('likes').insert(like_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating like: {e}")
+            raise
 
     def delete_like(self, post_id: str, user_id: str) -> bool:
         """Delete a like"""
-        container = self._get_container('likes')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.post_id = @post_id AND c.user_id = @user_id"
-                parameters = [
-                    {"name": "@post_id", "value": post_id},
-                    {"name": "@user_id", "value": user_id}
-                ]
-                items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                if items:
-                    container.delete_item(item=items[0], partition_key=items[0]['id'])
-                    return True
-            except Exception as e:
-                logging.error(f"Error deleting like: {e}")
-        return False
+        try:
+            response = self.supabase.table('likes').delete().eq('post_id', post_id).eq('user_id', user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logging.error(f"Error deleting like: {e}")
+            return False
 
     def check_like_exists(self, post_id: str, user_id: str) -> bool:
-        """Check if a like exists"""
-        container = self._get_container('likes')
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.post_id = @post_id AND c.user_id = @user_id"
-                parameters = [
-                    {"name": "@post_id", "value": post_id},
-                    {"name": "@user_id", "value": user_id}
-                ]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] > 0 if result else False
-            except Exception as e:
-                logging.error(f"Error checking like: {e}")
-        return False
+        """Check if like exists"""
+        try:
+            response = self.supabase.table('likes').select('*').eq('post_id', post_id).eq('user_id', user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logging.error(f"Error checking like exists: {e}")
+            return False
 
     def get_likes_count(self, post_id: str) -> int:
         """Get likes count for a post"""
-        container = self._get_container('likes')
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.post_id = @post_id"
-                parameters = [{"name": "@post_id", "value": post_id}]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] if result else 0
-            except Exception as e:
-                logging.error(f"Error getting likes count: {e}")
-        return 0
+        try:
+            response = self.supabase.table('likes').select('*', count='exact').eq('post_id', post_id).execute()
+            return response.count or 0
+        except Exception as e:
+            logging.error(f"Error getting likes count: {e}")
+            return 0
 
-    # Spark operations
-    def create_spark(self, spark_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a spark (like)"""
-        container = self._get_container('likes')  # Using likes container for sparks
-        if container:
-            try:
-                if 'id' not in spark_data:
-                    spark_data['id'] = str(uuid.uuid4())
-                spark_data['type'] = 'spark'
-                return container.create_item(body=spark_data)
-            except exceptions.CosmosResourceExistsError:
-                raise ValueError("Spark already exists")
-        return {}
-
-    def get_sparks_by_post(self, post_id: str) -> List[Dict[str, Any]]:
-        """Get all sparks for a post"""
-        container = self._get_container('likes')  # Using likes container for sparks
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.post_id = @post_id AND c.type = 'spark'"
-                parameters = [{"name": "@post_id", "value": post_id}]
-                return list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-            except Exception as e:
-                logging.error(f"Error getting sparks for post {post_id}: {e}")
-        return []
-
-    def check_spark_exists(self, post_id: str, user_id: str) -> bool:
-        """Check if a spark exists for a post by a user"""
-        container = self._get_container('likes')  # Using likes container for sparks
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.post_id = @post_id AND c.user_id = @user_id AND c.type = 'spark'"
-                parameters = [
-                    {"name": "@post_id", "value": post_id},
-                    {"name": "@user_id", "value": user_id}
-                ]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] > 0 if result else False
-            except Exception as e:
-                logging.error(f"Error checking spark: {e}")
-        return False
-
-    def get_sparks_count(self, post_id: str) -> int:
-        """Get sparks count for a post"""
-        container = self._get_container('likes')  # Using likes container for sparks
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.post_id = @post_id AND c.type = 'spark'"
-                parameters = [{"name": "@post_id", "value": post_id}]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] if result else 0
-            except Exception as e:
-                logging.error(f"Error getting sparks count: {e}")
-        return 0
-
-    # Comment operations
     def create_comment(self, comment_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a comment"""
-        container = self._get_container('comments')
-        if container:
-            try:
-                if 'id' not in comment_data:
-                    comment_data['id'] = str(uuid.uuid4())
-                comment_data['type'] = 'comment'
-                return container.create_item(body=comment_data)
-            except Exception as e:
-                logging.error(f"Error creating comment: {e}")
-        return {}
+        try:
+            comment_data['id'] = str(uuid.uuid4())
+            comment_data['created_at'] = datetime.now(timezone.utc).isoformat()
+
+            response = self.supabase.table('comments').insert(comment_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating comment: {e}")
+            raise
 
     def get_comments_for_post(self, post_id: str) -> List[Dict[str, Any]]:
         """Get comments for a post"""
-        container = self._get_container('comments')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.post_id = @post_id ORDER BY c.created_at"
-                parameters = [{"name": "@post_id", "value": post_id}]
-                return list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-            except Exception as e:
-                logging.error(f"Error getting comments for post {post_id}: {e}")
+        try:
+            response = self.supabase.table('comments').select('*').eq('post_id', post_id).order('created_at', desc=True).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting comments: {e}")
+            return []
+
+    def create_notification(self, notification_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a notification"""
+        try:
+            notification_data['id'] = str(uuid.uuid4())
+            notification_data['created_at'] = datetime.now(timezone.utc).isoformat()
+
+            response = self.supabase.table('notifications').insert(notification_data).execute()
+            return response.data[0] if response.data else {}
+        except Exception as e:
+            logging.error(f"Error creating notification: {e}")
+            raise
+
+    def get_notifications(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get notifications for a user"""
+        try:
+            response = self.supabase.table('notifications').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(limit).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting notifications: {e}")
+            return []
+
+    # Placeholder methods for compatibility - implement as needed
+    def create_spark(self, spark_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a spark (placeholder)"""
+        logging.warning("create_spark not implemented for Supabase")
+        return spark_data
+
+    def get_sparks_by_post(self, _post_id: str) -> List[Dict[str, Any]]:
+        """Get sparks by post (placeholder)"""
+        logging.warning("get_sparks_by_post not implemented for Supabase")
         return []
 
+    def check_spark_exists(self, _post_id: str, _user_id: str) -> bool:
+        """Check spark exists (placeholder)"""
+        logging.warning("check_spark_exists not implemented for Supabase")
+        return False
+
+    def get_sparks_count(self, _post_id: str) -> int:
+        """Get sparks count (placeholder)"""
+        logging.warning("get_sparks_count not implemented for Supabase")
+        return 0
+
     def get_comments(self, post_id: str, page: int = 1, per_page: int = 10) -> List[Dict[str, Any]]:
-        """Get comments for a post with pagination"""
-        container = self._get_container('comments')
-        if container:
-            try:
-                offset = (page - 1) * per_page
-                query = "SELECT * FROM c WHERE c.post_id = @post_id ORDER BY c.created_at DESC OFFSET @offset LIMIT @per_page"
-                parameters = [
-                    {"name": "@post_id", "value": post_id},
-                    {"name": "@offset", "value": offset},
-                    {"name": "@per_page", "value": per_page}
-                ]
-                return list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-            except Exception as e:
-                logging.error(f"Error getting comments for post {post_id}: {e}")
-        return []
+        """Get comments with pagination"""
+        try:
+            offset = (page - 1) * per_page
+            response = self.supabase.table('comments').select('*').eq('post_id', post_id).order('created_at', desc=True).range(offset, offset + per_page - 1).execute()
+            return response.data or []
+        except Exception as e:
+            logging.error(f"Error getting comments: {e}")
+            return []
 
     def get_comments_by_post(self, post_id: str) -> List[Dict[str, Any]]:
         """Alias for get_comments_for_post"""
         return self.get_comments_for_post(post_id)
 
-    # Notification operations
-    def create_notification(self, notification_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a notification"""
-        container = self._get_container('notifications')
-        if container:
-            try:
-                return container.create_item(body=notification_data)
-            except Exception as e:
-                logging.error(f"Error creating notification: {e}")
-        return {}
-
-    def get_notifications(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get notifications for a user"""
-        container = self._get_container('notifications')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC OFFSET 0 LIMIT {limit}"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting notifications: {e}")
-        return []
-
     def get_notification_by_id(self, notification_id: str, user_id: str) -> Optional[Dict[str, Any]]:
-        """Get a notification by ID and user ID"""
-        container = self._get_container('notifications')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.id = '{notification_id}' AND c.user_id = '{user_id}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting notification: {e}")
-        return None
+        """Get notification by ID"""
+        try:
+            response = self.supabase.table('notifications').select('*').eq('id', notification_id).eq('user_id', user_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error getting notification: {e}")
+            return None
 
     def update_notification(self, notification_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Update a notification"""
-        container = self._get_container('notifications')
-        if container:
-            try:
-                # First get the notification to get its partition key
-                query = f"SELECT * FROM c WHERE c.id = '{notification_id}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                if items:
-                    notification = items[0]
-                    for key, value in updates.items():
-                        notification[key] = value
-                    return container.replace_item(item=notification_id, body=notification)
-            except Exception as e:
-                logging.error(f"Error updating notification: {e}")
-        return None
+        """Update notification"""
+        try:
+            response = self.supabase.table('notifications').update(updates).eq('id', notification_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.error(f"Error updating notification: {e}")
+            return None
 
+    # Additional placeholder methods for compatibility
     def create_stream_chat_message(self, chat_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a stream chat message"""
-        container = self._get_container('stream_chat')
-        if container:
-            try:
-                return container.create_item(body=chat_data)
-            except Exception as e:
-                logging.error(f"Error creating stream chat message: {e}")
-        return {}
+        logging.warning("create_stream_chat_message not implemented for Supabase")
+        return chat_data
 
-    def get_stream_chat_messages(self, stream_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get chat messages for a stream"""
-        container = self._get_container('stream_chat')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.stream_id = '{stream_id}' ORDER BY c.created_at DESC OFFSET 0 LIMIT {limit}"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting stream chat messages: {e}")
+    def get_stream_chat_messages(self, _stream_id: str, _limit: int = 50) -> List[Dict[str, Any]]:
+        logging.warning("get_stream_chat_messages not implemented for Supabase")
         return []
 
     def create_live_stream(self, stream_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a live stream"""
-        container = self._get_container('streams')
-        if container:
-            try:
-                return container.create_item(body=stream_data)
-            except Exception as e:
-                logging.error(f"Error creating live stream: {e}")
-        return {}
+        logging.warning("create_live_stream not implemented for Supabase")
+        return stream_data
 
-    def get_active_live_stream_by_id(self, stream_id: str) -> Optional[Dict[str, Any]]:
-        """Get active live stream by ID"""
-        container = self._get_container('streams')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.id = '{stream_id}' AND c.is_active = true"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting live stream: {e}")
+    def get_active_live_stream_by_id(self, _stream_id: str) -> Optional[Dict[str, Any]]:
+        logging.warning("get_active_live_stream_by_id not implemented for Supabase")
         return None
 
     def get_active_live_streams(self) -> List[Dict[str, Any]]:
-        """Get all active live streams"""
-        container = self._get_container('streams')
-        if container:
-            try:
-                query = "SELECT * FROM c WHERE c.is_active = true ORDER BY c.created_at DESC"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting active live streams: {e}")
+        logging.warning("get_active_live_streams not implemented for Supabase")
         return []
 
-    def end_live_stream(self, stream_id: str, user_id: str) -> Optional[Dict[str, Any]]:
-        """End a live stream"""
-        container = self._get_container('streams')
-        if container:
-            try:
-                # First get the stream
-                query = f"SELECT * FROM c WHERE c.id = '{stream_id}' AND c.user_id = '{user_id}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                if items:
-                    stream = items[0]
-                    stream['is_active'] = False
-                    return container.replace_item(item=stream_id, body=stream)
-            except Exception as e:
-                logging.error(f"Error ending live stream: {e}")
+    def end_live_stream(self, _stream_id: str, _user_id: str) -> Optional[Dict[str, Any]]:
+        logging.warning("end_live_stream not implemented for Supabase")
         return None
 
     def upsert_zodiac_dna(self, dna_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Upsert zodiac DNA data"""
-        container = self._get_container('zodiac_dna')
-        if container:
-            try:
-                # Check if DNA exists
-                query = f"SELECT * FROM c WHERE c.user_id = '{dna_data['user_id']}' AND c.trait_name = '{dna_data['trait_name']}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                if items:
-                    # Update existing
-                    existing = items[0]
-                    for key, value in dna_data.items():
-                        existing[key] = value
-                    return container.replace_item(item=existing['id'], body=existing)
-                else:
-                    # Create new
-                    dna_data['id'] = str(uuid.uuid4())
-                    return container.create_item(body=dna_data)
-            except Exception as e:
-                logging.error(f"Error upserting zodiac DNA: {e}")
-        return {}
+        logging.warning("upsert_zodiac_dna not implemented for Supabase")
+        return dna_data
 
-    def get_zodiac_dna_by_user_and_trait(self, user_id: str, trait_name: str) -> Optional[Dict[str, Any]]:
-        """Get zodiac DNA by user and trait"""
-        container = self._get_container('zodiac_dna')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' AND c.trait_name = '{trait_name}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items[0] if items else None
-            except Exception as e:
-                logging.error(f"Error getting zodiac DNA: {e}")
+    def get_zodiac_dna_by_user_and_trait(self, _user_id: str, _trait_name: str) -> Optional[Dict[str, Any]]:
+        logging.warning("get_zodiac_dna_by_user_and_trait not implemented for Supabase")
         return None
 
-    def get_zodiac_dna_by_user(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get all zodiac DNA for a user"""
-        container = self._get_container('zodiac_dna')
-        if container:
-            try:
-                query = f"SELECT * FROM c WHERE c.user_id = '{user_id}'"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting zodiac DNA: {e}")
+    def get_zodiac_dna_by_user(self, _user_id: str) -> List[Dict[str, Any]]:
+        logging.warning("get_zodiac_dna_by_user not implemented for Supabase")
         return []
 
     def create_user_interaction(self, interaction_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a user interaction"""
-        container = self._get_container('user_interactions')
-        if container:
-            try:
-                interaction_data['id'] = str(uuid.uuid4())
-                return container.create_item(body=interaction_data)
-            except Exception as e:
-                logging.error(f"Error creating user interaction: {e}")
-        return {}
+        logging.warning("create_user_interaction not implemented for Supabase")
+        return interaction_data
 
-    def get_user_interactions(self, user_id: str, interaction_type: str = None, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get user interactions"""
-        container = self._get_container('user_interactions')
-        if container:
-            try:
-                if interaction_type:
-                    query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' AND c.interaction_type = '{interaction_type}' ORDER BY c.created_at DESC OFFSET 0 LIMIT {limit}"
-                else:
-                    query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC OFFSET 0 LIMIT {limit}"
-                items = list(container.query_items(query=query, enable_cross_partition_query=True))
-                return items
-            except Exception as e:
-                logging.error(f"Error getting user interactions: {e}")
+    def get_user_interactions(self, _user_id: str, _interaction_type: str = None, _limit: int = 50) -> List[Dict[str, Any]]:
+        logging.warning("get_user_interactions not implemented for Supabase")
         return []
 
-    # Post tags operations
     def create_post_tag(self, tag_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a post tag"""
-        container = self._get_container('post_tags')
-        if container:
-            try:
-                return container.create_item(body=tag_data)
-            except Exception as e:
-                logging.error(f"Error creating post tag: {e}")
+        logging.warning("create_post_tag not implemented for Supabase")
+        return tag_data
+
+    def get_followers_count(self, user_id: str) -> int:
+        """Get followers count"""
+        try:
+            response = self.supabase.table('follows').select('*', count='exact').eq('followed_id', user_id).execute()
+            return response.count or 0
+        except Exception as e:
+            logging.error(f"Error getting followers count: {e}")
+            return 0
+
+    def upload_blob(self, _blob_name: str, _data: bytes, _content_type: str = 'application/octet-stream') -> Optional[str]:
+        """Upload to Supabase Storage (placeholder - implement with Supabase Storage)"""
+        logging.warning("upload_blob not implemented for Supabase Storage")
+        return None
+
+    def get_blob_url(self, _blob_name: str) -> Optional[str]:
+        """Get blob URL from Supabase Storage (placeholder)"""
+        logging.warning("get_blob_url not implemented for Supabase Storage")
+        return None
+
+    def delete_blob(self, _blob_name: str) -> bool:
+        """Delete blob from Supabase Storage (placeholder)"""
+        logging.warning("delete_blob not implemented for Supabase Storage")
+        return False
+
+    # Additional placeholder methods
+    def upsert_score(self, user_id, score, stage, game_type="zodiac_arena"):
+        logging.warning("upsert_score not implemented for Supabase")
+
+    def upsert_reward(self, user_id, item_id, reward_type, stage):
+        logging.warning("upsert_reward not implemented for Supabase")
+
+    def get_user_rewards(self, user_id):
+        logging.warning("get_user_rewards not implemented for Supabase")
+        return []
+
+    def get_leaderboard(self, game_type="zodiac_arena", limit=100):
+        logging.warning("get_leaderboard not implemented for Supabase")
+        return []
+
+    def store_analytics_event(self, event_data):
+        logging.warning("store_analytics_event not implemented for Supabase")
+
+    def store_user_insight(self, insight_data):
+        logging.warning("store_user_insight not implemented for Supabase")
+
+    def upload_media_to_blob(self, file, media_type='media'):
+        logging.warning("upload_media_to_blob not implemented for Supabase")
+        return None
+
+    def create_mentor_interaction(self, interaction_data: Dict[str, Any]) -> Dict[str, Any]:
+        logging.warning("create_mentor_interaction not implemented for Supabase")
+        return interaction_data
+
+    def get_mentor_interactions(self, user_id: str, mentor_name: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        logging.warning("get_mentor_interactions not implemented for Supabase")
+        return []
+
+    def update_mentor_interaction(self, interaction_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        logging.warning("update_mentor_interaction not implemented for Supabase")
+        return None
+
+    def create_quest_progress(self, quest_data: Dict[str, Any]) -> Dict[str, Any]:
+        logging.warning("create_quest_progress not implemented for Supabase")
+        return quest_data
+
+    def get_user_quests(self, user_id: str, status: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+        logging.warning("get_user_quests not implemented for Supabase")
+        return []
+
+    def update_quest_progress(self, quest_progress_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        logging.warning("update_quest_progress not implemented for Supabase")
+        return None
+
+    def get_quest_by_id(self, quest_progress_id: str) -> Optional[Dict[str, Any]]:
+        logging.warning("get_quest_by_id not implemented for Supabase")
+        return None
+
+    def complete_quest(self, quest_progress_id: str, completion_data: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
+        logging.warning("complete_quest not implemented for Supabase")
+        return None
+
+    def store_lunar_data(self, lunar_data: Dict[str, Any]) -> Dict[str, Any]:
+        logging.warning("store_lunar_data not implemented for Supabase")
+        return lunar_data
+
+    def get_lunar_data(self, start_date: str, end_date: str, data_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        logging.warning("get_lunar_data not implemented for Supabase")
+        return []
+
+    def get_current_moon_phase(self) -> Optional[Dict[str, Any]]:
+        logging.warning("get_current_moon_phase not implemented for Supabase")
+        return None
+
+    def get_void_periods(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
+        logging.warning("get_void_periods not implemented for Supabase")
+        return []
+
+    def get_upcoming_eclipses(self, limit: int = 10) -> List[Dict[str, Any]]:
+        logging.warning("get_upcoming_eclipses not implemented for Supabase")
+        return []
+
+    def get_user_cosmic_stats(self, user_id: str) -> Dict[str, Any]:
+        logging.warning("get_user_cosmic_stats not implemented for Supabase")
         return {}
 
-    # Follow operations
-    def get_followers_count(self, user_id: str) -> int:
-        """Get followers count for a user"""
-        container = self._get_container('follows')
-        if container:
-            try:
-                query = "SELECT VALUE COUNT(1) FROM c WHERE c.following_id = @user_id"
-                parameters = [{"name": "@user_id", "value": user_id}]
-                result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
-                return result[0] if result else 0
-            except Exception as e:
-                logging.error(f"Error getting followers count: {e}")
-        return 0
 
-    # Azure Blob Storage operations
-    def upload_blob(self, blob_name: str, data: bytes, content_type: str = 'application/octet-stream') -> Optional[str]:
-        """Upload data to Azure Blob Storage and return the blob URL"""
-        if not self.blob_service_client:
-            logging.error("Blob storage not initialized")
-            return None
+# For backward compatibility
+CosmosDBHelper = SupabaseDBHelper
 
-        try:
-            blob_client = self.blob_service_client.get_blob_client(
-                container=self.blob_container_name,
-                blob=blob_name
-            )
-            blob_client.upload_blob(data, overwrite=True, content_type=content_type)
-            return blob_client.url
-        except Exception as e:
-            logging.error(f"Error uploading blob {blob_name}: {e}")
-            return None
-
-    def get_blob_url(self, blob_name: str) -> Optional[str]:
-        """Get the public URL for a blob"""
-        if not self.blob_service_client:
-            logging.error("Blob storage not initialized")
-            return None
-
-        try:
-            blob_client = self.blob_service_client.get_blob_client(
-                container=self.blob_container_name,
-                blob=blob_name
-            )
-            return blob_client.url
-        except Exception as e:
-            logging.error(f"Error getting blob URL for {blob_name}: {e}")
-            return None
-
-    def delete_blob(self, blob_name: str) -> bool:
-        """Delete a blob from storage"""
-        if not self.blob_service_client:
-            logging.error("Blob storage not initialized")
-            return False
-
-        try:
-            blob_client = self.blob_service_client.get_blob_client(
-                container=self.blob_container_name,
-                blob=blob_name
-            )
-            blob_client.delete_blob()
-            return True
-        except Exception as e:
-            logging.error(f"Error deleting blob {blob_name}: {e}")
-            return False
-
-# Global instance
+# Global helper instance
 _cosmos_helper = None
 
-def get_cosmos_helper() -> CosmosDBHelper:
-    """Get singleton CosmosDBHelper instance"""
+def get_cosmos_helper() -> SupabaseDBHelper:
+    """Get global SupabaseDBHelper instance (for backward compatibility)"""
     global _cosmos_helper
     if _cosmos_helper is None:
-        _cosmos_helper = CosmosDBHelper()
+        _cosmos_helper = SupabaseDBHelper()
     return _cosmos_helper
