@@ -3,11 +3,16 @@ import os
 
 from flask import Flask
 from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from supabase import create_client
 
 app = Flask(__name__)
-limiter = Limiter(app=app, default_limits=["200 per day", "50 per hour"])
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL")
