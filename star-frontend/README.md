@@ -1,12 +1,12 @@
 # Star App Frontend
 
-A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Connects to the Flask backend on Fly.io.
+A minimal, beginner-friendly Next.js frontend for the Star App with a starry background, twinkling stars, and a comet. Connects to the Flask backend on Render.
 
 ## Quick Start
 
 1. npm install
 2. Create .env.local with:
-   `NEXT_PUBLIC_API_URL=https://your-fly-app.fly.dev`
+   `NEXT_PUBLIC_API_URL=https://your-render-app.onrender.com`
 3. npm run dev
 4. Open http://localhost:3000
 

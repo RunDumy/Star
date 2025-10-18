@@ -8,6 +8,10 @@ export const STORAGE_BUCKETS = {
 } as const
 
 export const getStorageUrl = (bucket: string, path: string): string => {
+    if (!supabase) {
+        // Return a placeholder URL for server-side rendering
+        return `/api/placeholder/${bucket}/${path}`
+    }
     const { data } = supabase.storage.from(bucket).getPublicUrl(path)
     return data.publicUrl
 }
@@ -23,19 +27,6 @@ export const getAvatarUrl = (filename: string): string => {
 export const getMediaUrl = (filename: string): string => {
     return getStorageUrl(STORAGE_BUCKETS.MEDIA, filename)
 }
-
-// Legacy Azure Blob Storage URL mappings (for migration)
-export const AZURE_TO_SUPABASE_ASSETS = {
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/blank_tarot.png': () => getAssetUrl('blank_tarot.png'),
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/whoosh-flame-388763.mp3': () => getAssetUrl('whoosh-flame-388763.mp3'),
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/whoosh-truck-2-386138.mp3': () => getAssetUrl('whoosh-truck-2-386138.mp3'),
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/whoosh-axe-throw-389751.mp3': () => getAssetUrl('whoosh-axe-throw-389751.mp3'),
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/whoosh-velocity-383019.mp3': () => getAssetUrl('whoosh-velocity-383019.mp3'),
-    'https://stt2ynjil2jmuuu.blob.core.windows.net/assets/whoosh-dark-tension-386134.mp3': () => getAssetUrl('whoosh-dark-tension-386134.mp3'),
-    'https://star-assets.blob.core.windows.net/star-assets/whoosh-flame-388763.mp3': () => getAssetUrl('whoosh-flame-388763.mp3'),
-    'https://star-assets.blob.core.windows.net/star-assets/whoosh-dark-tension-386134.mp3': () => getAssetUrl('whoosh-dark-tension-386134.mp3'),
-    'https://star-assets.blob.core.windows.net/star-assets/blank_tarot.png': () => getAssetUrl('blank_tarot.png'),
-} as const
 
 // Zodiac icon mappings
 export const getZodiacIconUrl = (zodiacSign: string): string => {

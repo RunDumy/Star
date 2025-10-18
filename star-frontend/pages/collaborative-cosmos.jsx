@@ -284,11 +284,11 @@ const CollaborativeCosmosScene = () => {
         // Fetch posts
         const postsResponse = await postsAPI.getPosts();
         setPosts(postsResponse.data.posts || []);
-        
+
         // Fetch zodiac numbers
         const zodiacResponse = await zodiacAPI.getNumbers();
         setZodiacNumbers(zodiacResponse.data);
-        
+
         // Fetch existing constellations
         const constellationsResponse = await collaborationAPI.getConstellations();
         if (constellationsResponse.data) {
@@ -408,11 +408,10 @@ const CollaborativeCosmosScene = () => {
                 <button
                   key={tool}
                   onClick={() => setActiveTool(tool)}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                    activeTool === tool
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20'
-                  }`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${activeTool === tool
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    }`}
                   title={tool.charAt(0).toUpperCase() + tool.slice(1)}
                 >
                   <span className="text-lg">
@@ -628,12 +627,12 @@ const CollaborativeCosmosScene = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
           <div className="bg-black/90 text-white p-6 rounded-lg backdrop-blur-sm border border-green-500/30 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">Live Stream Controls</h3>
-            
+
             {activeStream ? (
               <div>
-                <AgoraUIKitLiveStream 
-                  streamId={activeStream.id} 
-                  isHost={true} 
+                <AgoraUIKitLiveStream
+                  streamId={activeStream.id}
+                  isHost={true}
                 />
                 <button
                   onClick={() => setActiveStream(null)}
@@ -682,3 +681,8 @@ CollaborativeCosmosScene.propTypes = {
 };
 
 export default CollaborativeCosmos;
+
+// Disable static generation and SSR to prevent Supabase access during build
+export const config = {
+  unstable_runtimeJS: false,
+};

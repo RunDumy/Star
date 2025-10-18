@@ -526,13 +526,13 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **Animation**: React Spring, Konva.js, React Three Fiber
 - **Real-time**: Socket.IO, AgoraRTC for live streaming
 - **APIs**: Spotify Web API, IPGeolocation
-- **Cloud**: Vercel + Fly.io + Supabase (Global CDN, PostgreSQL, Storage)
+- **Cloud**: Vercel + Render + Supabase (Global CDN, PostgreSQL, Storage)
 - **Testing**: Jest, React Testing Library, PyTest
 
 **Special Thanks to:**
 
 - **Vercel**: For global CDN and serverless hosting
-- **Fly.io**: For auto-scaling container hosting
+- **Render**: For auto-scaling container hosting
 - **Supabase**: For global PostgreSQL database and real-time features
 - **AgoraRTC**: For powering our live streaming infrastructure
 - **React Three Fiber**: For bringing 3D cosmic experiences to life

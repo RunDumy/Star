@@ -2,7 +2,7 @@
 
 /**
  * Environment Configuration Cleanup and Validation Utility
- * Consolidates duplicate .env files and validates Azure Key Vault integration
+ * Consolidates duplicate .env files and validates Supabase + Render integration
  */
 
 const fs = require('fs');
@@ -26,7 +26,7 @@ const CONFIG_PATHS = {
     },
     root: {
         dockerCompose: 'docker-compose.yml',
-        azureYaml: 'azure.yaml',
+        vercelJson: 'vercel.json',
         readme: 'README.md'
     }
 };
@@ -36,26 +36,28 @@ const ENV_VALIDATION = {
     frontend: {
         required: [
             'NEXT_PUBLIC_API_URL',
-            'NEXT_PUBLIC_AGORA_APP_ID'
+            'NEXT_PUBLIC_AGORA_APP_ID',
+            'NEXT_PUBLIC_SUPABASE_URL',
+            'NEXT_PUBLIC_SUPABASE_ANON_KEY'
         ],
         optional: [
             'NEXT_PUBLIC_SOCKET_URL',
-            'NEXT_PUBLIC_AZURE_KEY_VAULT_URL',
             'NEXT_PUBLIC_APP_ENV'
         ]
     },
     backend: {
         required: [
-            'COSMOS_DB_CONNECTION_STRING',
+            'SUPABASE_URL',
+            'SUPABASE_ANON_KEY',
+            'SUPABASE_SERVICE_ROLE_KEY',
             'AGORA_APP_ID',
             'AGORA_APP_CERTIFICATE',
             'SECRET_KEY'
         ],
-        azure_keyvault: [
-            'AZURE_KEY_VAULT_URL',
-            'AZURE_CLIENT_ID',
-            'AZURE_CLIENT_SECRET',
-            'AZURE_TENANT_ID'
+        supabase: [
+            'SUPABASE_URL',
+            'SUPABASE_ANON_KEY',
+            'SUPABASE_SERVICE_ROLE_KEY'
         ],
         spotify: [
             'SPOTIFY_CLIENT_ID',
@@ -63,9 +65,8 @@ const ENV_VALIDATION = {
         ],
         optional: [
             'IPGEOLOCATION_API_KEY',
-            'AZURE_STORAGE_CONNECTION_STRING',
             'LOG_LEVEL',
-            'NO_REDIS'
+            'FLASK_ENV'
         ]
     }
 };
@@ -93,8 +94,8 @@ class EnvironmentCleanupUtility {
             // Step 2: Validate existing environment configurations
             await this.validateEnvironmentFiles();
 
-            // Step 3: Check Azure Key Vault integration
-            await this.validateAzureKeyVaultSetup();
+            // Step 3: Check Supabase integration
+            await this.validateSupabaseSetup();
 
             // Step 4: Validate configuration consistency
             await this.validateConfigurationConsistency();
@@ -269,38 +270,36 @@ class EnvironmentCleanupUtility {
     }
 
     /**
-     * Validate Azure Key Vault integration setup
+     * Validate Supabase integration setup
      */
-    async validateAzureKeyVaultSetup() {
-        this.info.push('🔐 Validating Azure Key Vault integration...');
+    async validateSupabaseSetup() {
+        this.info.push('🔐 Validating Supabase integration...');
 
-        // Check if Azure SDK packages are installed
+        // Check if Supabase packages are installed
         const backendRequirements = path.join(CONFIG_PATHS.backend.base, '../requirements.txt');
         if (fs.existsSync(backendRequirements)) {
             const requirements = fs.readFileSync(backendRequirements, 'utf8');
 
-            const azurePackages = [
-                'azure-keyvault-secrets',
-                'azure-identity',
-                'azure-cosmos'
+            const supabasePackages = [
+                'supabase'
             ];
 
-            for (const pkg of azurePackages) {
+            for (const pkg of supabasePackages) {
                 if (!requirements.includes(pkg)) {
-                    this.warnings.push(`Missing Azure package in requirements.txt: ${pkg}`);
+                    this.warnings.push(`Missing Supabase package in requirements.txt: ${pkg}`);
                 }
             }
         }
 
-        // Check app.py for Key Vault integration
+        // Check app.py for Supabase integration
         const appPyPath = CONFIG_PATHS.backend.appPy;
         if (fs.existsSync(appPyPath)) {
             const appContent = fs.readFileSync(appPyPath, 'utf8');
 
-            if (appContent.includes('azure.keyvault') || appContent.includes('KeyVaultSecret')) {
-                this.info.push('✅ Azure Key Vault integration detected in app.py');
+            if (appContent.includes('supabase') || appContent.includes('SupabaseDBHelper')) {
+                this.info.push('✅ Supabase integration detected in app.py');
             } else {
-                this.warnings.push('Azure Key Vault integration not detected in app.py');
+                this.warnings.push('Supabase integration not detected in app.py');
             }
         }
     }
@@ -373,8 +372,11 @@ NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 # Agora RTC Configuration
 NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
 
-# Azure Configuration (Optional)
-NEXT_PUBLIC_AZURE_KEY_VAULT_URL=https://your-keyvault.vault.azure.net/
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
+
+# App Configuration
 NEXT_PUBLIC_APP_ENV=development
 
 # Analytics Configuration (Optional)
@@ -393,20 +395,15 @@ NEXT_PUBLIC_DEBUG_MODE=false
 # Core Configuration
 SECRET_KEY=your-super-secret-key-here
 LOG_LEVEL=INFO
-NO_REDIS=true
 
-# Azure Cosmos DB
-COSMOS_DB_CONNECTION_STRING=AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key-here;
+# Supabase Configuration
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 
 # Agora RTC Configuration
 AGORA_APP_ID=your_agora_app_id_here
 AGORA_APP_CERTIFICATE=your_agora_certificate_here
-
-# Azure Key Vault (Recommended for production)
-AZURE_KEY_VAULT_URL=https://your-keyvault.vault.azure.net/
-AZURE_CLIENT_ID=your_azure_client_id_here
-AZURE_CLIENT_SECRET=your_azure_client_secret_here
-AZURE_TENANT_ID=your_azure_tenant_id_here
 
 # Spotify Integration
 SPOTIFY_CLIENT_ID=your_spotify_client_id_here
@@ -414,7 +411,6 @@ SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
 
 # Additional Services (Optional)
 IPGEOLOCATION_API_KEY=your_ipgeolocation_key_here
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;
 
 # Development Configuration
 FLASK_ENV=development
@@ -511,10 +507,10 @@ FLASK_DEBUG=true
 
         console.log('\n🌟 Next Steps:');
         console.log('   1. Review and update .env files based on .env.example templates');
-        console.log('   2. Set up Azure Key Vault for production secrets management');
+        console.log('   2. Set up Supabase project and configure tables');
         console.log('   3. Validate Docker Compose configuration');
         console.log('   4. Run integration tests to verify all connections');
-        console.log('   5. Deploy to Azure using the deployment pipeline');
+        console.log('   5. Deploy to Vercel (frontend) and Render (backend)');
     }
 }
 

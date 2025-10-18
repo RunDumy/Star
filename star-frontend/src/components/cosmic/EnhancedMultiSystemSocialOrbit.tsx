@@ -92,7 +92,7 @@ const fetchAnimations = async (signature: string): Promise<any | null> => {
  * - Real-time WebSocket integration
  * - Interactive 3D zodiac wheel with Three.js
  * - Responsive dashboard with sharing capabilities
- * - Optimized for Azure App Service F1 tier
+ * - Optimized for modern web deployment
  */
 const MultiSystemSocialOrbit: React.FC<Props> = ({ user }) => {
     const [zodiacData, setZodiacData] = useState<ZodiacData | null>(null);

@@ -105,19 +105,14 @@ NEXT_TELEMETRY_DISABLED=1
 
 ## 🚀 Service Setup Instructions
 
-### **1. Azure Cosmos DB Setup**
+### **1. Supabase Setup**
 
 ```bash
-# Install Azure CLI
-az login
-
-# Create resource group
-az group create --name star-platform-rg --location eastus
-
-# Create Cosmos DB account
-az cosmosdb create --name star-cosmos-db --resource-group star-platform-rg --kind GlobalDocumentDB
-
-# Get connection string
+# 1. Create Supabase project at https://supabase.com
+# 2. Go to Settings > API to get your project URL and keys
+# 3. Run the SQL schema from supabase_schema.sql in the SQL Editor
+# 4. Configure authentication providers if needed
+# 5. Set up storage buckets for media files
 az cosmosdb keys list --name star-cosmos-db --resource-group star-platform-rg --type connection-strings
 ```
 

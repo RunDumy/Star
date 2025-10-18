@@ -2,5 +2,11 @@
     "buildCommand": "npm run build",
     "outputDirectory": ".next",
     "framework": "nextjs",
-    "rootDirectory": "star-frontend"
+    "rootDirectory": "star-frontend",
+    "env": {
+        "NEXT_PUBLIC_API_URL": "https://star-backend-l7u1.onrender.com",
+        "NEXT_PUBLIC_SUPABASE_URL": "https://hiwmpmvqcxzshdmhhlsb.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpd21wbXZxY3h6c2hkbWhobHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NDAzMjcsImV4cCI6MjA3NDUxNjMyN30.RXa8Bx3Pwy9Du2j-XD8WaGDjuCVe9H-PLTgMLJa11ZE",
+        "NEXT_PUBLIC_AGORA_APP_ID": "27d39aff6ec6469c86397e5043da3e51"
+    }
 }
