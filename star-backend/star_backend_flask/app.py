@@ -28,17 +28,35 @@ from analytics_api import analytics_bp, init_analytics_blueprint
 from api_blueprint import api_bp, init_api_blueprint
 
 # Initialize blueprints with Supabase client
-init_api_blueprint(supabase)
-init_analytics_blueprint(supabase)
+try:
+    init_api_blueprint(supabase)
+    print("API blueprint initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize API blueprint: {e}")
 
-app.register_blueprint(api_bp, url_prefix="/api/v1")
-app.register_blueprint(analytics_bp, url_prefix="/api/v1")
+try:
+    init_analytics_blueprint(supabase)
+    print("Analytics blueprint initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize analytics blueprint: {e}")
+
+try:
+    app.register_blueprint(api_bp, url_prefix="/api/v1")
+    print("API blueprint registered successfully")
+except Exception as e:
+    print(f"Failed to register API blueprint: {e}")
+
+try:
+    app.register_blueprint(analytics_bp, url_prefix="/api/v1")
+    print("Analytics blueprint registered successfully")
+except Exception as e:
+    print(f"Failed to register analytics blueprint: {e}")
 
 @app.route("/health")
 def health():
     return {
         "status": "healthy", 
-        "version": "1.0.0",
+        "version": "1.0.1",
         "blueprints": list(app.blueprints.keys()),
         "routes": [str(rule) for rule in app.url_map.iter_rules()]
     }, 200
