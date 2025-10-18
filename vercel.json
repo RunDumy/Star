@@ -1,9 +1,11 @@
 {
     "version": 2,
-    "buildCommand": "npm run build",
-    "outputDirectory": ".next",
-    "framework": null,
-    "rootDirectory": "star-frontend",
+    "builds": [
+        {
+            "src": "star-frontend/package.json",
+            "use": "@vercel/next"
+        }
+    ],
     "routes": [
         {
             "src": "/api/(.*)",
@@ -11,7 +13,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/$1"
+            "dest": "/star-frontend/$1"
         }
     ],
     "env": {
