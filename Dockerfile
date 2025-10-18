@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY star_backend_flask/ .
+COPY star-backend/star_backend_flask/ .
 RUN pip install --no-cache-dir -r requirements.txt
 ENV PORT=8000
 EXPOSE $PORT
