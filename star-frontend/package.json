@@ -1,6 +1,7 @@
 {
   "name": "star-frontend",
   "version": "0.1.0",
+  "description": "STAR Platform Frontend - Force rebuild v2",
   "private": true,
   "scripts": {
     "dev": "next dev",
