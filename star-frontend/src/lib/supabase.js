@@ -1,13 +1,38 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let supabaseClient = null
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables')
+function getSupabaseClient() {
+    if (!supabaseClient) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+            // Instead of throwing, create a mock client that won't work but won't crash
+            console.warn('Supabase environment variables not available, using mock client')
+            supabaseClient = {
+                auth: {
+                    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+                    signInWithPassword: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+                    signUp: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+                    signOut: () => Promise.resolve({ error: null })
+                },
+                from: () => ({
+                    select: () => ({ data: null, error: new Error('Supabase not configured') }),
+                    insert: () => ({ data: null, error: new Error('Supabase not configured') }),
+                    update: () => ({ data: null, error: new Error('Supabase not configured') }),
+                    delete: () => ({ data: null, error: new Error('Supabase not configured') })
+                })
+            }
+        } else {
+            supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+        }
+    }
+    return supabaseClient
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Always export a client object, but delay actual initialization
+export const supabase = getSupabaseClient()
 
 // Auth helpers
 export const auth = {
