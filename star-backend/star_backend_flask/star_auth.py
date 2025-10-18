@@ -1,7 +1,8 @@
-from functools import wraps
 from datetime import datetime, timedelta, timezone
-from flask import request, current_app
+from functools import wraps
+
 import jwt
+from flask import current_app, request
 
 
 def token_required(f):
@@ -18,18 +19,19 @@ def token_required(f):
         try:
             token = request.headers['Authorization'].split(' ')[1]
             data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=[app.config.get('JWT_ALGORITHM', 'HS256')])
-            # Application should provide a 'users_container' or DB access on the app module
-            from .main import users_container
-            user_data = list(users_container.query_items(
-                query="SELECT * FROM c WHERE c.id = @user_id",
-                parameters=[{"name": "@user_id", "value": str(data['user_id'])}],
-                enable_cross_partition_query=True
-            ))
-            if not user_data:
+            # Get user from database using utilities
+            from .database_utils import (get_users_container,
+                                         update_user_online_status)
+            users_table = get_users_container()
+            if not users_table:
+                return {'error': 'Database not available'}, 500
+                
+            result = users_table.select('*').eq('id', str(data['user_id'])).execute()
+            if not result.data:
                 return {'error': 'User not found'}, 401
-            current_user = type('User', (), {'id': user_data[0]['id'], 'username': user_data[0].get('username'), 'zodiac_sign': user_data[0].get('zodiac_sign')})
+            user_data = result.data[0]
+            current_user = type('User', (), {'id': user_data['id'], 'username': user_data.get('username'), 'zodiac_sign': user_data.get('zodiac_sign')})
             # Update last seen
-            from .main import update_user_online_status
             update_user_online_status(current_user.username, True)
         except jwt.ExpiredSignatureError:
             return {'error': 'Token has expired'}, 401
