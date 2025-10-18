@@ -6,7 +6,7 @@ Shared database functions to avoid circular imports
 import logging
 from datetime import datetime, timezone
 
-from .cosmos_db import get_cosmos_helper
+from cosmos_db import get_cosmos_helper
 
 logger = logging.getLogger(__name__)
 

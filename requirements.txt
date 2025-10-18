@@ -6,8 +6,8 @@ python-socketio==5.8.0
 python-engineio==4.7.1
 
 # Database and caching
-supabase==2.0.0
-httpx==0.23.0
+supabase==2.7.1
+httpx==0.26.0
 psycopg2-binary==2.9.7
 
 # Authentication and security
@@ -24,7 +24,7 @@ python-dateutil==2.8.2
 pytz==2023.3
 
 # Astronomy and astrology calculations
-ephem==4.1.4
+# ephem==4.1.5  # Commented out due to Python 3.13+ compatibility issues
 
 # Testing
 pytest==7.4.0

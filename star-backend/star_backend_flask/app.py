@@ -163,6 +163,9 @@ except ImportError as e:
     logger.warning(f"Analytics features not available: {e}")
     analytics_bp = None
 
+# Initialize api_bp before checking
+api_bp = None
+
 # Main API Blueprint registration
 try:
     if api_bp:
@@ -299,6 +302,46 @@ try:
 except ImportError as e:
     logger.warning(f"Main API blueprint not available: {e}")
     api_bp = None
+
+# Tarot Interactions Blueprint
+try:
+    from tarot_interactions import tarot_bp
+    logger.info("Tarot interactions blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Tarot interactions blueprint not available: {e}")
+    tarot_bp = None
+
+# Feed Blueprint
+try:
+    from feed import feed
+    logger.info("Feed blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Feed blueprint not available: {e}")
+    feed = None
+
+# Star Points Blueprint
+try:
+    from star_points import star_points
+    logger.info("Star points blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Star points blueprint not available: {e}")
+    star_points = None
+
+# Notifications Blueprint
+try:
+    from notifications import notifications
+    logger.info("Notifications blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Notifications blueprint not available: {e}")
+    notifications = None
+
+# Group Chat Blueprint
+try:
+    from group_chat import group_chat_bp
+    logger.info("Group chat blueprint loaded")
+except ImportError as e:
+    logger.warning(f"Group chat blueprint not available: {e}")
+    group_chat_bp = None
 
 # React Frontend serving routes
 @app.route('/')
