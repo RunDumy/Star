@@ -38,5 +38,9 @@ app.register_blueprint(analytics_bp, url_prefix="/api/v1")
 def health():
     return {"status": "healthy", "version": "1.0.0"}, 200
 
+@app.route("/test-blueprint")
+def test_blueprint():
+    return {"message": "Blueprint test", "api_bp_registered": "api_bp" in str(app.blueprints)}, 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
