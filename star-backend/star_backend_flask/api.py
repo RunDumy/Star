@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -19,10 +20,11 @@ from flask_socketio import SocketIO, emit, join_room
 from marshmallow import Schema, ValidationError, fields
 
 from .cosmos_db import get_cosmos_helper
+from .database_utils import (check_username_exists, create_user,
+                             get_user_by_username, update_user_online_status)
 from .enhanced_tarot_engine import EnhancedTarotEngine
-from .main import (check_username_exists, create_user, get_user_by_username,
-                   update_user_online_status)
 from .oracle_engine import OccultOracleEngine
+from .ritual_quests import ritual_quests_system
 from .star_auth import token_required
 
 # Chinese Zodiac Actions mapping for backend
@@ -509,7 +511,17 @@ def archetype_system():
             # Get or create profile
             try:
                 profile = profiles_container.read_item(item=user_id, partition_key=user_id)
-            except:
+            except Exception as e:
+                # Profile not found, create new one
+                logging.info(f"Profile not found for user {user_id}, creating new profile")
+                profile = {
+                    'id': user_id,
+                    'userId': user_id,
+                    'zodiacSigns': zodiac_data,
+                    'onboardingComplete': False
+                }
+            except Exception as e:
+                logging.error(f"Error reading profile for user {user_id}: {e}")
                 profile = {
                     'id': user_id,
                     'userId': user_id,
@@ -520,7 +532,7 @@ def archetype_system():
             # Add archetype data
             profile['archetype'] = {
                 'primary': archetype_key,
-                'selected_at': datetime.utcnow().isoformat()
+                'selected_at': datetime.now(timezone.utc).isoformat()
             }
             profile['ritualPhase'] = 'archetypal_integration'
             
@@ -596,7 +608,9 @@ def sigil_generation_system():
             # Update user profile with sigil options
             try:
                 profile = profiles_container.read_item(item=user_id, partition_key=user_id)
-            except:
+            except Exception as e:
+                # Profile not found, create new one
+                logging.info(f"Profile not found for user {user_id}, creating new profile")
                 profile = {
                     'id': user_id,
                     'userId': user_id,
@@ -642,7 +656,8 @@ def select_user_sigil():
         # Get user profile
         try:
             profile = profiles_container.read_item(item=user_id, partition_key=user_id)
-        except:
+        except Exception as e:
+            logging.error(f"Error reading profile for user {user_id}: {e}")
             return jsonify({'error': 'Profile not found'}), 404
         
         # Find selected sigil from options
@@ -673,6 +688,56 @@ def select_user_sigil():
     except Exception as e:
         logging.error(f"Sigil selection error: {e}")
         return jsonify({'error': 'Sigil selection failed'}), 500
+
+@api_bp.route('/api/v1/sigils/generate', methods=['POST'])
+@token_required
+def generate_sigil(current_user):
+    """Generate a unique sigil based on user's zodiac and archetype"""
+    try:
+        from datetime import datetime
+
+        import pytz
+        from sigil_generator import generate_base_sigil
+        
+        user_id = current_user['id']
+        cosmos_helper = get_cosmos_helper()
+        profile_container = cosmos_helper.get_container("profiles")
+        
+        # Get user profile
+        try:
+            profile = profile_container.read_item(item=user_id, partition_key=user_id)
+        except Exception as e:
+            logging.error(f"Error reading profile for user {user_id}: {e}")
+            return jsonify({"status": "error", "message": "Profile not found"}), 404
+        
+        zodiac = profile.get("zodiacSigns", {}).get("western", "Aries")
+        archetype = profile.get("archetype", {}).get("primary", "Seeker")
+        
+        # Generate the actual sigil geometry using the sigil generator
+        sigil_geometry = generate_base_sigil(zodiac, archetype, user_id)
+        
+        # Create sigil data with geometric information
+        sigil_id = f"{zodiac.lower()}_{archetype.lower()}_{datetime.now(pytz.UTC).isoformat()}"
+        sigil_data = {
+            "id": sigil_id,
+            "userId": user_id,
+            "zodiacBase": zodiac,
+            "archetypeModifier": archetype,
+            "points": sigil_geometry['points'],
+            "strokes": sigil_geometry['strokes'],
+            "metadata": sigil_geometry['metadata'],
+            "imageUrl": f"https://star-assets.blob.core.windows.net/sigils/{sigil_id}.png",  # Placeholder for future image generation
+            "createdAt": datetime.now(pytz.UTC).isoformat()
+        }
+        
+        # Store sigil in database
+        sigils_container = cosmos_helper.get_container("sigils")
+        sigils_container.upsert_item(sigil_data)
+        
+        return jsonify({"status": "success", "sigil": sigil_data}), 200
+    except Exception as e:
+        logging.error(f"Sigil generation error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_bp.route('/api/v1/user/profile', methods=['GET', 'PUT'])
 @token_required
@@ -719,6 +784,135 @@ def user_profile(current_user):
     except Exception as e:
         logging.error(f"Profile error: {e}")
         return jsonify({'error': 'Profile operation failed'}), 500
+
+@api_bp.route('/api/v1/cosmic-profile', methods=['POST'])
+@token_required
+def update_cosmic_profile(current_user):
+    """Update cosmic profile visibility, privacy settings, and customizations"""
+    try:
+        data = request.get_json()
+        user_id = current_user['id']
+        privacy_settings = data.get("privacySettings")
+        customizations = data.get("customizations", {})
+        
+        # Validate privacy settings
+        if privacy_settings:
+            for key, value in privacy_settings.items():
+                if value not in ["public", "tribe", "private"]:
+                    return jsonify({"status": "error", "message": f"Invalid visibility for {key}"}), 400
+        
+        # Validate customizations
+        valid_icons = [
+            "aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
+            "rat", "ox", "tiger", "rabbit", "dragon", "snake", "horse", "goat", "monkey", "rooster", "dog", "pig",
+            "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto",
+            "air", "earth", "fire", "water",
+            "new-moon", "waxing-crescent", "first-quarter", "waxing-gibbous", "full-moon", "waning-gibbous", "last-quarter", "waning-crescent",
+            "spring", "summer", "autumn", "winter",
+            "blank_tarot"
+        ]
+        for key, value in customizations.items():
+            if value not in valid_icons:
+                return jsonify({"status": "error", "message": f"Invalid customization for {key}: {value}"}), 400
+        
+        cosmos_helper = get_cosmos_helper()
+        profile_container = cosmos_helper.get_container("profiles")
+        
+        # Get or create profile
+        try:
+            profile = profile_container.read_item(item=user_id, partition_key=user_id)
+        except Exception as e:
+            # Profile not found, create new one
+            logging.info(f"Profile not found for user {user_id}, creating new profile")
+            profile = {
+                "id": user_id,
+                "userId": user_id,
+                "zodiacSigns": {},
+                "archetype": {},
+                "privacySettings": {
+                    "profile": "private",
+                    "zodiac": "private",
+                    "archetype": "private",
+                    "achievements": "private",
+                    "tribes": "private",
+                },
+                "customizations": {},
+                "tribes": [],
+                "achievements": []
+            }
+        
+        if privacy_settings:
+            profile["privacySettings"] = privacy_settings
+        if customizations:
+            profile["customizations"] = customizations
+        
+        profile_container.upsert_item(profile)
+        
+        return jsonify({"status": "success", "privacySettings": privacy_settings, "customizations": customizations}), 200
+    except Exception as e:
+        logging.error(f"Cosmic profile update error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/api/v1/cosmic-profile', methods=['GET'])
+@token_required
+def get_cosmic_profile(current_user):
+    """Get cosmic profile with privacy filtering"""
+    try:
+        user_id = current_user['id']
+        cosmos_helper = get_cosmos_helper()
+        profile_container = cosmos_helper.get_container("profiles")
+        
+        try:
+            profile = profile_container.read_item(item=user_id, partition_key=user_id)
+        except Exception as e:
+            logging.error(f"Error reading profile for user {user_id}: {e}")
+            return jsonify({"status": "error", "message": "Profile not found"}), 404
+        
+        # Filter sensitive data based on privacy settings
+        privacy_settings = profile.get("privacySettings", {})
+        if privacy_settings.get("zodiac") == "private":
+            profile["zodiacSigns"] = {}
+            profile["customizations"] = {
+                k: v for k, v in profile.get("customizations", {}).items()
+                if k not in ["zodiacIcon", "chineseZodiacIcon", "elementIcon", "lunarPhaseIcon", "planetIcon", "seasonIcon"]
+            }
+        if privacy_settings.get("archetype") == "private":
+            profile["archetype"] = {}
+        
+        return jsonify({"status": "success", "profile": profile}), 200
+    except Exception as e:
+        logging.error(f"Profile fetch error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/api/v1/profile/upload', methods=['POST'])
+@token_required
+def upload_asset(current_user):
+    """Upload profile asset to Supabase Storage (placeholder)"""
+    try:
+        user_id = current_user['id']
+        file = request.files.get("file")
+
+        if not file:
+            return jsonify({"status": "error", "message": "No file provided"}), 400
+
+        # TODO: Implement Supabase Storage upload
+        logging.warning("Supabase Storage upload not yet implemented")
+        return jsonify({"status": "error", "message": "File upload not yet implemented for Supabase"}), 501
+        
+        # Ensure container exists
+        try:
+            container_client.create_container()
+        except:
+            pass  # Container might already exist
+        
+        blob_name = f"{user_id}/{file.filename}"
+        blob_client = container_client.get_blob_client(blob_name)
+        blob_client.upload_blob(file, overwrite=True, metadata={"encrypted": "true" if encryption else "false"})
+        
+        return jsonify({"status": "success", "url": blob_client.url}), 200
+    except Exception as e:
+        logging.error(f"Upload error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_bp.route('/api/v1/daily-features', methods=['GET'])
 @token_required
@@ -948,24 +1142,37 @@ def create_post():
             'zodiac_sign': zodiac_sign
         }
 
-        # TODO: Implement Azure Blob Storage for media uploads
-        # For now, skip media uploads until Azure Blob Storage is configured
+        # Implement Azure Blob Storage for media uploads
+        media_urls = []
+        cosmos_helper = get_cosmos_helper()
+        
         if image_file:
-            # Generate unique filename
-            image_filename = f"posts/{uuid.uuid4()}/image_{uuid.uuid4()}.{image_file.filename.split('.')[-1]}"
-            # Upload to Azure Blob Storage
-            image_url = cosmos_helper.upload_blob(image_filename, image_file.read(), content_type=image_file.content_type)
-            if image_url:
-                post_data['image_url'] = image_url
-
+            try:
+                image_url = cosmos_helper.upload_media_to_blob(image_file, 'images')
+                if image_url:
+                    media_urls.append({'type': 'image', 'url': image_url})
+                    post_data['image_url'] = image_url
+                else:
+                    logging.warning("Failed to upload image to blob storage")
+            except Exception as e:
+                logging.error(f"Error uploading image to blob storage: {e}")
+        
         if video_file:
-            # Generate unique filename
-            video_filename = f"posts/{uuid.uuid4()}/video_{uuid.uuid4()}.{video_file.filename.split('.')[-1]}"
-            # Upload to Azure Blob Storage
-            video_url = cosmos_helper.upload_blob(video_filename, video_file.read(), content_type=video_file.content_type)
-            if video_url:
-                post_data['video_url'] = video_url
+            try:
+                video_url = cosmos_helper.upload_media_to_blob(video_file, 'videos')
+                if video_url:
+                    media_urls.append({'type': 'video', 'url': video_url})
+                    post_data['video_url'] = video_url
+                else:
+                    logging.warning("Failed to upload video to blob storage")
+            except Exception as e:
+                logging.error(f"Error uploading video to blob storage: {e}")
+        
+        post_data['media_urls'] = media_urls
 
+        # Add tags and create post
+        post_data['tags'] = [tag.strip() for tag in tags if tag.strip()]
+        
         # Create post
         post_data['id'] = str(uuid.uuid4())
         post_data['created_at'] = datetime.now(timezone.utc).isoformat()
@@ -981,8 +1188,35 @@ def create_post():
                     'tag': tag.strip()
                 })
 
-        # TODO: Implement follower notifications with Azure services
-        # For now, skip notifications until follower query is implemented
+        # Implement follower notifications with Azure services
+        try:
+            # Get user's followers for notifications
+            followers_query = "SELECT * FROM c WHERE c.following_user_id = @user_id"
+            followers = cosmos_helper.query_items(
+                'follows',
+                followers_query,
+                [{"name": "@user_id", "value": user_id}]
+            )
+            
+            # Create notifications for followers
+            for follower in followers:
+                notification_data = {
+                    'id': str(uuid.uuid4()),
+                    'user_id': follower['user_id'],
+                    'type': 'new_post',
+                    'data': {
+                        'post_id': post_id,
+                        'author_id': user_id,
+                        'content_preview': content[:100] if content else 'New post'
+                    },
+                    'created_at': datetime.now(timezone.utc).isoformat(),
+                    'read': False
+                }
+                cosmos_helper.create_notification(notification_data)
+                
+        except Exception as e:
+            logging.error(f"Error creating follower notifications: {e}")
+            # Continue with post creation even if notifications fail
         # followers = cosmos_helper.get_followers(user_id)
         # for follower in followers:
         #     notification = {
@@ -1044,6 +1278,558 @@ def comment_post(post_id):
         return jsonify({'success': True, 'comment': created_comment})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Ritual Quests Integration
+@api_bp.route('/api/v1/quests/recommend', methods=['GET'])
+@token_required
+def get_quest_recommendations():
+    """Get personalized quest recommendations for user"""
+    try:
+        user_id = g.user['sub']
+        profile = cosmos_helper.get_profile_by_user_id(user_id)
+
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Convert profile to format expected by quest system
+        user_profile = {
+            'sun_sign': profile.get('zodiacSigns', {}).get('western', ''),
+            'element': profile.get('elementalBalance', {}),
+            'dominant_archetype': profile.get('archetype', {}).get('primary', ''),
+            'birth_date': profile.get('birth_date', '')
+        }
+
+        recommendations = ritual_quests_system.recommend_quests(user_profile)
+
+        return jsonify({'recommendations': recommendations})
+    except Exception as e:
+        logging.error(f"Quest recommendations error: {e}")
+        return jsonify({'error': 'Failed to get quest recommendations'}), 500
+
+@api_bp.route('/api/v1/quests/<string:quest_id>/start', methods=['POST'])
+@token_required
+def start_quest(quest_id):
+    """Start a quest for the user"""
+    try:
+        user_id = g.user['sub']
+        result = ritual_quests_system.start_quest(user_id, quest_id)
+
+        if result['success']:
+            # Create quest progress record in database
+            quest_progress_data = {
+                'user_id': user_id,
+                'quest_id': quest_id,
+                'status': 'active',
+                'progress': 0.0,
+                'current_step': 0,
+                'started_at': datetime.now(timezone.utc).isoformat(),
+                'quest_details': result['quest_details']
+            }
+
+            cosmos_helper.create_quest_progress(quest_progress_data)
+
+            # Create a quest start post in the social feed
+            quest_details = result['quest_details']
+            quest_post = {
+                'id': str(uuid.uuid4()),
+                'user_id': user_id,
+                'content': f"🌟 Embarked on the ritual quest: {quest_details['title']}! {quest_details['description']}",
+                'type': 'quest_start',
+                'quest_data': {
+                    'quest_id': quest_id,
+                    'title': quest_details['title'],
+                    'archetype': quest_details['archetype']
+                },
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }
+
+            # Get user's zodiac sign for the post
+            profile = cosmos_helper.get_profile_by_user_id(user_id)
+            quest_post['zodiac_sign'] = profile.get('zodiacSigns', {}).get('western', 'aries') if profile else 'aries'
+
+            cosmos_helper.create_post(quest_post)
+
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Start quest error: {e}")
+        return jsonify({'error': 'Failed to start quest'}), 500
+
+@api_bp.route('/api/v1/quests/<string:quest_id>/step/<string:step_id>/complete', methods=['POST'])
+@token_required
+def complete_quest_step(quest_id, step_id):
+    """Complete a quest step"""
+    try:
+        user_id = g.user['sub']
+        result = ritual_quests_system.complete_quest_step(user_id, quest_id, step_id)
+
+        if result['success'] and result.get('quest_completed'):
+            # Update quest progress in database
+            cosmos_helper.complete_quest(f"{user_id}_{quest_id}", {
+                'completion_data': result.get('completion_data', {})
+            })
+
+            # Create quest completion post
+            quest_details = ritual_quests_system.quests[quest_id]
+            completion_post = {
+                'id': str(uuid.uuid4()),
+                'user_id': user_id,
+                'content': f"✨ Completed the ritual quest: {quest_details.title}! Unlocked: {', '.join(quest_details.rewards.get('achievement', []))}",
+                'type': 'quest_complete',
+                'quest_data': {
+                    'quest_id': quest_id,
+                    'title': quest_details.title,
+                    'rewards': quest_details.rewards
+                },
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }
+
+            # Get user's zodiac sign
+            profile = cosmos_helper.get_profile_by_user_id(user_id)
+            completion_post['zodiac_sign'] = profile.get('zodiacSigns', {}).get('western', 'aries') if profile else 'aries'
+
+            cosmos_helper.create_post(completion_post)
+
+            # Update user profile with quest rewards
+            if quest_details.rewards.get('badge_unlock'):
+                cosmos_helper.add_badge_to_profile(user_id, quest_details.rewards['badge_unlock'])
+
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Complete quest step error: {e}")
+        return jsonify({'error': 'Failed to complete quest step'}), 500
+
+@api_bp.route('/api/v1/quests/progress', methods=['GET'])
+@token_required
+def get_user_quest_progress():
+    """Get user's quest progress"""
+    try:
+        user_id = g.user['sub']
+        status = request.args.get('status')  # Optional filter by status
+        limit = int(request.args.get('limit', 20))
+
+        # Get quest progress from database
+        db_quests = cosmos_helper.get_user_quests(user_id, status, limit)
+
+        # Enhance with quest details from system
+        enhanced_quests = []
+        for quest in db_quests:
+            quest_id = quest.get('quest_id')
+            if quest_id in ritual_quests_system.quests:
+                quest_details = ritual_quests_system.quests[quest_id]
+                enhanced_quest = {
+                    **quest,
+                    'quest_details': asdict(quest_details)
+                }
+                enhanced_quests.append(enhanced_quest)
+            else:
+                enhanced_quests.append(quest)
+
+        return jsonify({'quests': enhanced_quests})
+    except Exception as e:
+        logging.error(f"Get quest progress error: {e}")
+        return jsonify({'error': 'Failed to get quest progress'}), 500
+
+@api_bp.route('/api/v1/quests/<string:quest_id>', methods=['GET'])
+@token_required
+def get_quest_details(quest_id):
+    """Get detailed quest information"""
+    try:
+        if quest_id not in ritual_quests_system.quests:
+            return jsonify({'error': 'Quest not found'}), 404
+
+        quest = ritual_quests_system.quests[quest_id]
+        return jsonify({'quest': asdict(quest)})
+    except Exception as e:
+        logging.error(f"Get quest details error: {e}")
+        return jsonify({'error': 'Failed to get quest details'}), 500
+
+@api_bp.route('/api/v1/quests/complete', methods=['POST'])
+@token_required
+def complete_quest(current_user):
+    """Complete a ritual quest and update user achievements"""
+    try:
+        from datetime import datetime
+
+        import pytz
+        
+        data = request.get_json()
+        quest_id = data.get("questId")
+        user_id = current_user['id']
+        
+        if not quest_id:
+            return jsonify({"status": "error", "message": "Quest ID required"}), 400
+        
+        cosmos_helper = get_cosmos_helper()
+        quests_container = cosmos_helper.get_container("quests")
+        profiles_container = cosmos_helper.get_container("profiles")
+        
+        # Get quest
+        try:
+            quest = quests_container.read_item(item=f"{user_id}_{quest_id}", partition_key=user_id)
+        except Exception as e:
+            logging.error(f"Error reading quest {quest_id} for user {user_id}: {e}")
+            return jsonify({"status": "error", "message": "Quest not found"}), 404
+        
+        # Mark as completed
+        quest["status"] = "completed"
+        quest["endTime"] = datetime.now(pytz.UTC).isoformat()
+        quests_container.upsert_item(quest)
+        
+        # Update profile with achievement
+        try:
+            profile = profiles_container.read_item(item=user_id, partition_key=user_id)
+        except Exception as e:
+            # Profile not found, create new one
+            logging.info(f"Profile not found for user {user_id}, creating new profile")
+            profile = {
+                "id": user_id,
+                "userId": user_id,
+                "achievements": []
+            }
+        
+        if "achievements" not in profile:
+            profile["achievements"] = []
+        
+        profile["achievements"].append({
+            "questId": quest_id,
+            "type": quest.get("questType", "unknown"),
+            "completedAt": datetime.now(pytz.UTC).isoformat()
+        })
+        
+        profiles_container.upsert_item(profile)
+        
+        return jsonify({"status": "success", "questId": quest_id}), 200
+    except Exception as e:
+        logging.error(f"Quest completion error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# Cosmic Intelligence - Mentor Interactions
+@api_bp.route('/api/v1/mentors/<string:mentor_name>/interact', methods=['POST'])
+@token_required
+def interact_with_mentor(mentor_name):
+    """Interact with an archetypal mentor"""
+    try:
+        user_id = g.user['sub']
+        data = request.get_json()
+        user_message = data.get('message', '')
+        user_profile = data.get('user_profile', {})
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        # Get mentor response from archetypal mentors system
+        from .archetypal_mentors import ArchetypalMentorsSystem
+        mentor_system = ArchetypalMentorsSystem()
+        mentor_response = mentor_system.get_mentor_response(
+            mentor_name, user_message, user_profile
+        )
+
+        # Store interaction in database
+        interaction_data = {
+            'user_id': user_id,
+            'mentor_name': mentor_name,
+            'user_message': user_message,
+            'mentor_response': mentor_response.get('response', ''),
+            'mood': mentor_response.get('mood', 'neutral'),
+            'emotional_resonance': mentor_response.get('emotional_resonance', 0.5),
+            'archetypal_insights': mentor_response.get('archetypal_insights', [])
+        }
+
+        cosmos_helper.create_mentor_interaction(interaction_data)
+
+        return jsonify({
+            'mentor': mentor_name,
+            'response': mentor_response,
+            'interaction_id': interaction_data.get('id')
+        })
+
+    except Exception as e:
+        logging.error(f"Mentor interaction error: {e}")
+        return jsonify({'error': 'Failed to interact with mentor'}), 500
+
+@api_bp.route('/api/v1/mentors/<string:mentor_name>/history', methods=['GET'])
+@token_required
+def get_mentor_history(mentor_name):
+    """Get interaction history with a specific mentor"""
+    try:
+        user_id = g.user['sub']
+        limit = int(request.args.get('limit', 20))
+
+        interactions = cosmos_helper.get_mentor_interactions(
+            user_id, mentor_name, limit
+        )
+
+        return jsonify({'interactions': interactions})
+
+    except Exception as e:
+        logging.error(f"Get mentor history error: {e}")
+        return jsonify({'error': 'Failed to get mentor history'}), 500
+
+@api_bp.route('/api/v1/mentors/history', methods=['GET'])
+@token_required
+def get_all_mentor_history():
+    """Get interaction history with all mentors"""
+    try:
+        user_id = g.user['sub']
+        limit = int(request.args.get('limit', 50))
+
+        interactions = cosmos_helper.get_mentor_interactions(
+            user_id, None, limit
+        )
+
+        return jsonify({'interactions': interactions})
+
+    except Exception as e:
+        logging.error(f"Get all mentor history error: {e}")
+        return jsonify({'error': 'Failed to get mentor history'}), 500
+
+# Cosmic Intelligence - Lunar Cycles
+@api_bp.route('/api/v1/lunar/current', methods=['GET'])
+@token_required
+def get_current_lunar_data():
+    """Get current lunar phase and astronomical data"""
+    try:
+        from .lunar_calculations import lunar_calculator
+
+        current_lunar = lunar_calculator.get_lunar_alchemy(datetime.now())
+
+        # Store current lunar data
+        lunar_data = {
+            'type': 'moon_phase',
+            'phase': current_lunar.get('phase', {}).get('phase', ''),
+            'illumination': current_lunar.get('phase', {}).get('illumination', 0),
+            'zodiac_sign': current_lunar.get('moon_in_zodiac', {}).get('sign', ''),
+            'degree': current_lunar.get('moon_in_zodiac', {}).get('degree', 0),
+            'lunar_mansion': current_lunar.get('lunar_mansion', {}).get('name', ''),
+            'void_of_course': current_lunar.get('void_of_course', False),
+            'next_aspect_time': current_lunar.get('next_aspect', {}).get('time')
+        }
+
+        cosmos_helper.store_lunar_data(lunar_data)
+
+        return jsonify({'lunar_data': current_lunar})
+
+    except Exception as e:
+        logging.error(f"Get current lunar data error: {e}")
+        return jsonify({'error': 'Failed to get lunar data'}), 500
+
+@api_bp.route('/api/v1/lunar/void-periods', methods=['GET'])
+@token_required
+def get_void_periods():
+    """Get void of course periods for upcoming days"""
+    try:
+        days_ahead = int(request.args.get('days', 7))
+        start_date = datetime.now().date().isoformat()
+        end_date = (datetime.now() + timedelta(days=days_ahead)).date().isoformat()
+
+        void_periods = cosmos_helper.get_void_periods(start_date, end_date)
+
+        return jsonify({'void_periods': void_periods})
+
+    except Exception as e:
+        logging.error(f"Get void periods error: {e}")
+        return jsonify({'error': 'Failed to get void periods'}), 500
+
+@api_bp.route('/api/v1/lunar/eclipses', methods=['GET'])
+@token_required
+def get_upcoming_eclipses():
+    """Get upcoming solar and lunar eclipses"""
+    try:
+        eclipses = cosmos_helper.get_upcoming_eclipses()
+
+        return jsonify({'eclipses': eclipses})
+
+    except Exception as e:
+        logging.error(f"Get eclipses error: {e}")
+        return jsonify({'error': 'Failed to get eclipse data'}), 500
+
+@api_bp.route('/api/v1/lunar/calendar/<string:start_date>/<string:end_date>', methods=['GET'])
+@token_required
+def get_lunar_calendar(start_date, end_date):
+    """Get lunar calendar data for a date range"""
+    try:
+        lunar_data = cosmos_helper.get_lunar_data(start_date, end_date)
+
+        return jsonify({'lunar_calendar': lunar_data})
+
+    except Exception as e:
+        logging.error(f"Get lunar calendar error: {e}")
+        return jsonify({'error': 'Failed to get lunar calendar'}), 500
+
+# ========== ENHANCED LUNAR & MENTOR ENDPOINTS ==========
+
+@api_bp.route('/api/v1/lunar/enhanced-guidance', methods=['GET'])
+@token_required
+def get_enhanced_lunar_guidance():
+    """Get comprehensive enhanced lunar guidance with mansion influences"""
+    try:
+        from .enhanced_occult_oracle import EnhancedOccultOracleEngine
+
+        oracle = EnhancedOccultOracleEngine(cosmos_helper)
+        date_param = request.args.get('date')
+
+        if date_param:
+            target_date = datetime.fromisoformat(date_param)
+        else:
+            target_date = datetime.now()
+
+        lunar_guidance = oracle.get_comprehensive_lunar_guidance(target_date)
+
+        return jsonify({'lunar_guidance': lunar_guidance})
+
+    except Exception as e:
+        logging.error(f"Enhanced lunar guidance error: {e}")
+        return jsonify({'error': 'Failed to get enhanced lunar guidance'}), 500
+
+@api_bp.route('/api/v1/mentors/enhanced-guidance', methods=['POST'])
+@token_required
+def get_enhanced_mentor_guidance():
+    """Get personalized guidance from archetypal mentor with lunar integration"""
+    try:
+        from .enhanced_occult_oracle import EnhancedOccultOracleEngine
+
+        data = request.get_json()
+        question = data.get('question', 'What guidance do you have for me?')
+        user_id = g.user['sub']
+
+        oracle = EnhancedOccultOracleEngine(cosmos_helper)
+
+        # Get user profile data for mentor assignment
+        user_profile = cosmos_helper.get_item('profiles', user_id) or {}
+
+        user_data = {
+            'natal_chart': user_profile.get('natal_chart'),
+            'numerology': user_profile.get('numerology', {})
+        }
+
+        mentor_guidance = oracle.get_archetypal_mentor_guidance(user_id, question, user_data)
+
+        return jsonify({'mentor_guidance': mentor_guidance})
+
+    except Exception as e:
+        logging.error(f"Enhanced mentor guidance error: {e}")
+        return jsonify({'error': 'Failed to get mentor guidance'}), 500
+
+@api_bp.route('/api/v1/oracle/enhanced-session', methods=['POST'])
+@token_required
+def create_enhanced_oracle_session():
+    """Create comprehensive oracle session with lunar and mentor integration"""
+    try:
+        from .enhanced_occult_oracle import EnhancedOccultOracleEngine
+
+        data = request.get_json()
+        name = data.get('name')
+        birth_date_str = data.get('birth_date')
+        birth_place = data.get('birth_place', 'New York')
+        question = data.get('question', '')
+
+        if not all([name, birth_date_str]):
+            return jsonify({'error': 'Name and birth_date are required'}), 400
+
+        birth_date = datetime.fromisoformat(birth_date_str)
+        user_id = g.user['sub']
+
+        oracle = EnhancedOccultOracleEngine(cosmos_helper)
+        session = oracle.create_enhanced_oracle_session(user_id, name, birth_date, birth_place, question)
+
+        return jsonify({'oracle_session': session})
+
+    except Exception as e:
+        logging.error(f"Enhanced oracle session error: {e}")
+        return jsonify({'error': 'Failed to create oracle session'}), 500
+
+@api_bp.route('/api/v1/cosmic/daily-guidance', methods=['GET'])
+@token_required
+def get_daily_cosmic_guidance():
+    """Get comprehensive daily cosmic guidance with lunar and mentor insights"""
+    try:
+        from .enhanced_occult_oracle import EnhancedOccultOracleEngine
+
+        user_id = g.user['sub']
+        oracle = EnhancedOccultOracleEngine(cosmos_helper)
+
+        daily_guidance = oracle.get_daily_cosmic_guidance(user_id)
+
+        return jsonify({'daily_guidance': daily_guidance})
+
+    except Exception as e:
+        logging.error(f"Daily cosmic guidance error: {e}")
+        return jsonify({'error': 'Failed to get daily guidance'}), 500
+
+@api_bp.route('/api/v1/mentors/available', methods=['GET'])
+@token_required
+def get_available_mentors():
+    """Get list of all available archetypal mentors"""
+    try:
+        from .enhanced_archetypal_mentors import ArchetypalMentorRegistry
+
+        registry = ArchetypalMentorRegistry()
+        mentors = []
+
+        for mentor in registry.mentors:
+            mentors.append({
+                'name': mentor.name,
+                'archetype': mentor.archetype,
+                'zodiac_sign': mentor.zodiac_sign.value[0],
+                'planetary_ruler': mentor.planetary_ruler,
+                'elemental_affinity': mentor.elemental_affinity,
+                'current_mood': mentor.current_mood
+            })
+
+        return jsonify({'mentors': mentors})
+
+    except Exception as e:
+        logging.error(f"Get available mentors error: {e}")
+        return jsonify({'error': 'Failed to get mentors'}), 500
+
+@api_bp.route('/api/v1/lunar/mansions/<string:mansion_name>', methods=['GET'])
+@token_required
+def get_mansion_details(mansion_name):
+    """Get detailed information about a specific lunar mansion"""
+    try:
+        from .enhanced_lunar_engine import EnhancedLunarEngine
+
+        lunar_engine = EnhancedLunarEngine()
+
+        # Find mansion details
+        mansion_data = None
+        for mansion in lunar_engine.lunar_mansions:
+            if mansion[0].lower() == mansion_name.lower():
+                mansion_data = {
+                    'name': mansion[0],
+                    'symbol': mansion[1],
+                    'ruler': mansion[4],
+                    'meaning': mansion[5],
+                    'activities': lunar_engine._get_mansion_activities(mansion[0]),
+                    'meditation': lunar_engine._get_mansion_meditation(mansion[0]),
+                    'mantras': lunar_engine._get_mansion_mantras(mansion[0])
+                }
+                break
+
+        if not mansion_data:
+            return jsonify({'error': 'Mansion not found'}), 404
+
+        return jsonify({'mansion': mansion_data})
+
+    except Exception as e:
+        logging.error(f"Get mansion details error: {e}")
+        return jsonify({'error': 'Failed to get mansion details'}), 500
+
+# Cosmic Intelligence - Analytics and Insights
+@api_bp.route('/api/v1/cosmic/stats', methods=['GET'])
+@token_required
+def get_cosmic_stats():
+    """Get comprehensive cosmic engagement statistics"""
+    try:
+        user_id = g.user['sub']
+
+        stats = cosmos_helper.get_user_cosmic_stats(user_id)
+
+        return jsonify({'cosmic_stats': stats})
+
+    except Exception as e:
+        logging.error(f"Get cosmic stats error: {e}")
+        return jsonify({'error': 'Failed to get cosmic statistics'}), 500
 
 @api_bp.route('/api/v1/comments/<string:post_id>', methods=['GET'])
 @token_required
@@ -3556,6 +4342,1177 @@ def get_numerology_next_steps(cosmic_profile: dict) -> list:
         logging.error(f"Error getting next steps: {e}")
         return ["Continue your cosmic journey with awareness and intention"]
 
+# ==================== ENHANCED MULTI-CULTURAL ZODIAC ACTIONS API ====================
+
+@api_bp.route('/api/v1/zodiac-actions/track', methods=['POST'])
+@token_required
+def track_zodiac_action(current_user):
+    """Track a multi-cultural zodiac action with comprehensive analytics"""
+    try:
+        data = request.get_json()
+        
+        # Extract action data with validation
+        action_type = data.get('action_type')  # like, comment, share, etc.
+        zodiac_tradition = data.get('zodiac_tradition')  # chinese, western, vedic, mayan, aztec
+        zodiac_sign = data.get('zodiac_sign')
+        target_id = data.get('target_id')  # post, user, or content ID
+        target_type = data.get('target_type')  # post, user, stream, etc.
+        cultural_context = data.get('cultural_context', {})  # Additional cultural data
+        animation_used = data.get('animation_used')  # Which animation was triggered
+        
+        if not all([action_type, zodiac_tradition, zodiac_sign]):
+            return jsonify({'error': 'action_type, zodiac_tradition, and zodiac_sign required'}), 400
+        
+        user_id = current_user['id']
+        
+        # Create comprehensive action record
+        action_record = {
+            'id': f"zodiac_action_{user_id}_{int(datetime.now(timezone.utc).timestamp() * 1000)}",
+            'user_id': user_id,
+            'action_type': action_type,
+            'zodiac_tradition': zodiac_tradition,
+            'zodiac_sign': zodiac_sign,
+            'target_id': target_id,
+            'target_type': target_type,
+            'cultural_context': cultural_context,
+            'animation_used': animation_used,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'session_id': data.get('session_id'),
+            'user_agent': request.headers.get('User-Agent'),
+            'ip_address': request.remote_addr
+        }
+        
+        # Store action in Cosmos DB
+        helper = get_cosmos_helper()
+        actions_container = helper.get_container('zodiac_actions')
+        actions_container.create_item(action_record)
+        
+        # Update user statistics
+        update_user_zodiac_stats(user_id, zodiac_tradition, zodiac_sign, action_type)
+        
+        # Generate real-time analytics
+        real_time_analytics = generate_action_analytics(action_record)
+        
+        # Emit real-time event for connected clients
+        socketio.emit('zodiac_action_performed', {
+            'user_id': user_id,
+            'action': action_type,
+            'zodiac_tradition': zodiac_tradition,
+            'zodiac_sign': zodiac_sign,
+            'animation_used': animation_used,
+            'analytics': real_time_analytics
+        }, room=f'zodiac_{zodiac_tradition}')
+        
+        return jsonify({
+            'success': True,
+            'action_id': action_record['id'],
+            'analytics': real_time_analytics,
+            'cultural_insights': get_cultural_insights(zodiac_tradition, zodiac_sign, action_type)
+        }), 201
+        
+    except Exception as e:
+        logging.error(f"Error tracking zodiac action: {e}")
+        return jsonify({'error': 'Failed to track zodiac action'}), 500
+
+
+@api_bp.route('/api/v1/zodiac-actions/analytics', methods=['GET'])
+@token_required
+def get_zodiac_analytics(current_user):
+    """Get comprehensive zodiac action analytics for user"""
+    try:
+        user_id = current_user['id']
+        
+        # Query parameters for filtering
+        time_range = request.args.get('time_range', '7d')  # 24h, 7d, 30d, all
+        tradition = request.args.get('tradition')  # Filter by specific tradition
+        action_type = request.args.get('action_type')  # Filter by specific action
+        
+        # Build query with filters
+        query_params = [{"name": "@user_id", "value": user_id}]
+        query = "SELECT * FROM c WHERE c.user_id = @user_id"
+        
+        # Add time filter
+        if time_range != 'all':
+            hours_ago = {'24h': 24, '7d': 168, '30d': 720}.get(time_range, 168)
+            cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat()
+            query += " AND c.timestamp >= @cutoff_time"
+            query_params.append({"name": "@cutoff_time", "value": cutoff_time})
+        
+        if tradition:
+            query += " AND c.zodiac_tradition = @tradition"
+            query_params.append({"name": "@tradition", "value": tradition})
+            
+        if action_type:
+            query += " AND c.action_type = @action_type"
+            query_params.append({"name": "@action_type", "value": action_type})
+        
+        query += " ORDER BY c.timestamp DESC"
+        
+        # Execute query
+        helper = get_cosmos_helper()
+        actions_container = helper.get_container('zodiac_actions')
+        actions = list(actions_container.query_items(query=query, parameters=query_params))
+        
+        # Generate comprehensive analytics
+        analytics = {
+            'summary': calculate_action_summary(actions),
+            'tradition_breakdown': calculate_tradition_breakdown(actions),
+            'action_frequency': calculate_action_frequency(actions),
+            'cultural_patterns': identify_cultural_patterns(actions),
+            'top_zodiac_signs': get_top_zodiac_signs(actions),
+            'engagement_timeline': generate_engagement_timeline(actions, time_range),
+            'cultural_diversity_score': calculate_cultural_diversity(actions),
+            'recommendations': generate_analytics_recommendations(actions, user_id)
+        }
+        
+        return jsonify({
+            'success': True,
+            'analytics': analytics,
+            'time_range': time_range,
+            'total_actions': len(actions)
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting zodiac analytics: {e}")
+        return jsonify({'error': 'Failed to get zodiac analytics'}), 500
+
+
+@api_bp.route('/api/v1/zodiac-actions/cultural-insights', methods=['GET'])
+@token_required
+def get_cultural_insights_endpoint(current_user):
+    """Get detailed cultural insights about zodiac traditions"""
+    try:
+        tradition = request.args.get('tradition')
+        zodiac_sign = request.args.get('zodiac_sign')
+        
+        if not tradition:
+            return jsonify({'error': 'tradition parameter required'}), 400
+        
+        # Get cultural context and insights
+        insights = {
+            'tradition_info': get_tradition_information(tradition),
+            'cultural_significance': get_cultural_significance(tradition, zodiac_sign),
+            'historical_context': get_historical_context(tradition),
+            'modern_interpretation': get_modern_interpretation(tradition, zodiac_sign),
+            'action_meanings': get_action_meanings(tradition, zodiac_sign),
+            'compatibility_wisdom': get_compatibility_wisdom(tradition, zodiac_sign)
+        }
+        
+        # Add user-specific insights
+        user_id = current_user['id']
+        personal_insights = generate_personal_cultural_insights(user_id, tradition, zodiac_sign)
+        insights['personal_connection'] = personal_insights
+        
+        return jsonify({
+            'success': True,
+            'tradition': tradition,
+            'zodiac_sign': zodiac_sign,
+            'insights': insights
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting cultural insights: {e}")
+        return jsonify({'error': 'Failed to get cultural insights'}), 500
+
+
+@api_bp.route('/api/v1/zodiac-actions/global-trends', methods=['GET'])
+@token_required 
+def get_global_zodiac_trends():
+    """Get global trends across all zodiac traditions"""
+    try:
+        time_range = request.args.get('time_range', '24h')
+        limit = int(request.args.get('limit', 100))
+        
+        # Calculate time cutoff
+        hours_ago = {'24h': 24, '7d': 168, '30d': 720}.get(time_range, 24)
+        cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat()
+        
+        # Query all recent actions (anonymized for global trends)
+        helper = get_cosmos_helper()
+        actions_container = helper.get_container('zodiac_actions')
+        
+        query = "SELECT c.zodiac_tradition, c.zodiac_sign, c.action_type, c.timestamp FROM c WHERE c.timestamp >= @cutoff_time"
+        parameters = [{"name": "@cutoff_time", "value": cutoff_time}]
+        
+        actions = list(actions_container.query_items(query=query, parameters=parameters))
+        
+        # Generate global trend analytics
+        trends = {
+            'most_active_traditions': calculate_tradition_activity(actions),
+            'trending_zodiac_signs': calculate_trending_signs(actions),
+            'popular_actions': calculate_popular_actions(actions),
+            'cultural_crossover': identify_cultural_crossover_patterns(actions),
+            'geographical_insights': generate_geographical_insights(actions),
+            'time_patterns': analyze_time_patterns(actions),
+            'engagement_velocity': calculate_engagement_velocity(actions, time_range)
+        }
+        
+        return jsonify({
+            'success': True,
+            'trends': trends,
+            'time_range': time_range,
+            'data_points': len(actions),
+            'last_updated': datetime.now(timezone.utc).isoformat()
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting global trends: {e}")
+        return jsonify({'error': 'Failed to get global trends'}), 500
+
+
+@api_bp.route('/api/v1/zodiac-actions/compatibility', methods=['POST'])
+@token_required
+def analyze_zodiac_compatibility(current_user):
+    """Analyze compatibility between zodiac signs across traditions"""
+    try:
+        data = request.get_json()
+        
+        user_zodiac = data.get('user_zodiac', {})  # User's zodiac signs across traditions
+        target_zodiac = data.get('target_zodiac', {})  # Target's zodiac signs
+        analysis_type = data.get('analysis_type', 'comprehensive')  # comprehensive, romantic, friendship, business
+        
+        if not user_zodiac or not target_zodiac:
+            return jsonify({'error': 'user_zodiac and target_zodiac required'}), 400
+        
+        # Calculate multi-tradition compatibility
+        compatibility_analysis = {
+            'overall_score': 0,
+            'tradition_scores': {},
+            'strength_areas': [],
+            'challenge_areas': [],
+            'recommendations': [],
+            'cultural_wisdom': {}
+        }
+        
+        total_score = 0
+        tradition_count = 0
+        
+        # Analyze each shared tradition
+        for tradition in user_zodiac.keys():
+            if tradition in target_zodiac:
+                tradition_compat = calculate_tradition_compatibility(
+                    tradition,
+                    user_zodiac[tradition],
+                    target_zodiac[tradition],
+                    analysis_type
+                )
+                
+                compatibility_analysis['tradition_scores'][tradition] = tradition_compat
+                total_score += tradition_compat['score']
+                tradition_count += 1
+                
+                # Add cultural wisdom for this tradition
+                compatibility_analysis['cultural_wisdom'][tradition] = get_compatibility_cultural_wisdom(
+                    tradition, user_zodiac[tradition], target_zodiac[tradition]
+                )
+        
+        # Calculate overall score
+        if tradition_count > 0:
+            compatibility_analysis['overall_score'] = round(total_score / tradition_count, 2)
+        
+        # Generate recommendations and insights
+        compatibility_analysis['recommendations'] = generate_compatibility_recommendations(
+            compatibility_analysis['tradition_scores'], analysis_type
+        )
+        
+        compatibility_analysis['strength_areas'] = identify_compatibility_strengths(
+            compatibility_analysis['tradition_scores']
+        )
+        
+        compatibility_analysis['challenge_areas'] = identify_compatibility_challenges(
+            compatibility_analysis['tradition_scores']
+        )
+        
+        # Store compatibility analysis for future reference
+        analysis_record = {
+            'id': f"compat_{current_user['id']}_{int(datetime.now(timezone.utc).timestamp())}",
+            'user_id': current_user['id'],
+            'user_zodiac': user_zodiac,
+            'target_zodiac': target_zodiac,
+            'analysis_type': analysis_type,
+            'result': compatibility_analysis,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        
+        helper = get_cosmos_helper()
+        compat_container = helper.get_container('zodiac_compatibility')
+        compat_container.create_item(analysis_record)
+        
+        return jsonify({
+            'success': True,
+            'compatibility_analysis': compatibility_analysis,
+            'analysis_id': analysis_record['id']
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error analyzing zodiac compatibility: {e}")
+        return jsonify({'error': 'Failed to analyze zodiac compatibility'}), 500
+
+
+# Helper functions for zodiac analytics
+
+def update_user_zodiac_stats(user_id: str, tradition: str, sign: str, action: str):
+    """Update user's zodiac statistics"""
+    try:
+        helper = get_cosmos_helper()
+        stats_container = helper.get_container('user_zodiac_stats')
+        
+        stat_id = f"{user_id}_{tradition}_{sign}"
+        
+        try:
+            stats = stats_container.read_item(item=stat_id, partition_key=user_id)
+        except Exception as e:
+            # Stats not found, create new ones
+            logging.info(f"Stats not found for user {user_id}, creating new stats")
+            stats = {
+                'id': stat_id,
+                'user_id': user_id,
+                'tradition': tradition,
+                'zodiac_sign': sign,
+                'action_counts': {},
+                'total_actions': 0,
+                'first_action': datetime.now(timezone.utc).isoformat(),
+                'last_action': datetime.now(timezone.utc).isoformat()
+            }
+        
+        # Update action counts
+        if action in stats['action_counts']:
+            stats['action_counts'][action] += 1
+        else:
+            stats['action_counts'][action] = 1
+        
+        stats['total_actions'] += 1
+        stats['last_action'] = datetime.now(timezone.utc).isoformat()
+        
+        stats_container.upsert_item(stats)
+        
+    except Exception as e:
+        logging.error(f"Error updating user zodiac stats: {e}")
+
+
+def generate_action_analytics(action_record: dict) -> dict:
+    """Generate real-time analytics for an action"""
+    return {
+        'cultural_authenticity': calculate_cultural_authenticity(
+            action_record['zodiac_tradition'],
+            action_record['zodiac_sign'],
+            action_record['action_type']
+        ),
+        'community_resonance': 0.85,  # Mock - calculate based on similar actions
+        'rarity_score': calculate_action_rarity(action_record),
+        'energy_type': get_zodiac_energy_type(
+            action_record['zodiac_tradition'],
+            action_record['zodiac_sign']
+        )
+    }
+
+
+def calculate_cultural_authenticity(tradition: str, sign: str, action: str) -> float:
+    """Calculate how authentic an action is to the cultural tradition"""
+    # Authentic action mappings per tradition
+    authentic_actions = {
+        'chinese': {
+            'rat': ['squeak', 'nibble', 'gather'],
+            'ox': ['plow', 'endure', 'build'],
+            'tiger': ['pounce', 'roar', 'hunt'],
+            'rabbit': ['hop', 'nurture', 'hide'],
+            'dragon': ['soar', 'breathe_fire', 'command'],
+            'snake': ['slither', 'shed', 'wisdom'],
+            'horse': ['gallop', 'race', 'freedom'],
+            'goat': ['graze', 'climb', 'peaceful'],
+            'monkey': ['swing', 'play', 'clever'],
+            'rooster': ['crow', 'strut', 'announce'],
+            'dog': ['bark', 'loyal', 'protect'],
+            'pig': ['root', 'feast', 'enjoy']
+        },
+        'western': {
+            'aries': ['charge', 'spark', 'lead'],
+            'taurus': ['ground', 'build', 'enjoy'],
+            'gemini': ['communicate', 'explore', 'adapt'],
+            'cancer': ['nurture', 'protect', 'feel'],
+            'leo': ['shine', 'create', 'lead'],
+            'virgo': ['analyze', 'perfect', 'serve'],
+            'libra': ['balance', 'harmonize', 'beautify'],
+            'scorpio': ['transform', 'intensify', 'probe'],
+            'sagittarius': ['explore', 'teach', 'adventure'],
+            'capricorn': ['achieve', 'structure', 'climb'],
+            'aquarius': ['innovate', 'rebel', 'connect'],
+            'pisces': ['flow', 'dream', 'heal']
+        }
+    }
+    
+    tradition_actions = authentic_actions.get(tradition, {})
+    sign_actions = tradition_actions.get(sign.lower(), [])
+    
+    if action.lower() in sign_actions:
+        return 1.0
+    elif any(action.lower() in actions for actions in tradition_actions.values()):
+        return 0.7
+    else:
+        return 0.4
+
+
+def calculate_action_rarity(action_record: dict) -> float:
+    """Calculate rarity score for an action"""
+    # Mock rarity calculation - in production, query database for frequency
+    tradition_rarity = {
+        'chinese': 0.3,
+        'western': 0.2,
+        'vedic': 0.7,
+        'mayan': 0.9,
+        'aztec': 0.95
+    }
+    
+    base_rarity = tradition_rarity.get(action_record['zodiac_tradition'], 0.5)
+    
+    # Adjust for specific zodiac signs (some are rarer)
+    if action_record['zodiac_sign'].lower() in ['dragon', 'phoenix', 'ahau']:
+        base_rarity += 0.2
+    
+    return min(1.0, base_rarity)
+
+
+def get_zodiac_energy_type(tradition: str, sign: str) -> str:
+    """Get the energy type for a zodiac sign"""
+    energy_types = {
+        'chinese': {
+            'rat': 'Quick Intelligence',
+            'ox': 'Steady Strength',
+            'tiger': 'Fierce Power',
+            'rabbit': 'Gentle Grace',
+            'dragon': 'Cosmic Force',
+            'snake': 'Deep Wisdom',
+            'horse': 'Free Spirit',
+            'goat': 'Peaceful Harmony',
+            'monkey': 'Clever Wit',
+            'rooster': 'Confident Pride',
+            'dog': 'Loyal Heart',
+            'pig': 'Abundant Joy'
+        },
+        'western': {
+            'aries': 'Cardinal Fire',
+            'taurus': 'Fixed Earth',
+            'gemini': 'Mutable Air',
+            'cancer': 'Cardinal Water',
+            'leo': 'Fixed Fire',
+            'virgo': 'Mutable Earth',
+            'libra': 'Cardinal Air',
+            'scorpio': 'Fixed Water',
+            'sagittarius': 'Mutable Fire',
+            'capricorn': 'Cardinal Earth',
+            'aquarius': 'Fixed Air',
+            'pisces': 'Mutable Water'
+        }
+    }
+    
+    tradition_energies = energy_types.get(tradition, {})
+    return tradition_energies.get(sign.lower(), 'Universal Energy')
+
+
+def get_cultural_insights(tradition: str, sign: str, action: str) -> dict:
+    """Get cultural insights for a specific zodiac action"""
+    return {
+        'tradition_wisdom': get_tradition_wisdom(tradition),
+        'sign_meaning': get_sign_cultural_meaning(tradition, sign),
+        'action_significance': get_action_cultural_significance(tradition, sign, action),
+        'spiritual_aspect': get_spiritual_aspect(tradition, sign),
+        'modern_relevance': get_modern_cultural_relevance(tradition, sign, action)
+    }
+
+
+def get_tradition_wisdom(tradition: str) -> str:
+    """Get wisdom about a specific zodiac tradition"""
+    wisdom = {
+        'chinese': 'The Chinese zodiac reflects a 12-year cycle of transformation, teaching us about patience, timing, and the cyclical nature of life.',
+        'western': 'Western astrology maps the soul\'s journey through archetypal energies, revealing our deepest motivations and potential.',
+        'vedic': 'Vedic astrology connects us to cosmic rhythms and karmic patterns, offering guidance for spiritual evolution.',
+        'mayan': 'Mayan astrology reveals our connection to galactic consciousness and the sacred mathematics of time.',
+        'aztec': 'Aztec astrology honors the interplay between cosmic forces and earthly manifestation through ritual and reverence.'
+    }
+    return wisdom.get(tradition, 'Ancient wisdom guides modern understanding.')
+
+
+def get_sign_cultural_meaning(tradition: str, sign: str) -> str:
+    """Get cultural meaning of a zodiac sign within its tradition"""
+    meanings = {
+        'chinese': {
+            'rat': 'Symbol of intelligence, resourcefulness, and new beginnings in Chinese culture.',
+            'dragon': 'The most auspicious sign, representing imperial power, wisdom, and good fortune.',
+            'tiger': 'Embodies courage, protection, and the warrior spirit in Chinese mythology.'
+        },
+        'western': {
+            'scorpio': 'The transformer, representing death, rebirth, and the mysteries of the psyche.',
+            'leo': 'The royal sign, embodying creative self-expression and heart-centered leadership.',
+            'aquarius': 'The water-bearer, symbolizing humanitarian ideals and futuristic vision.'
+        }
+    }
+    
+    tradition_meanings = meanings.get(tradition, {})
+    return tradition_meanings.get(sign.lower(), f'{sign} carries unique energetic qualities within {tradition} tradition.')
+
+
+def calculate_action_summary(actions: list) -> dict:
+    """Calculate summary statistics for actions"""
+    if not actions:
+        return {'total_actions': 0, 'unique_traditions': 0, 'unique_signs': 0}
+    
+    traditions = set(action.get('zodiac_tradition') for action in actions)
+    signs = set(action.get('zodiac_sign') for action in actions)
+    action_types = {}
+    
+    for action in actions:
+        action_type = action.get('action_type', 'unknown')
+        action_types[action_type] = action_types.get(action_type, 0) + 1
+    
+    return {
+        'total_actions': len(actions),
+        'unique_traditions': len(traditions),
+        'unique_signs': len(signs),
+        'action_type_counts': action_types,
+        'most_common_action': max(action_types.items(), key=lambda x: x[1])[0] if action_types else None
+    }
+
+
+def calculate_tradition_breakdown(actions: list) -> dict:
+    """Calculate breakdown of actions by tradition"""
+    tradition_counts = {}
+    for action in actions:
+        tradition = action.get('zodiac_tradition', 'unknown')
+        tradition_counts[tradition] = tradition_counts.get(tradition, 0) + 1
+    
+    total = len(actions)
+    tradition_percentages = {}
+    for tradition, count in tradition_counts.items():
+        tradition_percentages[tradition] = {
+            'count': count,
+            'percentage': round((count / total * 100), 2) if total > 0 else 0
+        }
+    
+    return tradition_percentages
+
+
+def calculate_action_frequency(actions: list) -> dict:
+    """Calculate frequency of different action types"""
+    action_counts = {}
+    for action in actions:
+        action_type = action.get('action_type', 'unknown')
+        action_counts[action_type] = action_counts.get(action_type, 0) + 1
+    
+    # Sort by frequency
+    sorted_actions = sorted(action_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return {
+        'action_counts': dict(sorted_actions),
+        'most_frequent': sorted_actions[0] if sorted_actions else None,
+        'total_unique_actions': len(sorted_actions)
+    }
+
+
+def identify_cultural_patterns(actions: list) -> dict:
+    """Identify cultural usage patterns"""
+    patterns = {
+        'cross_cultural_users': 0,
+        'tradition_specialists': {},
+        'cultural_bridges': [],
+        'emerging_trends': []
+    }
+    
+    # Group actions by user
+    user_traditions = {}
+    for action in actions:
+        user_id = action.get('user_id')
+        tradition = action.get('zodiac_tradition')
+        
+        if user_id and tradition:
+            if user_id not in user_traditions:
+                user_traditions[user_id] = set()
+            user_traditions[user_id].add(tradition)
+    
+    # Analyze patterns
+    for user_id, traditions in user_traditions.items():
+        if len(traditions) > 2:
+            patterns['cross_cultural_users'] += 1
+        elif len(traditions) == 1:
+            tradition = list(traditions)[0]
+            patterns['tradition_specialists'][tradition] = patterns['tradition_specialists'].get(tradition, 0) + 1
+    
+    return patterns
+
+
+def get_top_zodiac_signs(actions: list) -> list:
+    """Get top zodiac signs by activity"""
+    sign_counts = {}
+    for action in actions:
+        sign = action.get('zodiac_sign', 'unknown')
+        tradition = action.get('zodiac_tradition', 'unknown')
+        key = f"{tradition}:{sign}"
+        sign_counts[key] = sign_counts.get(key, 0) + 1
+    
+    # Sort and return top 10
+    sorted_signs = sorted(sign_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return [
+        {
+            'tradition_sign': tradition_sign,
+            'tradition': tradition_sign.split(':')[0],
+            'sign': tradition_sign.split(':')[1],
+            'activity_count': count
+        }
+        for tradition_sign, count in sorted_signs[:10]
+    ]
+
+
+def generate_engagement_timeline(actions: list, time_range: str) -> dict:
+    """Generate engagement timeline data"""
+    if not actions:
+        return {'timeline': [], 'peak_hours': [], 'total_periods': 0}
+    
+    # Group actions by hour
+    hourly_counts = {}
+    for action in actions:
+        timestamp = action.get('timestamp', '')
+        if timestamp:
+            try:
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                hour_key = dt.strftime('%Y-%m-%d %H:00')
+                hourly_counts[hour_key] = hourly_counts.get(hour_key, 0) + 1
+            except (ValueError, TypeError) as e:
+                logging.warning(f"Invalid timestamp format: {timestamp}: {e}")
+                continue
+    
+    # Sort timeline
+    timeline = []
+    for hour_key, count in sorted(hourly_counts.items()):
+        timeline.append({
+            'timestamp': hour_key,
+            'activity_count': count
+        })
+    
+    # Find peak hours
+    peak_hours = sorted(hourly_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    return {
+        'timeline': timeline,
+        'peak_hours': [{'hour': hour, 'count': count} for hour, count in peak_hours],
+        'total_periods': len(timeline)
+    }
+
+
+def calculate_cultural_diversity(actions: list) -> float:
+    """Calculate cultural diversity score (0-1)"""
+    if not actions:
+        return 0.0
+    
+    traditions = set(action.get('zodiac_tradition') for action in actions)
+    max_traditions = 5  # chinese, western, vedic, mayan, aztec
+    
+    diversity_score = len(traditions) / max_traditions
+    return round(diversity_score, 2)
+
+
+def generate_analytics_recommendations(actions: list, user_id: str) -> list:
+    """Generate personalized recommendations based on analytics"""
+    recommendations = []
+    
+    if not actions:
+        return ["Start exploring zodiac traditions to see personalized insights"]
+    
+    # Analyze user patterns
+    user_actions = [action for action in actions if action.get('user_id') == user_id]
+    traditions_used = set(action.get('zodiac_tradition') for action in user_actions)
+    
+    # Recommend unexplored traditions
+    all_traditions = {'chinese', 'western', 'vedic', 'mayan', 'aztec'}
+    unexplored = all_traditions - traditions_used
+    
+    if unexplored:
+        recommendations.append(f"Explore {list(unexplored)[0]} zodiac tradition for new perspectives")
+    
+    # Recommend based on activity patterns
+    if len(user_actions) < 10:
+        recommendations.append("Increase zodiac interactions to unlock deeper insights")
+    
+    if len(traditions_used) >= 3:
+        recommendations.append("You're a cultural bridge! Share your multi-tradition wisdom")
+    
+    return recommendations[:3]  # Limit to top 3
+
+
+def get_tradition_information(tradition: str) -> dict:
+    """Get comprehensive information about a zodiac tradition"""
+    tradition_info = {
+        'chinese': {
+            'origin': 'Ancient China, over 2000 years old',
+            'cycle': '12-year cycle based on lunar calendar',
+            'philosophy': 'Emphasizes harmony between heaven, earth, and humanity',
+            'cultural_significance': 'Central to Chinese cultural identity and New Year celebrations'
+        },
+        'western': {
+            'origin': 'Ancient Babylon and Greece, refined through centuries',
+            'cycle': 'Annual cycle based on solar calendar and constellation positions',
+            'philosophy': 'Explores psychological archetypes and life purpose',
+            'cultural_significance': 'Foundation of Western astrological practice and personality psychology'
+        },
+        'vedic': {
+            'origin': 'Ancient India, part of Vedic scriptures',
+            'cycle': 'Complex system involving lunar mansions and planetary periods',
+            'philosophy': 'Karmic astrology focused on spiritual evolution',
+            'cultural_significance': 'Integral to Hindu culture and spiritual practice'
+        },
+        'mayan': {
+            'origin': 'Ancient Mesoamerica, sophisticated mathematical system',
+            'cycle': '260-day sacred calendar with 20 day signs and 13 numbers',
+            'philosophy': 'Connection between cosmic time and human consciousness',
+            'cultural_significance': 'Sacred timekeeping system for ceremonies and agriculture'
+        },
+        'aztec': {
+            'origin': 'Mesoamerican civilization, influenced by earlier cultures',
+            'cycle': 'Tonalpohualli 260-day ritual calendar',
+            'philosophy': 'Balance between cosmic forces through ritual and sacrifice',
+            'cultural_significance': 'Guided religious ceremonies and daily life decisions'
+        }
+    }
+    
+    return tradition_info.get(tradition, {
+        'origin': 'Ancient wisdom tradition',
+        'cycle': 'Cyclical understanding of time and energy',
+        'philosophy': 'Harmony between cosmic and human consciousness',
+        'cultural_significance': 'Important for understanding human nature and timing'
+    })
+
+
+def get_cultural_significance(tradition: str, zodiac_sign: str) -> str:
+    """Get cultural significance of a specific sign in its tradition"""
+    significance_map = {
+        'chinese': {
+            'dragon': 'The most auspicious sign, associated with imperial power and divine favor',
+            'phoenix': 'Symbol of renewal, representing the empress and feminine power',
+            'tiger': 'Protector spirit, guardian of the mountains and courage'
+        },
+        'western': {
+            'leo': 'The royal sign, connected to the Sun and creative self-expression',
+            'scorpio': 'The transformer, associated with mysteries, death, and rebirth',
+            'aquarius': 'The water-bearer, symbol of humanitarian progress and innovation'
+        }
+    }
+    
+    tradition_signs = significance_map.get(tradition, {})
+    return tradition_signs.get(zodiac_sign.lower(), f'{zodiac_sign} holds special meaning within {tradition} tradition')
+
+
+def get_historical_context(tradition: str) -> str:
+    """Get historical context for a zodiac tradition"""
+    contexts = {
+        'chinese': 'Developed during the Han Dynasty (206 BC - 220 AD), the Chinese zodiac emerged from ancient shamanic practices and astronomical observations. It became integrated with Confucian philosophy and Taoist principles.',
+        'western': 'Originating in Babylonian astronomy around 2000 BC, Western astrology was refined by Greek philosophers like Ptolemy. It evolved through Islamic scholarship during the Middle Ages and Renaissance.',
+        'vedic': 'Rooted in the Vedas (1500-500 BC), Jyotisha (Vedic astrology) developed as a sacred science. It incorporates concepts of karma, dharma, and the cycle of reincarnation.',
+        'mayan': 'The Maya developed sophisticated astronomical knowledge from 2000 BC onwards. Their calendar system reflects deep understanding of celestial cycles and their influence on human affairs.',
+        'aztec': 'Building on Olmec and Maya foundations, Aztec astrology (1300-1500 AD) integrated cosmic understanding with ritual practice and agricultural timing.'
+    }
+    
+    return contexts.get(tradition, f'The {tradition} tradition represents ancient wisdom about cosmic influences on human life.')
+
+
+def get_modern_interpretation(tradition: str, zodiac_sign: str) -> str:
+    """Get modern interpretation of traditional zodiac concepts"""
+    if not zodiac_sign:
+        return f'Modern {tradition} astrology adapts ancient wisdom for contemporary psychological and spiritual insights.'
+    
+    interpretations = {
+        'chinese': {
+            'rat': 'Modern psychology sees Rat energy as quick intelligence and adaptability',
+            'dragon': 'Contemporary interpretation focuses on leadership potential and creative power'
+        },
+        'western': {
+            'scorpio': 'Modern astrology emphasizes psychological transformation and emotional depth',
+            'aquarius': 'Contemporary focus on humanitarian technology and social innovation'
+        }
+    }
+    
+    tradition_interps = interpretations.get(tradition, {})
+    return tradition_interps.get(zodiac_sign.lower(), f'Modern {tradition} astrology reframes {zodiac_sign} energy for contemporary life')
+
+
+def get_action_meanings(tradition: str, zodiac_sign: str) -> dict:
+    """Get meanings of actions within cultural context"""
+    action_meanings = {
+        'chinese': {
+            'dragon': {
+                'soar': 'Expanding consciousness and raising vibration',
+                'breathe_fire': 'Passionate creative expression',
+                'command': 'Natural leadership and authority'
+            }
+        },
+        'western': {
+            'scorpio': {
+                'transform': 'Deep psychological and spiritual metamorphosis',
+                'intensify': 'Bringing focus and depth to experiences',
+                'probe': 'Seeking truth beneath surface appearances'
+            }
+        }
+    }
+    
+    tradition_actions = action_meanings.get(tradition, {})
+    sign_actions = tradition_actions.get(zodiac_sign.lower(), {})
+    
+    return sign_actions or {'general_action': f'Actions reflect {zodiac_sign} energy within {tradition} tradition'}
+
+
+def get_compatibility_wisdom(tradition: str, zodiac_sign: str) -> str:
+    """Get compatibility wisdom for a zodiac sign"""
+    wisdom = {
+        'chinese': {
+            'dragon': 'Dragons harmonize best with Monkey and Rooster, bringing mutual inspiration',
+            'rat': 'Rats find deep compatibility with Dragon and Monkey through shared intelligence'
+        },
+        'western': {
+            'scorpio': 'Scorpio connects deeply with Cancer and Pisces through emotional intensity',
+            'leo': 'Leo shines brightest with Aries and Sagittarius through shared fire energy'
+        }
+    }
+    
+    tradition_wisdom = wisdom.get(tradition, {})
+    return tradition_wisdom.get(zodiac_sign.lower(), f'{zodiac_sign} compatibility depends on elemental harmony and complementary energies')
+
+
+def generate_personal_cultural_insights(user_id: str, tradition: str, zodiac_sign: str) -> dict:
+    """Generate personal insights for user's cultural connection"""
+    # In production, this would analyze user's historical data
+    return {
+        'cultural_affinity': 0.8,  # Mock score
+        'learning_opportunities': f'Explore {tradition} meditation practices',
+        'cultural_bridges': 'Your multi-tradition knowledge creates unique perspectives',
+        'personal_growth': f'{zodiac_sign} energy supports your current life phase'
+    }
+
+
+def calculate_tradition_activity(actions: list) -> list:
+    """Calculate most active traditions"""
+    tradition_counts = {}
+    for action in actions:
+        tradition = action.get('zodiac_tradition', 'unknown')
+        tradition_counts[tradition] = tradition_counts.get(tradition, 0) + 1
+    
+    sorted_traditions = sorted(tradition_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return [
+        {'tradition': tradition, 'activity_count': count}
+        for tradition, count in sorted_traditions
+    ]
+
+
+def calculate_trending_signs(actions: list) -> list:
+    """Calculate trending zodiac signs"""
+    # For trends, focus on recent activity
+    recent_cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+    recent_actions = [
+        action for action in actions 
+        if action.get('timestamp', '') >= recent_cutoff
+    ]
+    
+    sign_counts = {}
+    for action in recent_actions:
+        sign = action.get('zodiac_sign', 'unknown')
+        tradition = action.get('zodiac_tradition', 'unknown')
+        key = f"{tradition}:{sign}"
+        sign_counts[key] = sign_counts.get(key, 0) + 1
+    
+    sorted_signs = sorted(sign_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return [
+        {
+            'tradition': tradition_sign.split(':')[0],
+            'sign': tradition_sign.split(':')[1],
+            'trend_score': count
+        }
+        for tradition_sign, count in sorted_signs[:5]
+    ]
+
+
+def calculate_popular_actions(actions: list) -> list:
+    """Calculate most popular action types"""
+    action_counts = {}
+    for action in actions:
+        action_type = action.get('action_type', 'unknown')
+        action_counts[action_type] = action_counts.get(action_type, 0) + 1
+    
+    sorted_actions = sorted(action_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return [
+        {'action_type': action, 'count': count}
+        for action, count in sorted_actions[:10]
+    ]
+
+
+def identify_cultural_crossover_patterns(actions: list) -> dict:
+    """Identify patterns of cultural crossover"""
+    user_traditions = {}
+    for action in actions:
+        user_id = action.get('user_id')
+        tradition = action.get('zodiac_tradition')
+        
+        if user_id and tradition:
+            if user_id not in user_traditions:
+                user_traditions[user_id] = set()
+            user_traditions[user_id].add(tradition)
+    
+    crossover_patterns = {
+        'multi_tradition_users': 0,
+        'tradition_combinations': {},
+        'cultural_bridges': 0
+    }
+    
+    for user_id, traditions in user_traditions.items():
+        if len(traditions) > 1:
+            crossover_patterns['multi_tradition_users'] += 1
+            
+            if len(traditions) >= 3:
+                crossover_patterns['cultural_bridges'] += 1
+            
+            # Track specific combinations
+            combination = ':'.join(sorted(traditions))
+            crossover_patterns['tradition_combinations'][combination] = \
+                crossover_patterns['tradition_combinations'].get(combination, 0) + 1
+    
+    return crossover_patterns
+
+
+def generate_geographical_insights(actions: list) -> dict:
+    """Generate geographical insights from actions (mock implementation)"""
+    # In production, this would use IP geolocation data
+    return {
+        'global_reach': 'Multi-continental engagement',
+        'cultural_hotspots': ['North America', 'East Asia', 'Europe'],
+        'emerging_regions': ['South America', 'Southeast Asia'],
+        'cross_cultural_exchanges': 'High activity in culturally diverse regions'
+    }
+
+
+def analyze_time_patterns(actions: list) -> dict:
+    """Analyze time-based patterns in zodiac actions"""
+    if not actions:
+        return {'peak_hours': [], 'day_patterns': {}, 'timezone_distribution': {}}
+    
+    hour_counts = {}
+    day_counts = {}
+    
+    for action in actions:
+        timestamp = action.get('timestamp', '')
+        if timestamp:
+            try:
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                hour = dt.hour
+                day = dt.strftime('%A')
+                
+                hour_counts[hour] = hour_counts.get(hour, 0) + 1
+                day_counts[day] = day_counts.get(day, 0) + 1
+            except:
+                continue
+    
+    # Find peak hours
+    peak_hours = sorted(hour_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    return {
+        'peak_hours': [f"{hour:02d}:00" for hour, count in peak_hours],
+        'day_patterns': day_counts,
+        'most_active_day': max(day_counts.items(), key=lambda x: x[1])[0] if day_counts else None
+    }
+
+
+def calculate_engagement_velocity(actions: list, time_range: str) -> dict:
+    """Calculate engagement velocity and acceleration"""
+    if not actions:
+        return {'velocity': 0, 'acceleration': 0, 'trend': 'stable'}
+    
+    # Sort actions by timestamp
+    sorted_actions = sorted(actions, key=lambda x: x.get('timestamp', ''))
+    
+    total_time_hours = {'24h': 24, '7d': 168, '30d': 720}.get(time_range, 24)
+    actions_per_hour = len(actions) / total_time_hours
+    
+    # Calculate trend (simplified)
+    if len(sorted_actions) >= 2:
+        first_half = sorted_actions[:len(sorted_actions)//2]
+        second_half = sorted_actions[len(sorted_actions)//2:]
+        
+        if len(second_half) > len(first_half):
+            trend = 'accelerating'
+        elif len(second_half) < len(first_half):
+            trend = 'decelerating'
+        else:
+            trend = 'stable'
+    else:
+        trend = 'stable'
+    
+    return {
+        'velocity': round(actions_per_hour, 2),
+        'acceleration': 0,  # Simplified for this implementation
+        'trend': trend,
+        'total_actions': len(actions)
+    }
+
+
+def calculate_tradition_compatibility(tradition: str, user_sign: str, target_sign: str, analysis_type: str) -> dict:
+    """Calculate compatibility between two signs within a tradition"""
+    # Simplified compatibility matrix - in production, this would be more comprehensive
+    compatibility_matrices = {
+        'chinese': {
+            ('rat', 'dragon'): 0.9,
+            ('tiger', 'horse'): 0.8,
+            ('rabbit', 'goat'): 0.85,
+            # Add more combinations...
+        },
+        'western': {
+            ('scorpio', 'cancer'): 0.9,
+            ('leo', 'aries'): 0.85,
+            ('libra', 'gemini'): 0.8,
+            # Add more combinations...
+        }
+    }
+    
+    matrix = compatibility_matrices.get(tradition, {})
+    
+    # Check both directions
+    score = matrix.get((user_sign.lower(), target_sign.lower())) or \
+            matrix.get((target_sign.lower(), user_sign.lower())) or 0.6
+    
+    return {
+        'tradition': tradition,
+        'user_sign': user_sign,
+        'target_sign': target_sign,
+        'compatibility_score': score,
+        'analysis_type': analysis_type,
+        'strength_areas': get_compatibility_strengths(tradition, user_sign, target_sign, score),
+        'challenge_areas': get_compatibility_challenges_detail(tradition, user_sign, target_sign, score)
+    }
+
+
+def get_compatibility_strengths(tradition: str, sign1: str, sign2: str, score: float) -> list:
+    """Get compatibility strengths between two signs"""
+    if score >= 0.8:
+        return ['Strong elemental harmony', 'Natural understanding', 'Complementary energies']
+    elif score >= 0.6:
+        return ['Good communication potential', 'Mutual growth opportunities']
+    else:
+        return ['Learning through differences', 'Potential for growth']
+
+
+def get_compatibility_challenges_detail(tradition: str, sign1: str, sign2: str, score: float) -> list:
+    """Get compatibility challenges between two signs"""
+    if score < 0.5:
+        return ['Different communication styles', 'Conflicting priorities', 'Need for patience']
+    elif score < 0.7:
+        return ['Occasional misunderstandings', 'Different pacing']
+    else:
+        return ['Minor adjustments needed', 'Generally harmonious']
+
+
+def get_compatibility_cultural_wisdom(tradition: str, sign1: str, sign2: str) -> str:
+    """Get cultural wisdom about sign compatibility"""
+    wisdom_templates = {
+        'chinese': f'In Chinese tradition, {sign1} and {sign2} represent different aspects of the cosmic cycle',
+        'western': f'Western astrology sees {sign1} and {sign2} as part of the zodiacal journey of consciousness',
+        'vedic': f'Vedic wisdom suggests {sign1} and {sign2} have karmic lessons to share',
+        'mayan': f'Mayan calendar wisdom indicates {sign1} and {sign2} carry complementary galactic signatures'
+    }
+    
+    return wisdom_templates.get(tradition, f'{sign1} and {sign2} offer unique learning opportunities in {tradition} tradition')
+
+
+def generate_compatibility_recommendations(tradition_scores: dict, analysis_type: str) -> list:
+    """Generate compatibility recommendations"""
+    recommendations = []
+    
+    avg_score = sum(score['compatibility_score'] for score in tradition_scores.values()) / len(tradition_scores)
+    
+    if avg_score >= 0.8:
+        recommendations.append("Strong multi-tradition compatibility - embrace this harmonious connection")
+    elif avg_score >= 0.6:
+        recommendations.append("Good foundation with room for growth - focus on communication")
+    else:
+        recommendations.append("Growth opportunity - practice patience and understanding")
+    
+    # Analysis type specific recommendations
+    if analysis_type == 'romantic':
+        recommendations.append("Create rituals that honor both your zodiac traditions")
+    elif analysis_type == 'friendship':
+        recommendations.append("Share cultural wisdom from your different zodiac backgrounds")
+    elif analysis_type == 'business':
+        recommendations.append("Leverage complementary strengths from different traditions")
+    
+    return recommendations
+
+
+def identify_compatibility_strengths(tradition_scores: dict) -> list:
+    """Identify overall compatibility strengths"""
+    strengths = []
+    
+    for tradition, score_data in tradition_scores.items():
+        if score_data['compatibility_score'] >= 0.7:
+            strengths.extend(score_data.get('strength_areas', []))
+    
+    # Remove duplicates and return top strengths
+    unique_strengths = list(set(strengths))
+    return unique_strengths[:5]
+
+
+def identify_compatibility_challenges(tradition_scores: dict) -> list:
+    """Identify overall compatibility challenges"""
+    challenges = []
+    
+    for tradition, score_data in tradition_scores.items():
+        if score_data['compatibility_score'] < 0.6:
+            challenges.extend(score_data.get('challenge_areas', []))
+    
+    # Remove duplicates and return main challenges
+    unique_challenges = list(set(challenges))
+    return unique_challenges[:3]
+
+
+def get_action_cultural_significance(tradition: str, sign: str, action: str) -> str:
+    """Get cultural significance of a specific action"""
+    significance_map = {
+        'chinese': {
+            'dragon': {
+                'soar': 'In Chinese culture, dragons soaring represents ascending to higher consciousness and divine connection',
+                'command': 'Dragon commands reflect natural leadership blessed by heaven'
+            }
+        },
+        'western': {
+            'scorpio': {
+                'transform': 'Scorpio transformation embodies the alchemical process of spiritual rebirth',
+                'intensify': 'Scorpio intensity channels the power of focused will and determination'
+            }
+        }
+    }
+    
+    tradition_signs = significance_map.get(tradition, {})
+    sign_actions = tradition_signs.get(sign.lower(), {})
+    
+    return sign_actions.get(action.lower(), f'{action} carries special meaning in {tradition} tradition for {sign}')
+
+
+def get_spiritual_aspect(tradition: str, sign: str) -> str:
+    """Get spiritual aspect of a zodiac sign"""
+    spiritual_aspects = {
+        'chinese': {
+            'dragon': 'Spiritual connection to divine power and cosmic consciousness',
+            'phoenix': 'Spiritual renewal and resurrection energy'
+        },
+        'western': {
+            'scorpio': 'Spiritual transformation through death and rebirth cycles',
+            'pisces': 'Spiritual connection through compassion and universal love'
+        }
+    }
+    
+    tradition_aspects = spiritual_aspects.get(tradition, {})
+    return tradition_aspects.get(sign.lower(), f'{sign} carries spiritual wisdom within {tradition} tradition')
+
+
+def get_modern_cultural_relevance(tradition: str, sign: str, action: str) -> str:
+    """Get modern cultural relevance of zodiac concepts"""
+    return f'In modern context, {tradition} {sign} {action} represents authentic self-expression and cultural wisdom integration'
+
 # ==================== BADGE SYSTEM API ====================
 
 @api_bp.route('/api/v1/badges/manifest', methods=['GET'])
@@ -3928,3 +5885,268 @@ def update_badge_positions(current_user):
     except Exception as e:
         logging.error(f"Badge position update error: {e}")
         return jsonify({'error': 'Failed to update badge positions'}), 500
+
+# ===== ZODIAC MILESTONE ENDPOINTS =====
+@api_bp.route('/api/v1/zodiac/milestones/<user_id>', methods=['GET'])
+@token_required
+def get_zodiac_milestones(current_user, user_id):
+    """Get zodiac milestones and achievements for a user"""
+    try:
+        cosmos_helper = get_cosmos_helper()
+        
+        # Get user's posts to calculate engagement milestones
+        posts_container = cosmos_helper.get_container('posts')
+        posts_query = "SELECT * FROM posts WHERE user_id = @user_id"
+        user_posts = cosmos_helper.query_items_from_container(
+            posts_container, 
+            posts_query, 
+            parameters=[{"name": "@user_id", "value": user_id}]
+        )
+        
+        # Get user's social actions
+        social_actions_container = cosmos_helper.get_container('social_actions')
+        actions_query = "SELECT * FROM social_actions WHERE user_id = @user_id"
+        user_actions = cosmos_helper.query_items_from_container(
+            social_actions_container, 
+            actions_query, 
+            parameters=[{"name": "@user_id", "value": user_id}]
+        )
+        
+        # Calculate milestones
+        milestones = {
+            'posts_created': len(user_posts),
+            'likes_given': len([a for a in user_actions if a.get('action_type') == 'like']),
+            'comments_made': len([a for a in user_actions if a.get('action_type') == 'comment']),
+            'shares_made': len([a for a in user_actions if a.get('action_type') == 'share']),
+            'total_social_actions': len(user_actions),
+            'engagement_streak': calculate_engagement_streak(user_actions),
+            'zodiac_consistency': calculate_zodiac_consistency(user_actions)
+        }
+        
+        return jsonify({
+            'success': True,
+            'milestones': milestones,
+            'user_id': user_id
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting zodiac milestones: {e}")
+        return jsonify({'error': 'Failed to get zodiac milestones'}), 500
+
+@api_bp.route('/api/v1/badges/check-unlocks', methods=['POST'])
+@token_required
+def check_badge_unlocks_enhanced(current_user):
+    """Check for newly unlocked badges based on zodiac milestones"""
+    try:
+        data = request.get_json()
+        milestones = data.get('milestones', {})
+        user_id = data.get('userId') or current_user.get('id')
+        
+        cosmos_helper = get_cosmos_helper()
+        profiles_container = cosmos_helper.get_container('profiles')
+        
+        # Get user profile to check existing badges
+        profile_query = "SELECT * FROM profiles WHERE userId = @user_id"
+        profiles = cosmos_helper.query_items_from_container(
+            profiles_container, 
+            profile_query, 
+            parameters=[{"name": "@user_id", "value": user_id}]
+        )
+        
+        if not profiles:
+            return jsonify({'success': True, 'newUnlocks': []})
+        
+        profile = profiles[0]
+        existing_badges = profile.get('badges', [])
+        existing_badge_ids = [b.get('badge_id') for b in existing_badges]
+        
+        # Define badge unlock criteria based on zodiac milestones
+        badge_criteria = {
+            'social_butterfly': {'total_social_actions': 50},
+            'engagement_master': {'likes_given': 100, 'comments_made': 25},
+            'content_creator': {'posts_created': 10},
+            'zodiac_champion': {'zodiac_consistency': 0.8},
+            'streak_keeper': {'engagement_streak': 7},
+            'community_builder': {'shares_made': 20}
+        }
+        
+        new_unlocks = []
+        
+        for badge_id, criteria in badge_criteria.items():
+            # Skip if already unlocked
+            if badge_id in existing_badge_ids:
+                continue
+            
+            # Check if all criteria are met
+            meets_criteria = all(
+                milestones.get(metric, 0) >= threshold 
+                for metric, threshold in criteria.items()
+            )
+            
+            if meets_criteria:
+                # Create new badge entry
+                new_badge = {
+                    'badge_id': badge_id,
+                    'manifest': get_badge_manifest(badge_id),
+                    'unlocked_at': datetime.now(timezone.utc).isoformat(),
+                    'equipped': False
+                }
+                
+                existing_badges.append(new_badge)
+                new_unlocks.append(badge_id)
+        
+        # Update profile with new badges
+        if new_unlocks:
+            profile['badges'] = existing_badges
+            profiles_container.upsert_item(profile)
+            
+            logging.info(f"User {user_id} unlocked new badges: {new_unlocks}")
+        
+        return jsonify({
+            'success': True,
+            'newUnlocks': new_unlocks,
+            'totalBadges': len(existing_badges)
+        })
+        
+    except Exception as e:
+        logging.error(f"Error checking badge unlocks: {e}")
+        return jsonify({'error': 'Failed to check badge unlocks'}), 500
+
+def calculate_engagement_streak(user_actions):
+    """Calculate consecutive days of user engagement"""
+    try:
+        if not user_actions:
+            return 0
+        
+        # Sort actions by date
+        sorted_actions = sorted(
+            user_actions, 
+            key=lambda x: datetime.fromisoformat(x.get('timestamp', '').replace('Z', '+00:00'))
+        )
+        
+        # Count consecutive days
+        current_streak = 0
+        last_date = None
+        
+        for action in sorted_actions:
+            action_date = datetime.fromisoformat(action.get('timestamp', '').replace('Z', '+00:00')).date()
+            
+            if last_date is None:
+                current_streak = 1
+            elif (action_date - last_date).days == 1:
+                current_streak += 1
+            elif (action_date - last_date).days > 1:
+                current_streak = 1
+            
+            last_date = action_date
+        
+        return current_streak
+        
+    except Exception as e:
+        logging.error(f"Error calculating engagement streak: {e}")
+        return 0
+
+def calculate_zodiac_consistency(user_actions):
+    """Calculate how consistently user uses zodiac-themed actions"""
+    try:
+        if not user_actions:
+            return 0.0
+        
+        zodiac_actions = [
+            action for action in user_actions 
+            if action.get('zodiac_action') in ['Charge', 'Spark', 'Lead', 'Ignite', 'Roar', 'Shine']
+        ]
+        
+        consistency = len(zodiac_actions) / len(user_actions)
+        return round(consistency, 2)
+        
+    except Exception as e:
+        logging.error(f"Error calculating zodiac consistency: {e}")
+        return 0.0
+
+def get_badge_manifest(badge_id):
+    """Get badge manifest data for a specific badge"""
+    badge_manifests = {
+        'social_butterfly': {
+            'metadata': {
+                'id': 'social_butterfly',
+                'name': 'Social Butterfly',
+                'description': 'Master of cosmic social connections',
+                'category': 'social'
+            },
+            'rarity': 'rare',
+            'effects': {
+                'cosmic_influence': {'social_boost': 1.2}
+            }
+        },
+        'engagement_master': {
+            'metadata': {
+                'id': 'engagement_master',
+                'name': 'Engagement Master',
+                'description': 'Champion of meaningful cosmic interactions',
+                'category': 'engagement'
+            },
+            'rarity': 'epic',
+            'effects': {
+                'cosmic_influence': {'engagement_boost': 1.3}
+            }
+        },
+        'content_creator': {
+            'metadata': {
+                'id': 'content_creator',
+                'name': 'Content Creator',
+                'description': 'Weaver of cosmic stories and experiences',
+                'category': 'creation'
+            },
+            'rarity': 'rare',
+            'effects': {
+                'cosmic_influence': {'creation_boost': 1.25}
+            }
+        },
+        'zodiac_champion': {
+            'metadata': {
+                'id': 'zodiac_champion',
+                'name': 'Zodiac Champion',
+                'description': 'Devoted practitioner of zodiac wisdom',
+                'category': 'zodiac'
+            },
+            'rarity': 'legendary',
+            'effects': {
+                'cosmic_influence': {'zodiac_power': 1.5}
+            }
+        },
+        'streak_keeper': {
+            'metadata': {
+                'id': 'streak_keeper',
+                'name': 'Streak Keeper',
+                'description': 'Consistent cosmic energy cultivator',
+                'category': 'consistency'
+            },
+            'rarity': 'epic',
+            'effects': {
+                'cosmic_influence': {'consistency_bonus': 1.4}
+            }
+        },
+        'community_builder': {
+            'metadata': {
+                'id': 'community_builder',
+                'name': 'Community Builder',
+                'description': 'Architect of cosmic community connections',
+                'category': 'community'
+            },
+            'rarity': 'legendary',
+            'effects': {
+                'cosmic_influence': {'community_power': 1.6}
+            }
+        }
+    }
+    
+    return badge_manifests.get(badge_id, {
+        'metadata': {
+            'id': badge_id,
+            'name': badge_id.replace('_', ' ').title(),
+            'description': 'Mysterious cosmic achievement',
+            'category': 'mystery'
+        },
+        'rarity': 'common'
+    })
