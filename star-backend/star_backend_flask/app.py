@@ -23,42 +23,21 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from analytics_api import analytics_bp, init_analytics_blueprint
+# from analytics_api import analytics_bp, init_analytics_blueprint
 # Import blueprints
-from api_blueprint import api_bp, init_api_blueprint
+# from api_blueprint import api_bp, init_api_blueprint
 
 # Initialize blueprints with Supabase client
-try:
-    init_api_blueprint(supabase)
-    print("API blueprint initialized successfully")
-except Exception as e:
-    print(f"Failed to initialize API blueprint: {e}")
-
-try:
-    init_analytics_blueprint(supabase)
-    print("Analytics blueprint initialized successfully")
-except Exception as e:
-    print(f"Failed to initialize analytics blueprint: {e}")
-
-try:
-    app.register_blueprint(api_bp, url_prefix="/api/v1")
-    print("API blueprint registered successfully")
-except Exception as e:
-    print(f"Failed to register API blueprint: {e}")
-
-try:
-    app.register_blueprint(analytics_bp, url_prefix="/api/v1")
-    print("Analytics blueprint registered successfully")
-except Exception as e:
-    print(f"Failed to register analytics blueprint: {e}")
+# TODO: Re-enable blueprint imports after fixing import issues
 
 @app.route("/health")
 def health():
     return {
         "status": "healthy", 
-        "version": "1.0.1",
+        "version": "1.0.2",
         "blueprints": list(app.blueprints.keys()),
-        "routes": [str(rule) for rule in app.url_map.iter_rules()]
+        "routes": [str(rule) for rule in app.url_map.iter_rules()],
+        "blueprints_disabled": True
     }, 200
 
 @app.route("/test-blueprint")
