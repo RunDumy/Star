@@ -36,7 +36,12 @@ app.register_blueprint(analytics_bp, url_prefix="/api/v1")
 
 @app.route("/health")
 def health():
-    return {"status": "healthy", "version": "1.0.0"}, 200
+    return {
+        "status": "healthy", 
+        "version": "1.0.0",
+        "blueprints": list(app.blueprints.keys()),
+        "routes": [str(rule) for rule in app.url_map.iter_rules()]
+    }, 200
 
 @app.route("/test-blueprint")
 def test_blueprint():
