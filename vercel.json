@@ -1,11 +1,9 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "star-frontend/package.json",
-            "use": "@vercel/next"
-        }
-    ],
+    "buildCommand": "cd star-frontend && npm run build",
+    "outputDirectory": "star-frontend/.next",
+    "installCommand": "cd star-frontend && npm install",
+    "framework": "nextjs",
     "routes": [
         {
             "src": "/api/(.*)",
