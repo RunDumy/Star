@@ -4,13 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "chmod +x node_modules/.bin/next && next build",
     "start": "next start",
     "lint": "next lint --fix",
     "lint:check": "next lint",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "postinstall": "chmod +x node_modules/.bin/next"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@babel/preset-env": "^7.28.3",
