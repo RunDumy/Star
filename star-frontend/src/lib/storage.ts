@@ -48,5 +48,4 @@ export const getChineseZodiacIconUrl = (chineseSign: string): string => {
 
 export const getElementIconUrl = (element: string): string => {
     return getAssetUrl(`icons8-${element}-100.png`)
-}</content>
-    < parameter name = "filePath" > c: \Users\fudos\PycharmProjects\Star\star - frontend\src\lib\storage.ts
+}

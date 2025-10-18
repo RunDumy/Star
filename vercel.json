@@ -9,7 +9,7 @@
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "https://star-backend.fly.dev/api/$1"
+            "dest": "https://star-backend-l7u1.onrender.com/api/$1"
         },
         {
             "src": "/(.*)",
@@ -17,6 +17,6 @@
         }
     ],
     "env": {
-        "NEXT_PUBLIC_API_URL": "https://star-backend.fly.dev"
+        "NEXT_PUBLIC_API_URL": "https://star-backend-l7u1.onrender.com"
     }
 }
