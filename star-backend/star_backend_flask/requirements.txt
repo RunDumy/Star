@@ -1,5 +1,5 @@
 flask==3.0.3
-supabase==2.8.4
+supabase==2.22.0
 gunicorn==23.0.0
 agora-token-builder==1.0.0
 python-jose==3.3.0
