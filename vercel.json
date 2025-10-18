@@ -1,8 +1,9 @@
 {
     "version": 2,
-    "buildCommand": "cd star-frontend && npm run build",
-    "outputDirectory": "star-frontend/.next",
-    "framework": "nextjs",
+    "buildCommand": "npm run build",
+    "outputDirectory": ".next",
+    "framework": null,
+    "rootDirectory": "star-frontend",
     "routes": [
         {
             "src": "/api/(.*)",
@@ -10,7 +11,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/star-frontend/$1"
+            "dest": "/$1"
         }
     ],
     "env": {
