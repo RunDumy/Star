@@ -1,9 +1,13 @@
-from flask import Blueprint, request, jsonify
-from supabase import create_client
-import os
+from flask import Blueprint, jsonify, request
 
 analytics_bp = Blueprint("analytics", __name__)
-supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+
+# Supabase client will be set from main app
+supabase = None
+
+def init_analytics_blueprint(supabase_client):
+    global supabase
+    supabase = supabase_client
 
 @analytics_bp.route("/events", methods=["POST"])
 def log_event():

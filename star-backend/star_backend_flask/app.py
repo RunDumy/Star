@@ -23,9 +23,13 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from analytics_api import analytics_bp, init_analytics_blueprint
 # Import blueprints
-from api import api_bp
-from analytics_api import analytics_bp
+from api import api_bp, init_api_blueprint
+
+# Initialize blueprints with Supabase client
+init_api_blueprint(supabase)
+init_analytics_blueprint(supabase)
 
 app.register_blueprint(api_bp, url_prefix="/api/v1")
 app.register_blueprint(analytics_bp, url_prefix="/api/v1")

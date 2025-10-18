@@ -1,11 +1,20 @@
-from flask import Blueprint, jsonify, g
-from supabase import create_client
-import os
 import logging
 
+from flask import Blueprint, g, jsonify
+
 api_bp = Blueprint("api", __name__)
-supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
 logger = logging.getLogger(__name__)
+
+# Supabase client will be set from main app
+supabase = None
+
+def init_api_blueprint(supabase_client):
+    global supabase
+    supabase = supabase_client
+
+@api_bp.route("/test", methods=["GET"])
+def test_endpoint():
+    return jsonify({"status": "success", "message": "API blueprint is working"}), 200
 
 @api_bp.route("/compatibility", methods=["GET"])
 def get_compatibility():
