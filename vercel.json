@@ -1,8 +1,0 @@
-{
-    "version": 2,
-    "framework": "nextjs",
-    "rootDirectory": "star-frontend",
-    "env": {
-        "NEXT_PUBLIC_API_URL": "https://star-backend-l7u1.onrender.com"
-    }
-}
