@@ -1,9 +1,10 @@
+version: "1"
 services:
   - type: web
     name: star-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    buildCommand: pip install -r star-backend/requirements.txt
+    startCommand: cd star-backend/star_backend_flask && gunicorn app:app
     envVars:
       - key: SUPABASE_URL
         value: https://hiwmpmvqcxzshdmhhlsb.supabase.co
