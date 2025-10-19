@@ -1,9 +1,9 @@
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import React from 'react';
-import { CosmicPageWrapper } from '../src/components/cosmic/CosmicPageWrapper';
 
 const CosmicCreate: React.FC = () => {
     return (
-        <CosmicPageWrapper>
+        <UniversalSpaceLayout>
             <div className="page-content space-color">
                 <div className="cosmic-container">
                     <h1 className="glitter-text cosmic-title">Cosmic Creator</h1>
@@ -22,7 +22,7 @@ const CosmicCreate: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </CosmicPageWrapper>
+        </UniversalSpaceLayout>
     );
 };
 

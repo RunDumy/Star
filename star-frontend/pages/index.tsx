@@ -3,7 +3,7 @@
 import CosmicButton from '@/components/CosmicButton';
 import CosmicFeed from '@/components/CosmicFeed';
 import CosmicNotifications from '@/components/CosmicNotifications';
-import StarBackground from '@/components/StarBackground';
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
@@ -48,8 +48,8 @@ export default function Home() {
   const elements = ['all', 'fire', 'earth', 'air', 'water'];
 
   return (
-    <StarBackground>
-      <div className="min-h-screen p-4 text-white">
+    <UniversalSpaceLayout currentPage="Home Realm">
+      <div className="relative z-10 min-h-screen p-4 text-white">
         {/* Navigation Bar */}
         <nav className="flex items-center justify-between mb-8">
           <div className="flex space-x-4">
@@ -182,7 +182,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </StarBackground>
+    </UniversalSpaceLayout>
   );
 }
 

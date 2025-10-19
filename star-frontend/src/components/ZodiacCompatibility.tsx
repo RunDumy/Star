@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, Shield, Star, Users, Zap } from 'lucide-react';
+import { Heart, MessageCircle, Shield, Sparkles, Star, Users, Users2, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -21,6 +21,9 @@ interface CompatibilityResult {
   challenges: string[];
   elementHarmony: string;
   overallRating: 'excellent' | 'good' | 'moderate' | 'challenging';
+  zodiacInsights: string[];
+  elementalFlow: string;
+  tribeSuggestions: string[];
 }
 
 const zodiacSigns: Record<string, ZodiacSign> = {
@@ -156,7 +159,10 @@ export default function ZodiacCompatibility() {
       strengths: generateStrengths(sign1Data, sign2Data),
       challenges: generateChallenges(sign1Data, sign2Data),
       elementHarmony: `${sign1Data.element} + ${sign2Data.element}`,
-      overallRating
+      overallRating,
+      zodiacInsights: generateZodiacInsights(sign1Data, sign2Data),
+      elementalFlow: generateElementalFlow(sign1Data.element, sign2Data.element),
+      tribeSuggestions: generateTribeSuggestions(sign1Data, sign2Data)
     };
   }, []);
 
@@ -206,6 +212,39 @@ export default function ZodiacCompatibility() {
     return challenges;
   };
 
+  const generateZodiacInsights = (sign1: ZodiacSign, sign2: ZodiacSign): string[] => {
+    const insights = [];
+    insights.push(`${sign1.name}'s ${sign1.traits[0].toLowerCase()} nature complements ${sign2.name}'s ${sign2.traits[0].toLowerCase()} approach`);
+    insights.push(`Together they create a balanced cosmic energy flow`);
+    insights.push(`${sign1.element} and ${sign2.element} elements create unique dynamic interactions`);
+    return insights;
+  };
+
+  const generateElementalFlow = (element1: string, element2: string): string => {
+    const flows = {
+      'Fire+Fire': 'Intense passion and creative energy',
+      'Fire+Earth': 'Grounded ambition with fiery drive',
+      'Fire+Air': 'Inspiring ideas with passionate execution',
+      'Fire+Water': 'Emotional depth with transformative energy',
+      'Earth+Earth': 'Stable foundation and practical harmony',
+      'Earth+Air': 'Grounded ideas with intellectual depth',
+      'Earth+Water': 'Nurturing stability with emotional wisdom',
+      'Water+Water': 'Deep emotional connection and intuition',
+      'Water+Air': 'Emotional intelligence with mental clarity',
+      'Air+Air': 'Intellectual stimulation and communication'
+    };
+    return flows[`${element1}+${element2}` as keyof typeof flows] || 'Balanced elemental interaction';
+  };
+
+  const generateTribeSuggestions = (sign1: ZodiacSign, sign2: ZodiacSign): string[] => {
+    const suggestions = [];
+    suggestions.push(`${sign1.name} Creative Collective`);
+    suggestions.push(`${sign2.name} Wisdom Circle`);
+    suggestions.push(`${sign1.element} & ${sign2.element} Elemental Alliance`);
+    suggestions.push('Cosmic Harmony Seekers');
+    return suggestions;
+  };
+
   useEffect(() => {
     if (selectedSign1 && selectedSign2) {
       calculateCompatibility();
@@ -233,199 +272,341 @@ export default function ZodiacCompatibility() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-            <Heart className="w-10 h-10 text-pink-400" />
-            Zodiac Compatibility Calculator
-          </h1>
-          <p className="text-gray-300 text-lg">Discover your cosmic connection with another zodiac sign</p>
-        </motion.div>
+    <div className="relative z-10 max-w-6xl mx-auto p-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
+          <Heart className="w-10 h-10 text-pink-400" />
+          Zodiac Compatibility Calculator
+        </h1>
+        <p className="text-gray-300 text-lg">Discover your cosmic connection with another zodiac sign</p>
+      </motion.div>
 
-        {/* Sign Selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid md:grid-cols-2 gap-8 mb-8"
-        >
-          {/* First Sign */}
-          <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4 text-center">Your Sign</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {Object.entries(zodiacSigns).map(([key, sign]) => (
-                <motion.button
-                  key={key}
-                  onClick={() => setSelectedSign1(key)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedSign1 === key
-                      ? 'border-purple-400 bg-purple-900/50'
-                      : 'border-gray-600 hover:border-purple-300'
+      {/* Sign Selection */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid md:grid-cols-2 gap-8 mb-8"
+      >
+        {/* First Sign */}
+        <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-purple-500/20">
+          <h3 className="text-xl font-semibold text-white mb-4 text-center">Your Sign</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(zodiacSigns).map(([key, sign]) => (
+              <motion.button
+                key={key}
+                onClick={() => setSelectedSign1(key)}
+                className={`p-4 rounded-lg border-2 transition-all ${selectedSign1 === key
+                  ? 'border-purple-400 bg-purple-900/50'
+                  : 'border-gray-600 hover:border-purple-300'
                   }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{sign.emoji}</div>
-                    <div className="text-white font-medium text-sm">{sign.name}</div>
-                    <div className={`text-xs bg-gradient-to-r ${elementColors[sign.element as keyof typeof elementColors]} bg-clip-text text-transparent font-medium`}>
-                      {sign.element}
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-
-          {/* Second Sign */}
-          <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4 text-center">Partner&apos;s Sign</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {Object.entries(zodiacSigns).map(([key, sign]) => (
-                <motion.button
-                  key={key}
-                  onClick={() => setSelectedSign2(key)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedSign2 === key
-                      ? 'border-pink-400 bg-pink-900/50'
-                      : 'border-gray-600 hover:border-pink-300'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{sign.emoji}</div>
-                    <div className="text-white font-medium text-sm">{sign.name}</div>
-                    <div className={`text-xs bg-gradient-to-r ${elementColors[sign.element as keyof typeof elementColors]} bg-clip-text text-transparent font-medium`}>
-                      {sign.element}
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Compatibility Results */}
-        <AnimatePresence>
-          {compatibility && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-8 border border-purple-500/20"
-            >
-              {/* Score Display */}
-              <div className="text-center mb-8">
-                <div className="relative w-32 h-32 mx-auto mb-4">
-                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeDasharray={`${compatibility.score}, 100`}
-                      className="text-gray-600"
-                    />
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeDasharray={`${compatibility.score}, 100`}
-                      className={getRatingColor(compatibility.overallRating)}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-white">{compatibility.score}%</div>
-                      <div className={`text-sm font-medium ${getRatingColor(compatibility.overallRating)}`}>
-                        {compatibility.overallRating.toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <h2 className="text-2xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-                  {zodiacSigns[selectedSign1]?.emoji} + {zodiacSigns[selectedSign2]?.emoji}
-                  {React.createElement(getRatingIcon(compatibility.overallRating), { className: "w-6 h-6" })}
-                </h2>
-                <p className="text-gray-300 text-lg">{compatibility.description}</p>
-                <p className="text-purple-400 font-medium mt-2">{compatibility.elementHarmony}</p>
-              </div>
-
-              {/* Details */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Strengths */}
-                <div>
-                  <h3 className="text-xl font-semibold text-green-400 mb-4 flex items-center gap-2">
-                    <Heart className="w-5 h-5" />
-                    Cosmic Strengths
-                  </h3>
-                  <ul className="space-y-2">
-                    {compatibility.strengths.map((strength, index) => (
-                      <li key={`strength-${index}-${strength.slice(0, 10)}`} className="text-gray-300 flex items-start gap-2">
-                        <Star className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                        {strength}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Challenges */}
-                <div>
-                  <h3 className="text-xl font-semibold text-yellow-400 mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    Growth Opportunities
-                  </h3>
-                  <ul className="space-y-2">
-                    {compatibility.challenges.map((challenge, index) => (
-                      <li key={`challenge-${index}-${challenge.slice(0, 10)}`} className="text-gray-300 flex items-start gap-2">
-                        <Zap className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                        {challenge}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Sign Details */}
-              <div className="grid md:grid-cols-2 gap-6 mt-8 pt-6 border-t border-gray-700/50">
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <div className="text-center">
-                  <div className="text-4xl mb-2">{zodiacSigns[selectedSign1]?.emoji}</div>
-                  <h4 className="text-xl font-semibold text-white">{zodiacSigns[selectedSign1]?.name}</h4>
-                  <p className="text-gray-400">{zodiacSigns[selectedSign1]?.dates}</p>
-                  <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${elementColors[zodiacSigns[selectedSign1]?.element as keyof typeof elementColors]} text-white mt-2`}>
+                  <div className="text-3xl mb-2">{sign.emoji}</div>
+                  <div className="text-white font-medium text-sm">{sign.name}</div>
+                  <div className={`text-xs bg-gradient-to-r ${elementColors[sign.element as keyof typeof elementColors]} bg-clip-text text-transparent font-medium`}>
+                    {sign.element}
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Second Sign */}
+        <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-purple-500/20">
+          <h3 className="text-xl font-semibold text-white mb-4 text-center">Partner&apos;s Sign</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(zodiacSigns).map(([key, sign]) => (
+              <motion.button
+                key={key}
+                onClick={() => setSelectedSign2(key)}
+                className={`p-4 rounded-lg border-2 transition-all ${selectedSign2 === key
+                  ? 'border-pink-400 bg-pink-900/50'
+                  : 'border-gray-600 hover:border-pink-300'
+                  }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="text-center">
+                  <div className="text-3xl mb-2">{sign.emoji}</div>
+                  <div className="text-white font-medium text-sm">{sign.name}</div>
+                  <div className={`text-xs bg-gradient-to-r ${elementColors[sign.element as keyof typeof elementColors]} bg-clip-text text-transparent font-medium`}>
+                    {sign.element}
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Compatibility Results */}
+      <AnimatePresence>
+        {compatibility && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-8 border border-purple-500/20"
+          >
+            {/* Score Display */}
+            <div className="text-center mb-8">
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeDasharray={`${compatibility.score}, 100`}
+                    className="text-gray-600"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeDasharray={`${compatibility.score}, 100`}
+                    className={getRatingColor(compatibility.overallRating)}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white">{compatibility.score}%</div>
+                    <div className={`text-sm font-medium ${getRatingColor(compatibility.overallRating)}`}>
+                      {compatibility.overallRating.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h2 className="text-2xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+                {zodiacSigns[selectedSign1]?.emoji} + {zodiacSigns[selectedSign2]?.emoji}
+                {React.createElement(getRatingIcon(compatibility.overallRating), { className: "w-6 h-6" })}
+              </h2>
+              <p className="text-gray-300 text-lg">{compatibility.description}</p>
+              <p className="text-purple-400 font-medium mt-2">{compatibility.elementHarmony}</p>
+            </div>
+
+            {/* Details */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Strengths */}
+              <div>
+                <h3 className="text-xl font-semibold text-green-400 mb-4 flex items-center gap-2">
+                  <Heart className="w-5 h-5" />
+                  Cosmic Strengths
+                </h3>
+                <ul className="space-y-2">
+                  {compatibility.strengths.map((strength, index) => (
+                    <li key={`strength-${index}-${strength.slice(0, 10)}`} className="text-gray-300 flex items-start gap-2">
+                      <Star className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      {strength}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Challenges */}
+              <div>
+                <h3 className="text-xl font-semibold text-yellow-400 mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Growth Opportunities
+                </h3>
+                <ul className="space-y-2">
+                  {compatibility.challenges.map((challenge, index) => (
+                    <li key={`challenge-${index}-${challenge.slice(0, 10)}`} className="text-gray-300 flex items-start gap-2">
+                      <Zap className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      {challenge}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Enhanced Analysis Sections */}
+            <div className="grid md:grid-cols-3 gap-6 mt-8 pt-6 border-t border-gray-700/50">
+              {/* Zodiac Insights */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-purple-400 mb-3 flex items-center justify-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Zodiac Insights
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  {compatibility.zodiacInsights.map((insight, index) => (
+                    <li key={`insight-${selectedSign1}-${selectedSign2}-${index}`} className="flex items-start gap-2">
+                      <Star className="w-3 h-3 text-purple-400 mt-0.5 flex-shrink-0" />
+                      {insight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Elemental Flow */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-blue-400 mb-3 flex items-center justify-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Elemental Flow
+                </h3>
+                <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/20">
+                  <p className="text-sm text-gray-300">{compatibility.elementalFlow}</p>
+                </div>
+              </div>
+
+              {/* Tribe Suggestions */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-green-400 mb-3 flex items-center justify-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Suggested Tribes
+                </h3>
+                <div className="space-y-2">
+                  {compatibility.tribeSuggestions.map((tribe, index) => (
+                    <motion.button
+                      key={`tribe-${selectedSign1}-${selectedSign2}-${tribe.replaceAll(/\s+/g, '-')}`}
+                      className="w-full bg-gradient-to-r from-green-900/30 to-blue-900/30 hover:from-green-800/40 hover:to-blue-800/40 rounded-lg p-2 border border-green-500/20 transition-colors text-sm text-gray-300"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {tribe}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Elemental Harmony Visualization */}
+            <div className="mt-8 pt-6 border-t border-gray-700/50">
+              <h3 className="text-xl font-semibold text-white mb-6 text-center">Elemental Harmony</h3>
+              <div className="flex items-center justify-center gap-8 mb-6">
+                {/* First Element */}
+                <motion.div
+                  className="text-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="text-6xl mb-2">
+                    {zodiacSigns[selectedSign1]?.element === 'Fire' && '🔥'}
+                    {zodiacSigns[selectedSign1]?.element === 'Earth' && '🌍'}
+                    {zodiacSigns[selectedSign1]?.element === 'Air' && '💨'}
+                    {zodiacSigns[selectedSign1]?.element === 'Water' && '💧'}
+                  </div>
+                  <div className={`text-lg font-semibold bg-gradient-to-r ${elementColors[zodiacSigns[selectedSign1]?.element as keyof typeof elementColors]} bg-clip-text text-transparent`}>
                     {zodiacSigns[selectedSign1]?.element}
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl mb-2">{zodiacSigns[selectedSign2]?.emoji}</div>
-                  <h4 className="text-xl font-semibold text-white">{zodiacSigns[selectedSign2]?.name}</h4>
-                  <p className="text-gray-400">{zodiacSigns[selectedSign2]?.dates}</p>
-                  <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${elementColors[zodiacSigns[selectedSign2]?.element as keyof typeof elementColors]} text-white mt-2`}>
+                  <div className="text-2xl">{zodiacSigns[selectedSign1]?.emoji}</div>
+                </motion.div>
+
+                {/* Harmony Flow */}
+                <motion.div
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <motion.div
+                    animate={{ x: [0, 10, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="text-2xl"
+                  >
+                    ⚡
+                  </motion.div>
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="text-3xl text-yellow-400"
+                  >
+                    ✨
+                  </motion.div>
+                  <motion.div
+                    animate={{ x: [0, -10, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                    className="text-2xl"
+                  >
+                    🌊
+                  </motion.div>
+                </motion.div>
+
+                {/* Second Element */}
+                <motion.div
+                  className="text-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <div className="text-6xl mb-2">
+                    {zodiacSigns[selectedSign2]?.element === 'Fire' && '🔥'}
+                    {zodiacSigns[selectedSign2]?.element === 'Earth' && '🌍'}
+                    {zodiacSigns[selectedSign2]?.element === 'Air' && '💨'}
+                    {zodiacSigns[selectedSign2]?.element === 'Water' && '💧'}
+                  </div>
+                  <div className={`text-lg font-semibold bg-gradient-to-r ${elementColors[zodiacSigns[selectedSign2]?.element as keyof typeof elementColors]} bg-clip-text text-transparent`}>
                     {zodiacSigns[selectedSign2]?.element}
                   </div>
-                </div>
+                  <div className="text-2xl">{zodiacSigns[selectedSign2]?.emoji}</div>
+                </motion.div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-            <p className="text-white text-lg">Calculating cosmic compatibility...</p>
-          </div>
+              <div className="text-center">
+                <motion.div
+                  className="inline-block bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-lg p-4 border border-purple-500/30"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <p className="text-purple-300 font-medium">{compatibility.elementalFlow}</p>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Social Interaction Features */}
+            <div className="mt-8 pt-6 border-t border-gray-700/50">
+              <h3 className="text-xl font-semibold text-white mb-4 text-center">Cosmic Connections</h3>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <motion.button
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Send Compatibility Message
+                </motion.button>
+                <motion.button
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Users2 className="w-5 h-5" />
+                  Find Compatible Tribes
+                </motion.button>
+                <motion.button
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Heart className="w-5 h-5" />
+                  Save This Pairing
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Calculating cosmic compatibility...</p>
+        </div>
+      )}
     </div>
   );
 }

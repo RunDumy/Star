@@ -1,10 +1,10 @@
-import StarBackground from '../src/components/StarBackground';
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 
 export default function HomePage() {
   return (
-    <StarBackground>
-      <div className="p-8">Welcome to the 3D Cosmic Interface (placeholder)</div>
-    </StarBackground>
+    <UniversalSpaceLayout currentPage="Home Realm">
+      <div className="relative z-10 p-8">Welcome to the 3D Cosmic Interface (placeholder)</div>
+    </UniversalSpaceLayout>
   );
 }
 

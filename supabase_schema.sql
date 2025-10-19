@@ -344,3 +344,68 @@ CREATE POLICY "Users can insert responses to prompts they can see" ON prompt_res
 -- User actions policies
 CREATE POLICY "Users can view their own actions" ON user_actions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own actions" ON user_actions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Zodiac Arena Leaderboard
+CREATE TABLE IF NOT EXISTS zodiac_arena_scores (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(50) NOT NULL,
+    score INTEGER NOT NULL,
+    wave_reached INTEGER NOT NULL,
+    zodiac_sign VARCHAR(50),
+    duration_seconds INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Zodiac Arena Store Items
+CREATE TABLE IF NOT EXISTS zodiac_arena_store_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price_rp INTEGER NOT NULL, -- RP = Resonance Points
+    item_type VARCHAR(50) NOT NULL, -- 'cosmetic', 'powerup', 'skin', etc.
+    item_data JSONB, -- Store item-specific data
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Zodiac Arena Purchases
+CREATE TABLE IF NOT EXISTS zodiac_arena_purchases (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    item_id UUID REFERENCES zodiac_arena_store_items(id) ON DELETE CASCADE,
+    purchase_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    rp_spent INTEGER NOT NULL
+);
+
+-- User Resonance Points (RP) balance
+CREATE TABLE IF NOT EXISTS user_rp_balance (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    balance INTEGER DEFAULT 0,
+    total_earned INTEGER DEFAULT 0,
+    total_spent INTEGER DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Zodiac Arena Leaderboard policies
+CREATE POLICY "Users can view all scores" ON zodiac_arena_scores FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own scores" ON zodiac_arena_scores FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Zodiac Arena Store policies
+CREATE POLICY "Users can view active store items" ON zodiac_arena_store_items FOR SELECT USING (is_active = true);
+CREATE POLICY "Users can view their own purchases" ON zodiac_arena_purchases FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own purchases" ON zodiac_arena_purchases FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- User RP Balance policies
+CREATE POLICY "Users can view their own RP balance" ON user_rp_balance FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own RP balance" ON user_rp_balance FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own RP balance" ON user_rp_balance FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Insert some default store items
+INSERT INTO zodiac_arena_store_items (name, description, price_rp, item_type, item_data) VALUES
+('Fire Boost', 'Increases fire damage by 25% for 30 seconds', 100, 'powerup', '{"effect": "damage_boost", "multiplier": 1.25, "duration": 30}'),
+('Health Potion', 'Restores 50 HP instantly', 75, 'consumable', '{"heal_amount": 50}'),
+('Cosmic Skin', 'Unlocks the Cosmic Warrior skin', 500, 'cosmetic', '{"skin_id": "cosmic_warrior"}'),
+('Speed Boost', 'Increases movement speed by 50% for 20 seconds', 150, 'powerup', '{"effect": "speed_boost", "multiplier": 1.5, "duration": 20}'),
+('Shield', 'Grants temporary damage immunity for 10 seconds', 200, 'powerup', '{"effect": "shield", "duration": 10}')
+ON CONFLICT DO NOTHING;

@@ -1,12 +1,12 @@
 'use client';
 
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import CosmicAwakeningRitual from '../src/components/cosmic/CosmicAwakeningRitual';
-import StarBackground from '../src/components/StarBackground';
 
 export default function Register() {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<any>(null);
 
   const handleProfileCreated = (newProfile: any) => {
     setProfile(newProfile);
@@ -18,7 +18,7 @@ export default function Register() {
 
   if (profile) {
     return (
-      <StarBackground>
+      <UniversalSpaceLayout currentPage="Cosmic Birth">
         <motion.div
           className="relative z-10 min-h-screen flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
@@ -37,16 +37,16 @@ export default function Register() {
             </button>
           </div>
         </motion.div>
-      </StarBackground>
+      </UniversalSpaceLayout>
     );
   }
 
   return (
-    <StarBackground>
+    <UniversalSpaceLayout currentPage="Cosmic Birth">
       <div className="relative z-10">
         <CosmicAwakeningRitual onProfileCreated={handleProfileCreated} />
       </div>
-    </StarBackground>
+    </UniversalSpaceLayout>
   );
 }
 

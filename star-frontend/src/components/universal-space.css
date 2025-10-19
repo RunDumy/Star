@@ -1,0 +1,370 @@
+/* universal-space.css - Pure Black Void Background System */
+
+.universal-black-void {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    z-index: -10;
+    overflow: hidden;
+}
+
+/* Multi-layer starfield system for parallax depth */
+.starfield-far {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.1), transparent),
+        radial-gradient(1px 1px at 40px 70px, rgba(255, 255, 255, 0.05), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.08), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.03), transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(255, 255, 255, 0.07), transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: starfieldFarDrift 300s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes starfieldFarDrift {
+    from {
+        transform: translateX(0) translateY(0);
+    }
+
+    to {
+        transform: translateX(-200px) translateY(-100px);
+    }
+}
+
+.starfield-mid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(1px 1px at 50px 60px, rgba(168, 85, 247, 0.15), transparent),
+        radial-gradient(1px 1px at 80px 90px, rgba(236, 72, 153, 0.1), transparent),
+        radial-gradient(1px 1px at 120px 40px, rgba(59, 130, 246, 0.12), transparent),
+        radial-gradient(1px 1px at 180px 70px, rgba(168, 85, 247, 0.08), transparent),
+        radial-gradient(1px 1px at 220px 50px, rgba(236, 72, 153, 0.11), transparent);
+    background-repeat: repeat;
+    background-size: 250px 150px;
+    animation: starfieldMidDrift 200s linear infinite;
+    opacity: 0.4;
+}
+
+@keyframes starfieldMidDrift {
+    from {
+        transform: translateX(0) translateY(0);
+    }
+
+    to {
+        transform: translateX(-250px) translateY(-150px);
+    }
+}
+
+.starfield-near {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(1px 1px at 30px 40px, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(1px 1px at 70px 80px, rgba(168, 85, 247, 0.2), transparent),
+        radial-gradient(1px 1px at 110px 30px, rgba(236, 72, 153, 0.25), transparent),
+        radial-gradient(1px 1px at 150px 60px, rgba(59, 130, 246, 0.18), transparent),
+        radial-gradient(1px 1px at 190px 90px, rgba(255, 255, 255, 0.22), transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: starfieldNearDrift 100s linear infinite;
+    opacity: 0.8;
+}
+
+@keyframes starfieldNearDrift {
+    from {
+        transform: translateX(0) translateY(0);
+    }
+
+    to {
+        transform: translateX(-200px) translateY(-100px);
+    }
+}
+
+/* Cosmic dust particles overlay */
+.cosmic-dust {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(1px 1px at 25% 25%, rgba(168, 85, 247, 0.1), transparent 1px),
+        radial-gradient(1px 1px at 75% 75%, rgba(236, 72, 153, 0.08), transparent 1px),
+        radial-gradient(1px 1px at 50% 10%, rgba(59, 130, 246, 0.12), transparent 1px),
+        radial-gradient(1px 1px at 10% 80%, rgba(168, 85, 247, 0.09), transparent 1px),
+        radial-gradient(1px 1px at 90% 40%, rgba(236, 72, 153, 0.11), transparent 1px);
+    background-size: 100px 100px;
+    animation: cosmicDustFloat 60s ease-in-out infinite;
+    opacity: 0.3;
+}
+
+@keyframes cosmicDustFloat {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.3;
+    }
+
+    25% {
+        transform: translateY(-10px) rotate(90deg);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(180deg);
+        opacity: 0.2;
+    }
+
+    75% {
+        transform: translateY(-10px) rotate(270deg);
+        opacity: 0.35;
+    }
+}
+
+/* Content overlay system */
+.cosmic-content-overlay {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100vh;
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+}
+
+/* Universal Space Layout Styles */
+
+.universal-space-layout {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.cosmic-page-content {
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+    color: white;
+    overflow-y: auto;
+}
+
+/* Transition Effects */
+.cosmic-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 1) 100%);
+}
+
+.warp-effect {
+    position: relative;
+    width: 200px;
+    height: 200px;
+}
+
+.warp-rings {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border: 2px solid #00FFFF;
+    border-radius: 50%;
+    animation: warpPulse 1.5s ease-out infinite;
+}
+
+.warp-particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+    animation: warpParticles 1.5s ease-out infinite;
+}
+
+.transition-text {
+    margin-top: 2rem;
+    color: #FFD700;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.25rem;
+    text-align: center;
+    animation: textGlow 1.5s ease-out infinite;
+}
+
+/* Animations */
+@keyframes warpPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
+}
+
+@keyframes warpParticles {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(2) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes textGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700;
+    }
+
+    50% {
+        text-shadow: 0 0 20px #FFD700, 0 0 30px #FFD700, 0 0 40px #FFD700;
+    }
+}
+
+/* Performance optimizations */
+.universal-black-void,
+.starfield-far,
+.starfield-mid,
+.starfield-near,
+.cosmic-dust {
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+
+    .starfield-far,
+    .starfield-mid,
+    .starfield-near {
+        animation-duration: 400s, 250s, 150s;
+    }
+
+    .cosmic-dust {
+        animation-duration: 80s;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+    .universal-black-void,
+    .starfield-far,
+    .starfield-mid,
+    .starfield-near,
+    .cosmic-dust,
+    .cosmic-nebula {
+        animation: none;
+    }
+}
+
+/* Mythic Navigation Indicator */
+.navigation-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    z-index: 10;
+    text-align: center;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
+/* Mobile Touch Controls */
+.mobile-touch-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.mobile-hints {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+    line-height: 1.4;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-hints div {
+    margin-bottom: 4px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+    .mobile-hints {
+        font-size: 12px;
+        top: 10px;
+        left: 10px;
+    }
+
+    .mobile-hints div {
+        padding: 3px 6px;
+    }
+
+    .cosmic-page-content {
+        padding: 1rem;
+    }
+}
+
+/* Hide mobile hints during transitions */
+.mobile-touch-overlay[data-transitioning="true"] .mobile-hints {
+    opacity: 0;
+}

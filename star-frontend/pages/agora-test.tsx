@@ -1,3 +1,4 @@
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
@@ -9,8 +10,8 @@ const AgoraUIKitLiveStream = dynamic(
 
 export default function AgoraTestPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-8">
-      <div className="max-w-4xl mx-auto">
+    <UniversalSpaceLayout currentPage="Agora Test Realm">
+      <div className="relative z-10 max-w-4xl mx-auto p-8">
         <div className="bg-black/50 backdrop-blur-sm rounded-lg p-8">
           <h1 className="text-3xl font-bold text-white mb-6 text-center">
             🌟 AgoraRTC Test Page
@@ -63,6 +64,6 @@ export default function AgoraTestPage() {
           </div>
         </div>
       </div>
-    </div>
+    </UniversalSpaceLayout>
   );
 }

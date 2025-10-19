@@ -7,7 +7,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles, Star } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useCollaboration } from '../../lib/CollaborationContext';
+import { useCollaboration } from '../../contexts/CollaborationContext';
 
 // Zodiac cursor styles
 const ZODIAC_CURSOR_STYLES = {
@@ -27,7 +27,7 @@ const ZODIAC_CURSOR_STYLES = {
 };
 
 interface LiveCursorsProps {
-    containerRef?: React.RefObject<HTMLElement>;
+    containerRef?: React.RefObject<HTMLDivElement | null>;
     enabled?: boolean;
     showLabels?: boolean;
     showTrails?: boolean;
@@ -46,7 +46,7 @@ export const LiveCursors: React.FC<LiveCursorsProps> = ({
     showLabels = true,
     showTrails = false
 }) => {
-    const { currentSession, liveCursors, updateCursor } = useCollaboration();
+    const { currentSession, cursors, updateCursor } = useCollaboration();
 
     const [localCursor, setLocalCursor] = useState({ x: 0, y: 0 });
     const [cursorTrails, setCursorTrails] = useState<Record<string, CursorTrail[]>>({});
@@ -81,11 +81,7 @@ export const LiveCursors: React.FC<LiveCursorsProps> = ({
         setLocalCursor({ x: clampedX, y: clampedY });
 
         // Update collaboration cursor
-        updateCursor({
-            x: clampedX,
-            y: clampedY,
-            element: (event.target as HTMLElement)?.id || undefined
-        });
+        updateCursor({ x: clampedX, y: clampedY });
 
         lastUpdate.current = now;
     }, [enabled, currentSession, updateCursor, containerRef, throttleDelay]);
@@ -149,32 +145,30 @@ export const LiveCursors: React.FC<LiveCursorsProps> = ({
 
     // Update trails when cursors move
     useEffect(() => {
-        Object.entries(liveCursors).forEach(([userId, cursor]) => {
-            if (userId !== currentUserId) {
-                addTrailPoint(userId, cursor.x, cursor.y);
+        for (const cursor of cursors) {
+            if (cursor.user_id !== currentUserId) {
+                addTrailPoint(cursor.user_id, cursor.x, cursor.y);
             }
-        });
-    }, [liveCursors, currentUserId, addTrailPoint]);
+        }
+    }, [cursors, currentUserId, addTrailPoint]);
 
     if (!enabled || !currentSession) {
         return null;
     }
 
     // Filter out current user's cursor
-    const otherCursors = Object.entries(liveCursors).filter(
-        ([userId]) => userId !== currentUserId
-    );
+    const otherCursors = cursors.filter(cursor => cursor.user_id !== currentUserId);
 
     return (
         <div className="absolute inset-0 pointer-events-none z-50">
             <AnimatePresence>
-                {otherCursors.map(([userId, cursor]) => {
+                {otherCursors.map((cursor) => {
                     const zodiacStyle = ZODIAC_CURSOR_STYLES[cursor.zodiac_sign as keyof typeof ZODIAC_CURSOR_STYLES]
                         || ZODIAC_CURSOR_STYLES.unknown;
-                    const userTrails = cursorTrails[userId] || [];
+                    const userTrails = cursorTrails[cursor.user_id] || [];
 
                     return (
-                        <React.Fragment key={userId}>
+                        <React.Fragment key={cursor.user_id}>
                             {/* Cursor trails */}
                             {showTrails && userTrails.map((trail, index) => (
                                 <motion.div
@@ -257,12 +251,7 @@ export const LiveCursors: React.FC<LiveCursorsProps> = ({
                                             </span>
                                         </div>
 
-                                        {/* Element interaction indicator */}
-                                        {cursor.element && (
-                                            <div className="text-xs text-gray-300 mt-1">
-                                                Interacting with: {cursor.element}
-                                            </div>
-                                        )}
+                                        {/* Element interaction indicator - removed as not in CursorPosition interface */}
                                     </motion.div>
                                 )}
                             </motion.div>
@@ -299,7 +288,7 @@ export const LiveCursors: React.FC<LiveCursorsProps> = ({
  * Provides cursor position and element interaction data for collaborative features
  */
 export const useCursorAwareness = (elementId?: string) => {
-    const { currentSession, liveCursors } = useCollaboration();
+    const { currentSession, cursors } = useCollaboration();
     const [hoveredUsers, setHoveredUsers] = useState<string[]>([]);
     const [interactingUsers, setInteractingUsers] = useState<string[]>([]);
 
@@ -309,11 +298,8 @@ export const useCursorAwareness = (elementId?: string) => {
         const hovered: string[] = [];
         const interacting: string[] = [];
 
-        Object.entries(liveCursors).forEach(([userId, cursor]) => {
-            if (cursor.element === elementId) {
-                interacting.push(userId);
-            }
-
+        for (const cursor of cursors) {
+            // Note: element interaction tracking removed as CursorPosition doesn't include element property
             // Check if cursor is within element bounds (approximate)
             const element = document.getElementById(elementId);
             if (element) {
@@ -330,21 +316,21 @@ export const useCursorAwareness = (elementId?: string) => {
                     cursorY >= rect.top &&
                     cursorY <= rect.bottom
                 ) {
-                    hovered.push(userId);
+                    hovered.push(cursor.user_id);
                 }
             }
-        });
+        }
 
         setHoveredUsers(hovered);
         setInteractingUsers(interacting);
-    }, [currentSession, liveCursors, elementId]);
+    }, [currentSession, cursors, elementId]);
 
     return {
         hoveredUsers,
         interactingUsers,
         isBeingViewed: hoveredUsers.length > 0 || interactingUsers.length > 0,
         viewerCount: hoveredUsers.length + interactingUsers.length,
-        viewers: [...new Set([...hoveredUsers, ...interactingUsers])]
+        viewers: Array.from(new Set([...hoveredUsers, ...interactingUsers]))
     };
 };
 

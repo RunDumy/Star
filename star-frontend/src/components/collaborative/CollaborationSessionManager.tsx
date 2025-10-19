@@ -25,7 +25,7 @@ import {
     VideoOff
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { CollaborationSession, useCollaboration } from '../lib/CollaborationContext';
+import { CollaborationSession, useCollaboration } from '../../contexts/CollaborationContext';
 
 interface SessionManagerProps {
     onSessionJoined?: (session: CollaborationSession) => void;
@@ -326,8 +326,8 @@ export const CollaborationSessionManager: React.FC<SessionManagerProps> = ({
                             <button
                                 onClick={toggleMute}
                                 className={`p-3 rounded-lg transition-colors ${voiceChannel.muted
-                                        ? 'bg-red-600 text-white hover:bg-red-700'
-                                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                                    ? 'bg-red-600 text-white hover:bg-red-700'
+                                    : 'bg-gray-600 text-white hover:bg-gray-700'
                                     }`}
                             >
                                 {voiceChannel.muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -336,8 +336,8 @@ export const CollaborationSessionManager: React.FC<SessionManagerProps> = ({
                             <button
                                 onClick={toggleVideo}
                                 className={`p-3 rounded-lg transition-colors ${voiceChannel.video_enabled
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-600 text-white hover:bg-gray-700'
                                     }`}
                             >
                                 {voiceChannel.video_enabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
@@ -412,8 +412,8 @@ export const CollaborationSessionManager: React.FC<SessionManagerProps> = ({
                         key={id}
                         onClick={() => setActiveTab(id as any)}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors ${activeTab === id
-                                ? 'bg-purple-600 text-white'
-                                : 'text-purple-200 hover:text-white hover:bg-purple-600/50'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-purple-200 hover:text-white hover:bg-purple-600/50'
                             }`}
                     >
                         <Icon className="w-4 h-4" />
@@ -486,8 +486,8 @@ export const CollaborationSessionManager: React.FC<SessionManagerProps> = ({
                                                             {session.participant_count}/{session.max_participants}
                                                         </span>
                                                         <span className={`px-2 py-1 rounded text-xs capitalize ${session.status === 'active' ? 'bg-green-500/20 text-green-300' :
-                                                                session.status === 'waiting' ? 'bg-yellow-500/20 text-yellow-300' :
-                                                                    'bg-gray-500/20 text-gray-300'
+                                                            session.status === 'waiting' ? 'bg-yellow-500/20 text-yellow-300' :
+                                                                'bg-gray-500/20 text-gray-300'
                                                             }`}>
                                                             {session.status}
                                                         </span>
@@ -544,8 +544,8 @@ export const CollaborationSessionManager: React.FC<SessionManagerProps> = ({
                                             key={type.id}
                                             onClick={() => setCreateForm({ ...createForm, session_type: type.id })}
                                             className={`p-4 rounded-lg border-2 transition-colors text-left ${createForm.session_type === type.id
-                                                    ? 'border-purple-400 bg-purple-600/20'
-                                                    : 'border-purple-500/20 hover:border-purple-400/50'
+                                                ? 'border-purple-400 bg-purple-600/20'
+                                                : 'border-purple-500/20 hover:border-purple-400/50'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3 mb-2">

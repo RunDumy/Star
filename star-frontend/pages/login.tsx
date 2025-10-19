@@ -1,9 +1,9 @@
 'use client';
 
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import DOMPurify from 'dompurify';
 import Link from 'next/link';
 import { useState } from 'react';
-import StarBackground from '../src/components/StarBackground';
 import { login } from '../src/lib/api';
 
 export default function Login() {
@@ -28,7 +28,7 @@ export default function Login() {
   };
 
   return (
-    <StarBackground>
+    <UniversalSpaceLayout currentPage="Login Realm">
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg bg-black/50 p-6 shadow-lg backdrop-blur">
           <h1 className="mb-4 text-center text-2xl font-bold">Login to Star App</h1>
@@ -68,7 +68,7 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </StarBackground>
+    </UniversalSpaceLayout>
   );
 }
 

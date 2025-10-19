@@ -11,11 +11,6 @@ on:
       - "star-frontend/**"
   workflow_call:
 
-env:
-  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  AZURE_RESOURCE_GROUP: star-app-rg-centralus
-  AZURE_APP_SERVICE_NAME: star-frontend
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -43,41 +38,3 @@ jobs:
         run: npm run lint
       - name: Run tests
         run: npm test -- --coverage
-
-  build-and-deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Build and push Docker image
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and push container
-        run: |
-          cd star-frontend
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/star-frontend:${{ github.sha }} .
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/star-frontend:${{ github.sha }}
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_APP_SERVICE_NAME }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/star-frontend:${{ github.sha }}
-          slot-name: production
-      - name: Post-deployment health check
-        run: |
-          sleep 60
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://star-frontend.azurewebsites.net/)
-          if [ "$response" != "200" ]; then
-            echo "Health check failed: $response"
-            exit 1
-          fi

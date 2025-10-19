@@ -1,7 +1,12 @@
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import ZodiacCompatibility from '../src/components/ZodiacCompatibility';
 
 export default function ZodiacCompatibilityPage() {
-  return <ZodiacCompatibility />;
+  return (
+    <UniversalSpaceLayout currentPage="Zodiac Arena">
+      <ZodiacCompatibility />
+    </UniversalSpaceLayout>
+  );
 }
 
 export const metadata = {

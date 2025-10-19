@@ -1,1 +1,0 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[8202],{188:(_,n,u)=>{(window.__NEXT_P=window.__NEXT_P||[]).push(["/cosmic",function(){return u(2830)}])},2830:(_,n,u)=>{"use strict";u.r(n),u.d(n,{default:()=>c});var s=u(7876),e=u(2232);function c(){return(0,s.jsx)(e.A,{})}}},_=>{_.O(0,[7391,5037,8230,5095,5003,1088,2232,636,6593,8792],()=>_(_.s=188)),_N_E=_.O()}]);

@@ -1,7 +1,7 @@
 import logging
 import os
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 from analytics_api import analytics_bp, init_analytics_blueprint
 # Import blueprints
 from api_blueprint import api_bp, init_api_blueprint
+from collaboration_api import collaboration_bp
 
 # Initialize blueprints with Supabase client
 init_api_blueprint(supabase)
@@ -33,10 +34,12 @@ init_analytics_blueprint(supabase)
 
 app.register_blueprint(api_bp, url_prefix="/api/v1")
 app.register_blueprint(analytics_bp, url_prefix="/api/v1")
+app.register_blueprint(collaboration_bp)
 
-@app.route("/health")
-def health():
-    return {"status": "healthy", "version": "1.0.0"}, 200
+@app.route("/", methods=['GET', 'HEAD'])
+def root():
+    logger.info("Root endpoint accessed")
+    return jsonify({"message": "STAR Platform API - Cosmic Intelligence Online", "version": "1.0.0"}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

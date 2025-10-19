@@ -1,7 +1,7 @@
 'use client';
 
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import { useEffect, useState } from 'react';
-import StarBackground from '../src/components/StarBackground';
 import { fetchZodiacNumbers } from '../src/lib/api';
 
 type ZodiacInfo = {
@@ -27,7 +27,7 @@ export default function Zodiac() {
   }, []);
 
   return (
-    <StarBackground>
+    <UniversalSpaceLayout currentPage="Zodiac Realm">
       <div className="relative z-10 mx-auto max-w-2xl p-6 text-center">
         <h1 className="mb-4 text-3xl font-bold">Your Cosmic Numbers</h1>
         {error && <p className="text-red-300">{error}</p>}
@@ -58,7 +58,7 @@ export default function Zodiac() {
           </div>
         )}
       </div>
-    </StarBackground>
+    </UniversalSpaceLayout>
   );
 }
 

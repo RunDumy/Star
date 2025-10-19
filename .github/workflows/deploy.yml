@@ -1,80 +1,80 @@
 name: Deploy STAR Platform to Vercel + Render
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
-    NODE_VERSION: "18"
-    PYTHON_VERSION: "3.9"
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.9"
 
 jobs:
-    test-and-validate:
-        runs-on: ubuntu-latest
+  test-and-validate:
+    runs-on: ubuntu-latest
 
-        steps:
-            - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-                  cache: "npm"
-                  cache-dependency-path: "./star-frontend/package-lock.json"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "./star-frontend/package-lock.json"
 
-            - name: Install frontend dependencies
-              run: |
-                  cd ./star-frontend
-                  npm ci
+      - name: Install frontend dependencies
+        run: |
+          cd ./star-frontend
+          npm ci
 
-            - name: Lint frontend
-              run: |
-                  cd ./star-frontend
-                  npm run lint
+      - name: Lint frontend
+        run: |
+          cd ./star-frontend
+          npm run lint
 
-            - name: Build frontend
-              run: |
-                  cd ./star-frontend
-                  npm run build
+      - name: Build frontend
+        run: |
+          cd ./star-frontend
+          npm run build
 
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-            - name: Install backend dependencies
-              run: |
-                  cd ./star-backend/star_backend_flask
-                  pip install -r ../../../requirements.txt
+      - name: Install backend dependencies
+        run: |
+          cd ./star-backend/star_backend_flask
+          pip install -r ../../../requirements.txt
 
-            - name: Run backend tests
-              run: |
-                  cd ./star-backend/star_backend_flask
-                  python -m pytest ../../tests/ -v
+      - name: Run backend tests
+        run: |
+          cd ./star-backend/star_backend_flask
+          python -m pytest ../../tests/ -v
 
-            - name: Run frontend tests
-              run: |
-                  cd ./star-frontend
-                  npm test -- --watchAll=false --passWithNoTests
+      - name: Run frontend tests
+        run: |
+          cd ./star-frontend
+          npm test -- --watchAll=false --passWithNoTests
 
-    validate-deployments:
-        runs-on: ubuntu-latest
-        needs: test-and-validate
+  validate-deployments:
+    runs-on: ubuntu-latest
+    needs: test-and-validate
 
-        steps:
-            - name: Test Render backend health
-              run: |
-                  sleep 10  # Brief wait for any auto-deployments
-                  curl -f https://star-backend-l7u1.onrender.com/api/health || exit 1
+    steps:
+      - name: Test Render backend health
+        run: |
+          sleep 10  # Brief wait for any auto-deployments
+          curl -f https://star-backend-l7u1.onrender.com/api/health || exit 1
 
-            - name: Test Vercel frontend availability
-              run: |
-                  # Note: Vercel deployment happens automatically on push
-                  # This checks if the deployment URL is accessible
-                  # Replace with actual Vercel URL once known
-                  echo "Vercel deployment triggered automatically on push"
+      - name: Test Vercel frontend availability
+        run: |
+          # Note: Vercel deployment happens automatically on push
+          # This checks if the deployment URL is accessible
+          # Replace with actual Vercel URL once known
+          echo "Vercel deployment triggered automatically on push"
 
-            - name: Test key API endpoints
-              run: |
-                  curl -f https://star-backend-l7u1.onrender.com/api/v1/zodiac-calculator || exit 1
+      - name: Test key API endpoints
+        run: |
+          curl -f https://star-backend-l7u1.onrender.com/api/v1/zodiac-calculator || exit 1

@@ -1,6 +1,6 @@
 import logging
 
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
 api_bp = Blueprint("api", __name__)
 logger = logging.getLogger(__name__)
@@ -27,12 +27,36 @@ def get_compatibility():
         logger.error(f"Compatibility error: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@api_bp.route("/notifications", methods=["GET"])
-def get_notifications():
+@api_bp.route("/zodiac-arena/leaderboard", methods=["POST"])
+def update_leaderboard():
     try:
-        user_id = g.current_user
-        notifications = supabase.table("analytics").select("*").eq("userId", user_id).execute().data
-        return jsonify({"status": "success", "notifications": notifications}), 200
+        data = request.get_json()
+        leaderboard = {
+            'id': f"score-{data['user_id']}-{data['timestamp']}",
+            'user_id': data['user_id'],
+            'score': data['score'],
+            'timestamp': data['timestamp']
+        }
+        supabase.table('leaderboard').insert(leaderboard).execute()
+        return jsonify({'status': 'success', 'score': data['score']}), 200
     except Exception as e:
-        logger.error(f"Notifications error: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logger.error(f"Leaderboard update failed: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@api_bp.route("/zodiac-arena/store", methods=["POST"])
+def store_purchase():
+    try:
+        data = request.get_json()
+        purchase = {
+            'id': f"purchase-{data['user_id']}-{data['timestamp']}",
+            'user_id': data['user_id'],
+            'item_id': data['item_id'],
+            'type': data['type'],
+            'value': data['value'],
+            'timestamp': data['timestamp']
+        }
+        supabase.table('store').insert(purchase).execute()
+        return jsonify({'status': 'success', 'item_id': data['item_id']}), 200
+    except Exception as e:
+        logger.error(f"Store purchase failed: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500

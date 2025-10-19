@@ -1,8 +1,8 @@
+import UniversalSpaceLayout from '@/components/UniversalSpaceLayout';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { CosmicPageWrapper } from '../src/components/cosmic/CosmicPageWrapper';
 import { useInfiniteScroll } from '../src/hooks/useInfiniteScroll';
 import { useSocket } from '../src/lib/SocketContext';
 
@@ -266,7 +266,7 @@ const CosmicFeed = () => {
     }
 
     return (
-        <CosmicPageWrapper>
+        <UniversalSpaceLayout currentPage="Cosmic Feed">
             <div className="container mx-auto px-4 py-8 space-color">
                 {/* Header */}
                 <motion.div
@@ -675,7 +675,7 @@ const CosmicFeed = () => {
                     </div>
                 </motion.div>
             </div>
-        </CosmicPageWrapper >
+        </UniversalSpaceLayout>
     );
 };
 

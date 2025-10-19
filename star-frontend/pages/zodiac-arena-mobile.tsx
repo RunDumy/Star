@@ -1,5 +1,7 @@
-import ZodiacArenaMobile from '../src/components/game/ZodiacArenaMobile';
+import dynamic from 'next/dynamic';
 
-export default function ZodiacArenaMobilePage(): JSX.Element {
+const ZodiacArenaMobile = dynamic(() => import('../src/components/game/ZodiacArenaMobile'), { ssr: false });
+
+export default function ZodiacArenaMobilePage() {
     return <ZodiacArenaMobile />;
 }
